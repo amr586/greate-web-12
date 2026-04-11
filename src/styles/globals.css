@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+:root {
+  --teal-50: #e6f2f5;
+  --teal-100: #ccdfed;
+  --teal-200: #99c8db;
+  --teal-300: #66b1c9;
+  --teal-400: #339ab7;
+  --teal-500: #007a9a;
+  --teal-600: #006a87;
+  --teal-700: #005a7d;
+  --teal-800: #004a68;
+  --teal-900: #003a53;
+  --gold-50: #faf6ee;
+  --gold-100: #f5eddd;
+  --gold-200: #ebdbbb;
+  --gold-300: #e1c999;
+  --gold-400: #d7b777;
+  --gold-500: #bca056;
+  --gold-600: #a68c4a;
+  --gold-700: #8f783e;
+  --gold-800: #796432;
+  --gold-900: #635026;
+  --black: #0a0a0a;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Cairo', 'Segoe UI', sans-serif;
+  background: #ffffff;
+  color: #0a0a0a;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #005a7d; border-radius: 3px; }
+
+/* Custom selection */
+::selection { background: #005a7d; color: white; }
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-20px) rotate(2deg); }
+  66% { transform: translateY(10px) rotate(-1deg); }
+}
+
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-blob { animation: blob 8s ease-in-out infinite; }
+.animate-blob-delay { animation: blob 8s ease-in-out infinite 2s; }
+.animate-blob-delay2 { animation: blob 8s ease-in-out infinite 4s; }
+.animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #005a7d, #007a9a, #bca056);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Property card hover */
+.property-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.property-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(0, 90, 125, 0.25);
+}
+
+/* Teal button */
+.btn-purple {
+  background: linear-gradient(135deg, #005a7d, #004a68);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-purple::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #007a9a, #005a7d);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-purple:hover::before { opacity: 1; }
+
+/* Input styles */
+.input-purple {
+  border: 2px solid #ccdfed;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.input-purple:focus {
+  border-color: #005a7d;
+  box-shadow: 0 0 0 4px rgba(0, 90, 125, 0.1);
+}
+
+/* Page transition wrapper */
+.page-wrapper {
+  min-height: 100vh;
+}
+
+/* WhatsApp button */
+.whatsapp-float {
+  position: fixed;
+  bottom: 100px;
+  left: 24px;
+  z-index: 100;
+}
+
+/* Stat card */
+.stat-card {
+  background: linear-gradient(135deg, #005a7d, #004a68);
+  color: white;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* Badge */
+.badge-purple {
+  background: #e6f2f5;
+  color: #005a7d;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Section divider */
+.section-title {
+  position: relative;
+  display: inline-block;
+}
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  right: 0;
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, #bca056, transparent);
+  border-radius: 2px;
+}
+
+/* Hero particle */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
