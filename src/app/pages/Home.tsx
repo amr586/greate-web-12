@@ -133,7 +133,7 @@ export default function Home() {
       </section>
 
       {/* STATS */}
-      <section ref={statsRef} className="py-16 bg-gradient-to-br from-[#bca056] to-[#a68a47]">
+      <section ref={statsRef} className="py-16 bg-gradient-to-br from-[#c8a95e] to-[#9a7535]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -143,9 +143,9 @@ export default function Home() {
               { value: 12, label: 'سنوات خبرة', icon: <Star size={24} /> },
             ].map((stat, i) => (
               <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={statsInView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: i * 0.1 }} className="text-center">
-                <div className="w-12 h-12 bg-[#bca056]/20 rounded-xl flex items-center justify-center mx-auto mb-3 text-[#bca056]">{stat.icon}</div>
+                <div className="w-12 h-12 bg-white/25 border border-white/40 rounded-xl flex items-center justify-center mx-auto mb-3 text-white">{stat.icon}</div>
                 <div className="text-white mb-1 text-4xl font-black">{statsInView ? <CountUp end={stat.value} /> : 0}+</div>
-                <div className="text-[#bca056]/80 text-sm">{stat.label}</div>
+                <div className="text-white/80 text-sm font-medium">{stat.label}</div>
               </motion.div>
             ))}
           </div>

@@ -16,8 +16,6 @@ export default function UserAddProperty() {
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
-  const COMPANY_PHONE = '01100111618';
-
   const [form, setForm] = useState({
     title: '',
     title_ar: '',
@@ -31,13 +29,19 @@ export default function UserAddProperty() {
     floor: '',
     district: 'التجمع الخامس',
     address: '',
-    contact_phone: COMPANY_PHONE,
+    contact_phone: '',
     is_furnished: false,
     has_parking: false,
     has_elevator: false,
     has_pool: false,
     has_garden: false,
   });
+
+  useEffect(() => {
+    if (user?.phone) {
+      setForm(p => ({ ...p, contact_phone: user.phone || '' }));
+    }
+  }, [user?.phone]);
 
   useEffect(() => {
     if (!user) {
@@ -218,14 +222,11 @@ export default function UserAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">رقم التواصل للعقار</label>
-                <div className="relative">
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📞</span>
-                  <input type="tel" value={COMPANY_PHONE} readOnly
-                    dir="ltr"
-                    className="w-full px-4 py-3 pr-10 border border-gray-100 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed select-none text-right" />
-                </div>
-                <p className="text-xs text-gray-400 mt-1">رقم شركة GREAT SOCIETY — يُستخدم تلقائياً للتواصل مع المهتمين</p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">رقم تواصلك <span className="text-red-500">*</span></label>
+                <input type="tel" value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
+                  placeholder="مثال: 01100000000" dir="ltr" required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] text-right" />
+                <p className="text-xs text-gray-400 mt-1">سيتواصل معك فريقنا على هذا الرقم للتحقق من الطلب. رقم التواصل الظاهر على الإعلان سيحدده الأدمن عند الموافقة.</p>
               </div>
             </div>
           </div>

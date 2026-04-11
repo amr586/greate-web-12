@@ -29,6 +29,7 @@ export default function AdminAddProperty() {
     floor: '',
     district: 'التجمع الخامس',
     address: '',
+    contact_phone: '01100111618',
     is_furnished: false,
     has_parking: false,
     has_elevator: false,
@@ -283,13 +284,17 @@ export default function AdminAddProperty() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">رقم التواصل للعقار</label>
-                <div className="relative">
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">📞</span>
-                  <input type="tel" value="01100111618" readOnly dir="ltr"
-                    className="w-full px-4 py-3 pr-10 border border-gray-100 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed text-right" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">رقم التواصل الذي يظهر على العقار</label>
+                <div className="flex gap-2">
+                  <input type="tel" value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)} dir="ltr"
+                    placeholder="مثال: 01100111618"
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056] text-right" />
+                  <button type="button" onClick={() => update('contact_phone', '01100111618')}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-medium whitespace-nowrap transition-colors">
+                    رقم الشركة
+                  </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">رقم شركة GREAT SOCIETY — يُستخدم تلقائياً للتواصل</p>
+                <p className="text-xs text-gray-400 mt-1">الرقم الافتراضي هو رقم الشركة · يمكنك تغييره</p>
               </div>
             </div>
           </div>

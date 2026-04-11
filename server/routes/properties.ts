@@ -86,10 +86,12 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       (user.role === 'admin' && ['data_entry', 'property_manager'].includes(user.sub_role || ''));
     const initialStatus = isStaff ? 'approved' : 'pending';
     const COMPANY_PHONE = '01100111618';
+    // Staff use whatever phone they set (default company phone). Users use their own phone so admin can contact them.
+    const finalPhone = isStaff ? (contact_phone || COMPANY_PHONE) : (contact_phone || user.phone || COMPANY_PHONE);
     const result = await query(
       `INSERT INTO properties (title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms, bathrooms, floor, address, district, contact_phone, owner_id, status)
        VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-      [displayTitle, displayTitle, description, type, purpose, price, area, rooms || bedrooms, bedrooms || rooms, bathrooms, floor, address, district, COMPANY_PHONE, user.id, initialStatus]
+      [displayTitle, displayTitle, description, type, purpose, price, area, rooms || bedrooms, bedrooms || rooms, bathrooms, floor, address, district, finalPhone, user.id, initialStatus]
     );
     const property = result.rows[0];
     if (images && images.length > 0) {
