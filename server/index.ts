@@ -204,6 +204,8 @@ async function runMigrations() {
     await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS has_pool BOOLEAN DEFAULT false');
     await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS is_furnished BOOLEAN DEFAULT false');
     await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false');
+    await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS down_payment VARCHAR(100)');
+    await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS delivery_status VARCHAR(100)');
 
     // Seed default accounts (use ON CONFLICT DO NOTHING to be idempotent)
     const seedAccounts = [

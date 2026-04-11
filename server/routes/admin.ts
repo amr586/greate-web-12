@@ -63,8 +63,20 @@ router.patch('/properties/:id/approve', authenticate, requireAdmin, async (req: 
     if (sub && sub !== 'property_manager' && req.user!.role !== 'superadmin') {
       return res.status(403).json({ error: 'صلاحية مدير العقارات فقط' });
     }
-    await query("UPDATE properties SET status='approved', approved_by=$1, approved_at=NOW() WHERE id=$2",
-      [req.user!.id, req.params.id]);
+    const { contact_phone, is_featured, down_payment, delivery_status } = req.body || {};
+    await query(
+      `UPDATE properties SET
+        status='approved',
+        approved_by=$1,
+        approved_at=NOW(),
+        contact_phone=COALESCE($2, contact_phone),
+        is_featured=COALESCE($3, is_featured),
+        down_payment=COALESCE($4, down_payment),
+        delivery_status=COALESCE($5, delivery_status),
+        updated_at=NOW()
+      WHERE id=$6`,
+      [req.user!.id, contact_phone || null, typeof is_featured === 'boolean' ? is_featured : null, down_payment || null, delivery_status || null, req.params.id]
+    );
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'خطأ' });
@@ -82,17 +94,26 @@ router.patch('/properties/:id/reject', authenticate, requireAdmin, async (req: A
 
 router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    const { title, title_ar, description, description_ar, price, area, rooms, bathrooms, district, city, address, type, purpose, floor } = req.body;
+    const {
+      title, title_ar, description, description_ar, price, area, rooms, bedrooms, bathrooms, district,
+      city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status
+    } = req.body;
     await query(
       `UPDATE properties SET
         title=COALESCE($1,title), title_ar=COALESCE($2,title_ar),
         description=COALESCE($3,description), description_ar=COALESCE($4,description_ar),
         price=COALESCE($5,price), area=COALESCE($6,area), rooms=COALESCE($7,rooms),
-        bathrooms=COALESCE($8,bathrooms), district=COALESCE($9,district), city=COALESCE($10,city),
-        address=COALESCE($11,address), type=COALESCE($12,type), purpose=COALESCE($13,purpose),
-        floor=COALESCE($14,floor), updated_at=NOW()
-      WHERE id=$15`,
-      [title, title_ar, description, description_ar, price, area, rooms, bathrooms, district, city, address, type, purpose, floor, req.params.id]
+        bedrooms=COALESCE($8,bedrooms), bathrooms=COALESCE($9,bathrooms), district=COALESCE($10,district),
+        city=COALESCE($11,city), address=COALESCE($12,address), type=COALESCE($13,type),
+        purpose=COALESCE($14,purpose), floor=COALESCE($15,floor), contact_phone=COALESCE($16,contact_phone),
+        is_featured=COALESCE($17,is_featured), down_payment=COALESCE($18,down_payment),
+        delivery_status=COALESCE($19,delivery_status), updated_at=NOW()
+      WHERE id=$20`,
+      [
+        title, title_ar, description, description_ar, price, area, rooms, bedrooms || rooms, bathrooms,
+        district, city, address, type, purpose, floor, contact_phone,
+        typeof is_featured === 'boolean' ? is_featured : null, down_payment, delivery_status, req.params.id
+      ]
     );
     res.json({ success: true });
   } catch {

@@ -8,7 +8,7 @@ const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00
 interface Props {
   propertyId: number;
   onClose: () => void;
-  onApprove?: () => void;
+  onApprove?: (data?: any) => void;
   onReject?: () => void;
 }
 
@@ -18,9 +18,23 @@ const purposeLabel: Record<string, string> = { sale: 'للبيع', rent: 'للإ
 export default function PropertyDetailModal({ propertyId, onClose, onApprove, onReject }: Props) {
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewForm, setReviewForm] = useState<any>({
+    contact_phone: '',
+    is_featured: false,
+    down_payment: '',
+    delivery_status: '',
+  });
 
   useEffect(() => {
-    api.getAdminProperty(propertyId).then(setProperty).catch(console.error).finally(() => setLoading(false));
+    api.getAdminProperty(propertyId).then(data => {
+      setProperty(data);
+      setReviewForm({
+        contact_phone: data.contact_phone || data.owner_phone || '',
+        is_featured: Boolean(data.is_featured),
+        down_payment: data.down_payment || '',
+        delivery_status: data.delivery_status || '',
+      });
+    }).catch(console.error).finally(() => setLoading(false));
   }, [propertyId]);
 
   return (
@@ -95,6 +109,30 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
               <p className="text-gray-500 text-xs mb-1">السعر</p>
               <p className="text-2xl font-black text-[#7C3AED]">{Number(property.price).toLocaleString('ar-EG')} جنيه</p>
               {property.purpose === 'rent' && <p className="text-gray-400 text-xs">شهرياً</p>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-sm">
+                {property.down_payment && (
+                  <div className="bg-white/70 rounded-lg px-3 py-2">
+                    <span className="text-gray-400 text-xs block">المقدم</span>
+                    <span className="font-bold text-gray-800">{property.down_payment}</span>
+                  </div>
+                )}
+                {property.delivery_status && (
+                  <div className="bg-white/70 rounded-lg px-3 py-2">
+                    <span className="text-gray-400 text-xs block">التسليم</span>
+                    <span className="font-bold text-gray-800">{property.delivery_status}</span>
+                  </div>
+                )}
+                {(property.contact_phone || property.owner_phone) && (
+                  <div className="bg-white/70 rounded-lg px-3 py-2">
+                    <span className="text-gray-400 text-xs block">رقم الإعلان</span>
+                    <span className="font-bold text-gray-800" dir="ltr">{property.contact_phone || property.owner_phone}</span>
+                  </div>
+                )}
+                <div className="bg-white/70 rounded-lg px-3 py-2">
+                  <span className="text-gray-400 text-xs block">نوع العرض</span>
+                  <span className="font-bold text-gray-800">{property.is_featured ? 'مميز' : 'عادي'}</span>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -156,17 +194,47 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
             </div>
 
             {property.status === 'pending' && onApprove && onReject && (
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => { onApprove(); onClose(); }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold transition-colors"
-                >
-                  <CheckCircle size={16} />قبول العقار
-                </button>
-                <button onClick={() => { onReject(); onClose(); }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition-colors"
-                >
-                  <XCircle size={16} />رفض العقار
-                </button>
+              <div className="border-t border-gray-100 pt-5 space-y-4">
+                <h4 className="font-bold text-gray-900">إعدادات النشر قبل الموافقة</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">رقم الإعلان</label>
+                    <input value={reviewForm.contact_phone} onChange={e => setReviewForm((p: any) => ({ ...p, contact_phone: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]" dir="ltr" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">نوع العرض</label>
+                    <select value={reviewForm.is_featured ? 'featured' : 'normal'} onChange={e => setReviewForm((p: any) => ({ ...p, is_featured: e.target.value === 'featured' }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]">
+                      <option value="normal">عادي</option>
+                      <option value="featured">مميز</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">المقدم</label>
+                    <input value={reviewForm.down_payment} onChange={e => setReviewForm((p: any) => ({ ...p, down_payment: e.target.value }))}
+                      placeholder="مثال: مقدم 750,000 جنيه"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">حالة التسليم</label>
+                    <input value={reviewForm.delivery_status} onChange={e => setReviewForm((p: any) => ({ ...p, delivery_status: e.target.value }))}
+                      placeholder="مثال: استلام فوري"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]" />
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => { onApprove(reviewForm); onClose(); }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold transition-colors"
+                  >
+                    <CheckCircle size={16} />قبول العقار
+                  </button>
+                  <button onClick={() => { onReject(); onClose(); }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition-colors"
+                  >
+                    <XCircle size={16} />رفض العقار
+                  </button>
+                </div>
               </div>
             )}
           </div>

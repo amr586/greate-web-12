@@ -102,6 +102,10 @@ export default function SuperAdminDashboard() {
       floor: prop.floor || '',
       type: prop.type || '',
       purpose: prop.purpose || '',
+      contact_phone: prop.contact_phone || prop.owner_phone || '',
+      is_featured: Boolean(prop.is_featured),
+      down_payment: prop.down_payment || '',
+      delivery_status: prop.delivery_status || '',
     });
   };
 
@@ -615,6 +619,9 @@ export default function SuperAdminDashboard() {
                   { key: 'bathrooms', label: 'الحمامات' },
                   { key: 'district', label: 'المنطقة' },
                   { key: 'floor', label: 'الطابق' },
+                  { key: 'contact_phone', label: 'رقم الإعلان' },
+                  { key: 'down_payment', label: 'المقدم' },
+                  { key: 'delivery_status', label: 'حالة التسليم' },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">{f.label}</label>
@@ -644,6 +651,14 @@ export default function SuperAdminDashboard() {
                       <option value="rent">إيجار</option>
                     </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">نوع العرض</label>
+                  <select value={editForm.is_featured ? 'featured' : 'normal'} onChange={e => setEditForm((p: any) => ({ ...p, is_featured: e.target.value === 'featured' }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]">
+                    <option value="normal">عادي</option>
+                    <option value="featured">مميز</option>
+                  </select>
                 </div>
               </div>
               <div className="flex gap-3 mt-5">

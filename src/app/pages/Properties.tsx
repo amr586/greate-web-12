@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, X, Building2, Phone, MapPin, Star, Wallet, ChevronLeft, BedDouble, Bath, Maximize2, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 
 const COMPANY_PHONE = '01100111618';
 
-const FEATURED = [
+export const FEATURED = [
   {
     id: 'f1',
     title: 'شقة 3 غرف متشطبة بالكامل – طريق السويس',
@@ -137,6 +138,9 @@ export default function Properties() {
     return matchSearch && matchDistrict && matchType;
   });
 
+  const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
+  const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
+
   const clearFilters = () => { setSearch(''); setDistrict('الكل'); setType('الكل'); };
   const activeCount = [search, district !== 'الكل' ? district : '', type !== 'الكل' ? type : ''].filter(Boolean).length;
 
@@ -245,17 +249,31 @@ export default function Properties() {
           </div>
           <h2 className="text-xl font-black text-gray-900">عقارات مميزة</h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#bca056]/30" />
-          <span className="text-sm text-gray-400">{filtered.length} عقار</span>
+          <span className="text-sm text-gray-400">{filtered.length + filteredDbFeatured.length} عقار</span>
         </div>
 
-        {filtered.length === 0 ? (
+        {filtered.length === 0 && filteredDbFeatured.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200 mb-8">
             <Building2 size={32} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">لا توجد عقارات مميزة تطابق البحث</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {filtered.map((f, i) => (
+            {[...filtered, ...filteredDbFeatured.map(p => ({
+              id: String(p.id),
+              title: p.title_ar || p.title || 'عقار مميز',
+              badge: 'عرض مميز',
+              badgeColor: 'bg-[#bca056]',
+              image: p.primary_image || (Array.isArray(p.images) && p.images[0]) || DEFAULT_IMAGE,
+              desc: p.description_ar || p.description || '',
+              district: p.district || '',
+              type: p.type || 'عقار',
+              rooms: p.bedrooms || p.rooms || 0,
+              price: formatPrice(p.price),
+              down: p.down_payment || p.delivery_status || 'تفاصيل متاحة',
+              contact_phone: p.contact_phone || COMPANY_PHONE,
+              delivery_status: p.delivery_status,
+            }))].map((f: any, i) => (
               <motion.div
                 key={f.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -263,6 +281,7 @@ export default function Properties() {
                 transition={{ delay: i * 0.07 }}
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col group"
               >
+                <Link to={`/properties/${f.id}`} className="block">
                 <div className="relative h-48 overflow-hidden">
                   <img
                     src={f.image}
@@ -281,7 +300,13 @@ export default function Properties() {
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-black text-gray-900 text-sm mb-3 leading-snug">{f.title}</h3>
                   <p className="text-gray-500 text-xs leading-relaxed whitespace-pre-line mb-4 flex-1 line-clamp-5">{f.desc}</p>
+                  {f.delivery_status && (
+                    <p className="text-green-700 bg-green-50 border border-green-100 rounded-lg px-2.5 py-1 text-xs font-bold mb-3 w-fit">{f.delivery_status}</p>
+                  )}
+                </div>
+                </Link>
 
+                <div className="p-5 pt-0">
                   <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -291,14 +316,14 @@ export default function Properties() {
                       <span className="text-xs bg-[#e6f2f5] text-[#005a7d] font-semibold px-2.5 py-1 rounded-lg">{f.type}</span>
                     </div>
                     <a
-                      href={`tel:+2${COMPANY_PHONE}`}
+                      href={`tel:+2${f.contact_phone || COMPANY_PHONE}`}
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white text-sm font-bold py-2.5 rounded-xl hover:opacity-90 transition-all"
                     >
                       <Phone size={14} />
-                      اتصل الآن: {COMPANY_PHONE}
+                      اتصل الآن
                     </a>
                     <a
-                      href={`https://wa.me/2${COMPANY_PHONE}`}
+                      href={`https://wa.me/2${f.contact_phone || COMPANY_PHONE}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 text-sm font-bold py-2.5 rounded-xl hover:bg-green-100 transition-all mt-2 border border-green-200"
@@ -322,14 +347,14 @@ export default function Properties() {
           </div>
           <h2 className="text-xl font-black text-gray-900">جميع العقارات</h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#005a7d]/30" />
-          {!loadingProps && <span className="text-sm text-gray-400">{filteredDb.length} عقار</span>}
+          {!loadingProps && <span className="text-sm text-gray-400">{filteredDbNormal.length} عقار</span>}
         </div>
 
         {loadingProps ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 size={32} className="animate-spin text-[#005a7d]" />
           </div>
-        ) : filteredDb.length === 0 ? (
+        ) : filteredDbNormal.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
             <div className="w-16 h-16 bg-[#e6f2f5] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Building2 size={28} className="text-[#005a7d]" />
@@ -344,7 +369,7 @@ export default function Properties() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDb.map((p, i) => {
+            {filteredDbNormal.map((p, i) => {
               const title = p.title_ar || p.title || 'عقار';
               const image = p.primary_image || (Array.isArray(p.images) && p.images[0]) || DEFAULT_IMAGE;
               const phone = p.contact_phone || COMPANY_PHONE;
@@ -356,6 +381,7 @@ export default function Properties() {
                   transition={{ delay: i * 0.05 }}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col group"
                 >
+                  <Link to={`/properties/${p.id}`} className="block">
                   <div className="relative h-48 overflow-hidden">
                     <img
                       src={image}
@@ -401,8 +427,17 @@ export default function Properties() {
                           {p.area} م²
                         </span>
                       ) : null}
+                      {p.down_payment ? (
+                        <span className="font-semibold text-[#bca056]">مقدم: {p.down_payment}</span>
+                      ) : null}
+                      {p.delivery_status ? (
+                        <span className="font-semibold text-green-700">{p.delivery_status}</span>
+                      ) : null}
                     </div>
+                  </div>
+                  </Link>
 
+                  <div className="p-5 pt-0">
                     <div className="border-t border-gray-100 pt-4 mt-auto">
                       <div className="flex items-center justify-between mb-3">
                         <div>
@@ -415,7 +450,7 @@ export default function Properties() {
                         className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white text-sm font-bold py-2.5 rounded-xl hover:opacity-90 transition-all"
                       >
                         <Phone size={14} />
-                        اتصل الآن: {phone}
+                        اتصل الآن
                       </a>
                       <a
                         href={`https://wa.me/2${phone}`}

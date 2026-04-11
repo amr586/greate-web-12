@@ -27,16 +27,22 @@ async function setup() {
       title VARCHAR(300) NOT NULL,
       title_ar VARCHAR(300),
       description TEXT,
+      description_ar TEXT,
       type VARCHAR(50) NOT NULL,
       purpose VARCHAR(20) NOT NULL CHECK (purpose IN ('sale','rent')),
       price NUMERIC(15,2) NOT NULL,
       area NUMERIC(10,2),
+      rooms INTEGER,
       bedrooms INTEGER,
       bathrooms INTEGER,
       floor INTEGER,
       total_floors INTEGER,
       district VARCHAR(100),
+      city VARCHAR(100),
       address TEXT,
+      contact_phone VARCHAR(30),
+      down_payment VARCHAR(100),
+      delivery_status VARCHAR(100),
       lat NUMERIC(10,7),
       lng NUMERIC(10,7),
       status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','sold')),
@@ -46,6 +52,7 @@ async function setup() {
       sold_to INTEGER REFERENCES users(id),
       sold_at TIMESTAMPTZ,
       sold_price NUMERIC(15,2),
+      views INTEGER DEFAULT 0,
       has_parking BOOLEAN DEFAULT false,
       has_elevator BOOLEAN DEFAULT false,
       has_garden BOOLEAN DEFAULT false,
@@ -62,6 +69,7 @@ async function setup() {
       property_id INTEGER REFERENCES properties(id) ON DELETE CASCADE,
       url TEXT NOT NULL,
       is_primary BOOLEAN DEFAULT false,
+      order_index INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
@@ -215,9 +223,9 @@ async function setup() {
 
     for (const prop of sampleProps) {
       const propRes = await query(
-        `INSERT INTO properties (owner_id, title, title_ar, type, purpose, price, area, bedrooms, bathrooms, district, status, is_featured)
-         VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$8,$9,'approved',true) RETURNING id`,
-        [adminId, prop.title, prop.type, prop.purpose, prop.price, prop.area, prop.bedrooms, prop.bathrooms, prop.district]
+        `INSERT INTO properties (owner_id, title, title_ar, type, purpose, price, area, rooms, bedrooms, bathrooms, district, contact_phone, status, is_featured)
+         VALUES ($1,$2,$2,$3,$4,$5,$6,$7,$7,$8,$9,$10,'approved',true) RETURNING id`,
+        [adminId, prop.title, prop.type, prop.purpose, prop.price, prop.area, prop.bedrooms, prop.bathrooms, prop.district, '01100111618']
       );
       await query(
         'INSERT INTO property_images (property_id, url, is_primary) VALUES ($1,$2,true)',

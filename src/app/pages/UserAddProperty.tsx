@@ -30,6 +30,9 @@ export default function UserAddProperty() {
     district: 'التجمع الخامس',
     address: '',
     contact_phone: '',
+    down_payment: '',
+    delivery_status: '',
+    is_featured: false,
     is_furnished: false,
     has_parking: false,
     has_elevator: false,
@@ -227,6 +230,26 @@ export default function UserAddProperty() {
                   placeholder="مثال: 01100000000" dir="ltr" required
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] text-right" />
                 <p className="text-xs text-gray-400 mt-1">سيتواصل معك فريقنا على هذا الرقم للتحقق من الطلب. رقم التواصل الظاهر على الإعلان سيحدده الأدمن عند الموافقة.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">المقدم</label>
+                <input type="text" value={form.down_payment} onChange={e => update('down_payment', e.target.value)}
+                  placeholder="مثال: مقدم 750,000 جنيه"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">حالة التسليم</label>
+                <input type="text" value={form.delivery_status} onChange={e => update('delivery_status', e.target.value)}
+                  placeholder="مثال: استلام فوري"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">نوع العرض</label>
+                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
+                  <option value="normal">عرض عادي</option>
+                  <option value="featured">عرض مميز</option>
+                </select>
               </div>
             </div>
           </div>

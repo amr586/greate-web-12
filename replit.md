@@ -104,6 +104,8 @@ npx tsx server/setup-db.ts
 - **Purchase Request Notifications**: When a user submits a payment/purchase request, all superadmin users AND all admin users with `sub_role='property_manager'` automatically receive a dashboard notification with full purchase details.
 - **SubAdmin Dashboard**: Property manager sub-role has full property management (edit, delete, add), purchase requests tab (with approve action), and buyer/owner communication chat. Data entry sub-role has listings + add property tabs only.
 - **Footer Links**: Privacy policy and terms of service links open Google Drive PDFs in a new tab.
+- **Enhanced Property Cards**: Property cards open detail pages, show down payment and delivery status when available, and use an "اتصل الآن" button that dials directly without exposing the phone number in the card button text.
+- **Featured Listing Workflow**: User submissions and admin edits can mark properties as normal or featured. Approved DB properties with `is_featured=true` appear in the featured section alongside curated featured listings.
 
 ## Notifications System
 - Route: `server/routes/notifications.ts` registered at `/api/notifications`
@@ -113,6 +115,6 @@ npx tsx server/setup-db.ts
 - `PATCH /api/notifications/mark-read/:id` — marks read
 
 ## DB Migration Scripts
-- `server/migrate.ts` — adds missing columns (rooms, views, description_ar, city, order_index)
+- `server/migrate.ts` — adds missing columns (rooms, views, description_ar, city, order_index, contact_phone, down_payment, delivery_status)
 - `server/seed-new-properties.ts` — seeds the 10 new Cairo properties
 - Run with: `npx tsx server/migrate.ts` and `npx tsx server/seed-new-properties.ts`

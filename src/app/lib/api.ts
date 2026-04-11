@@ -89,7 +89,7 @@ export const api = {
   getStats: () => request('/admin/stats'),
   getAllProperties: () => request('/admin/properties'),
   getAdminProperty: (id: number) => request(`/admin/properties/${id}`),
-  approveProperty: (id: number) => request(`/admin/properties/${id}/approve`, { method: 'PATCH' }),
+  approveProperty: (id: number, data: any = {}) => request(`/admin/properties/${id}/approve`, { method: 'PATCH', body: JSON.stringify(data) }),
   rejectProperty: (id: number) => request(`/admin/properties/${id}/reject`, { method: 'PATCH' }),
   markSold: (id: number, buyer_id?: number) => request(`/admin/properties/${id}/sold`, { method: 'PATCH', body: JSON.stringify({ buyer_id }) }),
   getUsers: () => request('/admin/users'),

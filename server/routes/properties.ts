@@ -79,7 +79,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { title, title_ar, description, type, purpose, price, area, rooms, bedrooms, bathrooms, floor, address, district, contact_phone, images } = req.body;
+    const {
+      title, title_ar, description, type, purpose, price, area, rooms, bedrooms, bathrooms, floor,
+      address, district, contact_phone, down_payment, delivery_status, is_featured, images,
+      is_furnished, has_parking, has_elevator, has_pool, has_garden
+    } = req.body;
     const displayTitle = title_ar || title || '';
     const user = req.user!;
     const isStaff = user.role === 'superadmin' ||
@@ -89,9 +93,18 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     // Staff use whatever phone they set (default company phone). Users use their own phone so admin can contact them.
     const finalPhone = isStaff ? (contact_phone || COMPANY_PHONE) : (contact_phone || user.phone || COMPANY_PHONE);
     const result = await query(
-      `INSERT INTO properties (title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms, bathrooms, floor, address, district, contact_phone, owner_id, status)
-       VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-      [displayTitle, displayTitle, description, type, purpose, price, area, rooms || bedrooms, bedrooms || rooms, bathrooms, floor, address, district, finalPhone, user.id, initialStatus]
+      `INSERT INTO properties (
+        title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms,
+        bathrooms, floor, address, district, contact_phone, down_payment, delivery_status,
+        is_featured, is_furnished, has_parking, has_elevator, has_pool, has_garden, owner_id, status
+      )
+       VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING *`,
+      [
+        displayTitle, displayTitle, description, type, purpose, price, area, rooms || bedrooms, bedrooms || rooms,
+        bathrooms, floor, address, district, finalPhone, down_payment || null, delivery_status || null,
+        Boolean(is_featured), Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
+        Boolean(has_pool), Boolean(has_garden), user.id, initialStatus
+      ]
     );
     const property = result.rows[0];
     if (images && images.length > 0) {

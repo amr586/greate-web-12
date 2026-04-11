@@ -8,10 +8,46 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { FEATURED } from './Properties';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=500&fit=crop';
 const WHATSAPP_NUMBER = '201281378331';
 const COMPANY_PHONE = '01100111618';
+
+function normalizePhone(phone: string) {
+  return String(phone || COMPANY_PHONE).replace(/[^\d]/g, '');
+}
+
+function formatDetailPrice(price: any) {
+  if (typeof price === 'string' && Number.isNaN(Number(price))) return price;
+  const numeric = Number(price);
+  if (!numeric) return 'تواصل للسعر';
+  return `${numeric.toLocaleString()} جنيه`;
+}
+
+function staticFeaturedProperty(id: string) {
+  const item = FEATURED.find(p => p.id === id);
+  if (!item) return null;
+  return {
+    id: item.id,
+    title: item.title,
+    title_ar: item.title,
+    description: item.desc,
+    description_ar: item.desc,
+    type: item.type,
+    purpose: 'sale',
+    price: item.price,
+    district: item.district,
+    rooms: item.rooms,
+    bedrooms: item.rooms,
+    images: [item.image],
+    contact_phone: COMPANY_PHONE,
+    down_payment: item.down,
+    delivery_status: item.badge.includes('استلام') ? item.badge : undefined,
+    is_featured: true,
+    is_static_featured: true,
+  };
+}
 
 function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTitle: string }) {
   const { user } = useAuth();
@@ -157,6 +193,12 @@ export function PropertyDetailEnhanced() {
 
   useEffect(() => {
     if (!id) return;
+    const staticProperty = staticFeaturedProperty(id);
+    if (staticProperty) {
+      setProperty(staticProperty);
+      setLoading(false);
+      return;
+    }
     api.getProperty(Number(id))
       .then(data => {
         setProperty(data);
@@ -172,6 +214,7 @@ export function PropertyDetailEnhanced() {
 
   const toggleSave = async () => {
     if (!user) { navigate('/login'); return; }
+    if (property.is_static_featured) return;
     try {
       if (isSaved) {
         await api.unsaveProperty(property.id);
@@ -220,6 +263,8 @@ export function PropertyDetailEnhanced() {
 
   const purposeLabel = property.purpose === 'sale' ? 'للبيع' : 'للإيجار';
   const purposeColor = property.purpose === 'sale' ? 'bg-[#7C3AED] text-white' : 'bg-[#005a7d] text-white';
+  const contactPhone = property.contact_phone || COMPANY_PHONE;
+  const whatsappPhone = normalizePhone(contactPhone).startsWith('20') ? normalizePhone(contactPhone) : `2${normalizePhone(contactPhone)}`;
 
   const features = [
     property.has_parking && 'مواقف سيارات',
@@ -274,7 +319,7 @@ export function PropertyDetailEnhanced() {
 
                 <div className="absolute bottom-4 right-4">
                   <span className="bg-white/95 text-[#7C3AED] font-black px-4 py-2 rounded-xl shadow text-lg">
-                    {Number(property.price).toLocaleString()} جنيه
+                    {formatDetailPrice(property.price)}
                   </span>
                 </div>
               </div>
@@ -330,6 +375,20 @@ export function PropertyDetailEnhanced() {
                     <div className="text-gray-500 text-xs">الموقع</div>
                   </div>
                 )}
+                {property.down_payment && (
+                  <div className="bg-amber-50 rounded-xl p-3 text-center">
+                    <CreditCard size={18} className="text-[#bca056] mx-auto mb-1" />
+                    <div className="font-bold text-gray-900 text-sm">{property.down_payment}</div>
+                    <div className="text-gray-500 text-xs">المقدم</div>
+                  </div>
+                )}
+                {property.delivery_status && (
+                  <div className="bg-green-50 rounded-xl p-3 text-center">
+                    <CheckCircle size={18} className="text-green-600 mx-auto mb-1" />
+                    <div className="font-bold text-gray-900 text-sm">{property.delivery_status}</div>
+                    <div className="text-gray-500 text-xs">التسليم</div>
+                  </div>
+                )}
               </div>
 
               {(property.description || property.description_ar) && (
@@ -374,15 +433,15 @@ export function PropertyDetailEnhanced() {
                 </div>
               </div>
               <div className="space-y-2">
-                {(property.contact_phone || COMPANY_PHONE) && (
-                  <a href={`tel:${property.contact_phone || COMPANY_PHONE}`}
+                {contactPhone && (
+                  <a href={`tel:${contactPhone}`}
                     className="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2 hover:bg-white/30 transition-colors"
                   >
                     <Phone size={15} />
-                    <span className="text-sm" dir="ltr">{property.contact_phone || COMPANY_PHONE}</span>
+                    <span className="text-sm" dir="ltr">{contactPhone}</span>
                   </a>
                 )}
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=مرحباً، أريد الاستفسار عن: ${property.title_ar || property.title}`}
+                <a href={`https://wa.me/${whatsappPhone}?text=مرحباً، أريد الاستفسار عن: ${property.title_ar || property.title}`}
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-green-500/80 hover:bg-green-500 rounded-lg px-3 py-2 transition-colors"
                 >
@@ -392,7 +451,7 @@ export function PropertyDetailEnhanced() {
               </div>
             </motion.div>
 
-            {property.purpose === 'sale' && (
+            {property.purpose === 'sale' && !property.is_static_featured && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
                 <Link to={`/payment/${property.id}`}
                   className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white py-3 rounded-2xl text-sm font-bold shadow-lg w-full hover:opacity-90 transition-all"
@@ -404,9 +463,11 @@ export function PropertyDetailEnhanced() {
               </motion.div>
             )}
 
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-              <ChatBox propertyId={property.id} propertyTitle={property.title_ar || property.title} />
-            </motion.div>
+            {!property.is_static_featured && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+                <ChatBox propertyId={property.id} propertyTitle={property.title_ar || property.title} />
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
