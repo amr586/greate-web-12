@@ -80,7 +80,7 @@ export default function SupportChat() {
         transition={{ delay: 2.3, type: 'spring' }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-44 left-24 z-40 w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center shadow-2xl shadow-gray-400/30"
+        className="fixed bottom-6 left-24 z-40 w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center shadow-2xl shadow-gray-400/30"
       >
         <AnimatePresence mode="wait">
           {open ? (
@@ -102,8 +102,8 @@ export default function SupportChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-44 left-6 z-40 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100"
-            style={{ maxHeight: '70vh', height: 480 }}
+            className="fixed bottom-24 left-6 z-40 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100"
+            style={{ maxHeight: 'calc(100vh - 7rem)', height: 480 }}
             dir="rtl"
           >
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-5 py-4 flex items-center gap-3">

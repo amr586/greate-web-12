@@ -1,20 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Building2, CheckCircle, X, Loader2, Clock } from 'lucide-react';
+import { Building2, CheckCircle, X, Loader2, Clock, Map } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const TYPES = ['شقة', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
-const DISTRICTS = ['التجمع الخامس', 'مصر الجديدة', 'العاصمة الإدارية', 'طريق السويس', 'التجمع السادس', 'Golden Square', 'مناطق أخرى'];
+const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
+const FINISHING_TYPES = ['غير مشطب', 'نصف تشطيب', 'ثلاثة أرباع تشطيب', 'متشطبة كامل', 'سوبر لوكس'];
 
 export default function UserAddProperty() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const planInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [floorPlanImage, setFloorPlanImage] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -27,43 +30,63 @@ export default function UserAddProperty() {
     bedrooms: '',
     bathrooms: '',
     floor: '',
-    district: 'التجمع الخامس',
+    district: '',
     address: '',
     contact_phone: '',
     down_payment: '',
     delivery_status: '',
-    is_featured: false,
     is_furnished: false,
     has_parking: false,
     has_elevator: false,
     has_pool: false,
     has_garden: false,
+    finishing_type: '',
+    google_maps_url: '',
   });
 
   useEffect(() => {
-    if (user?.phone) {
-      setForm(p => ({ ...p, contact_phone: user.phone || '' }));
-    }
+    if (user?.phone) setForm(p => ({ ...p, contact_phone: user.phone || '' }));
   }, [user?.phone]);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
+    if (!user) navigate('/login');
   }, [user, navigate]);
 
   if (!user) return null;
 
   const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
-    if (!files) return;
-    const file = files[0];
+    if (!files || files.length === 0) return;
+    setUploadingImages(true);
+    const token = localStorage.getItem('token');
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(f => formData.append('images', f));
+      const res = await fetch('/api/upload/multiple', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل الرفع');
+      setUploadedImages(prev => [...prev, ...data.urls]);
+    } catch (err: any) {
+      setError(err.message || 'فشل رفع الصور');
+    } finally {
+      setUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePlanSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    const token = localStorage.getItem('token');
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const token = localStorage.getItem('token');
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -71,9 +94,11 @@ export default function UserAddProperty() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل رفع الصورة');
-      setUploadedImages(prev => [...prev, data.url]);
+      setFloorPlanImage(data.url);
     } catch (err: any) {
       setError(err.message || 'فشل رفع الصورة');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -95,6 +120,7 @@ export default function UserAddProperty() {
         bathrooms: Number(form.bathrooms),
         floor: form.floor ? Number(form.floor) : null,
         images: uploadedImages,
+        floor_plan_image: floorPlanImage || null,
       };
       const res = await fetch('/api/properties', {
         method: 'POST',
@@ -128,7 +154,6 @@ export default function UserAddProperty() {
               <p className="text-gray-500 text-sm">سيتم مراجعة العقار من قِبل الإدارة خلال 24 ساعة</p>
             </div>
           </div>
-
           <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
             <Clock size={16} className="flex-shrink-0" />
             <span>بعد الإضافة سيظهر العقار في حسابك كـ "قيد المراجعة" حتى يوافق عليه الأدمن</span>
@@ -157,6 +182,7 @@ export default function UserAddProperty() {
         <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl p-8 border border-gray-200 space-y-8">
 
+          {/* Basic Info */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">المعلومات الأساسية</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -164,13 +190,13 @@ export default function UserAddProperty() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">العنوان (عربي) <span className="text-red-500">*</span></label>
                 <input type="text" value={form.title_ar} onChange={e => update('title_ar', e.target.value)}
                   placeholder="مثال: شقة 3 غرف في التجمع الخامس"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] transition-colors" required />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">العنوان (إنجليزي)</label>
                 <input type="text" value={form.title} onChange={e => update('title', e.target.value)}
                   placeholder="مثال: 3 Bedroom Apartment"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] transition-colors" />
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">نوع العقار</label>
@@ -185,6 +211,7 @@ export default function UserAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
                   <option value="sale">بيع</option>
                   <option value="rent">إيجار</option>
+                  <option value="resale">ريسيل</option>
                 </select>
               </div>
             </div>
@@ -196,6 +223,7 @@ export default function UserAddProperty() {
             </div>
           </div>
 
+          {/* Pricing & Location */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">السعر والموقع</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,11 +240,16 @@ export default function UserAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">المنطقة</label>
-                <select value={form.district} onChange={e => update('district', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
-                  {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2">المنطقة <span className="text-red-500">*</span></label>
+                <input type="text" value={form.district} onChange={e => update('district', e.target.value)}
+                  placeholder="مثال: التجمع الخامس، العاصمة الإدارية..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]"
+                  list="user-districts-list" required />
+                <datalist id="user-districts-list">
+                  {['التجمع الخامس','مصر الجديدة','العاصمة الإدارية','طريق السويس','التجمع السادس','جولدن سكوير','النرجس الجديدة','بيت الوطن','شمال الرحاب','مدينة نصر','هليوبوليس'].map(d => (
+                    <option key={d} value={d} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">العنوان التفصيلي</label>
@@ -229,7 +262,7 @@ export default function UserAddProperty() {
                 <input type="tel" value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
                   placeholder="مثال: 01100000000" dir="ltr" required
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] text-right" />
-                <p className="text-xs text-gray-400 mt-1">سيتواصل معك فريقنا على هذا الرقم للتحقق من الطلب. رقم التواصل الظاهر على الإعلان سيحدده الأدمن عند الموافقة.</p>
+                <p className="text-xs text-gray-400 mt-1">سيتواصل معك فريقنا على هذا الرقم للتحقق من الطلب.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">المقدم</label>
@@ -244,16 +277,17 @@ export default function UserAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">نوع العرض</label>
-                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
-                  <option value="normal">عرض عادي</option>
-                  <option value="featured">عرض مميز</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                  <Map size={14} />رابط موقع جوجل ماب (اختياري)
+                </label>
+                <input type="url" value={form.google_maps_url} onChange={e => update('google_maps_url', e.target.value)}
+                  placeholder="https://maps.google.com/..." dir="ltr"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
             </div>
           </div>
 
+          {/* Details */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">التفاصيل</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -275,6 +309,14 @@ export default function UserAddProperty() {
                   placeholder="0" min="0"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">نوع التشطيب</label>
+                <select value={form.finishing_type} onChange={e => update('finishing_type', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
+                  <option value="">غير محدد</option>
+                  {FINISHING_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
@@ -294,20 +336,31 @@ export default function UserAddProperty() {
             </div>
           </div>
 
+          {/* Property Images */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">صور العقار</h2>
             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#005a7d] transition-colors group"
               onClick={() => fileInputRef.current?.click()}>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-              <Building2 size={32} className="mx-auto mb-2 text-gray-300 group-hover:text-[#005a7d] transition-colors" />
-              <p className="text-gray-500 text-sm">اضغط لرفع صورة للعقار</p>
-              <p className="text-gray-400 text-xs mt-1">يمكنك رفع أكثر من صورة</p>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesSelect} className="hidden" />
+              {uploadingImages ? (
+                <div className="flex items-center justify-center gap-2 text-gray-500">
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>جاري رفع الصور...</span>
+                </div>
+              ) : (
+                <>
+                  <Building2 size={32} className="mx-auto mb-2 text-gray-300 group-hover:text-[#005a7d] transition-colors" />
+                  <p className="text-gray-500 text-sm font-medium">اضغط لرفع صور العقار</p>
+                  <p className="text-gray-400 text-xs mt-1">يمكنك اختيار أكثر من صورة دفعة واحدة</p>
+                </>
+              )}
             </div>
             {uploadedImages.length > 0 && (
               <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                 {uploadedImages.map((img, idx) => (
                   <div key={idx} className="relative group">
                     <img src={img} alt="" className="w-full h-32 object-cover rounded-xl" />
+                    {idx === 0 && <span className="absolute bottom-2 right-2 bg-[#005a7d] text-white text-[10px] px-2 py-0.5 rounded-lg font-medium">رئيسية</span>}
                     <button type="button" onClick={() => removeImage(idx)}
                       className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       <X size={14} />
@@ -316,6 +369,31 @@ export default function UserAddProperty() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Floor Plan */}
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2">
+              <Map size={18} />مسقط أفقي (2D) - اختياري
+            </h2>
+            <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-[#005a7d] transition-colors group"
+              onClick={() => planInputRef.current?.click()}>
+              <input ref={planInputRef} type="file" accept="image/*" onChange={handlePlanSelect} className="hidden" />
+              {floorPlanImage ? (
+                <div className="relative inline-block">
+                  <img src={floorPlanImage} alt="مسقط" className="max-h-48 rounded-xl mx-auto" />
+                  <button type="button" onClick={e => { e.stopPropagation(); setFloorPlanImage(''); }}
+                    className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-lg">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Map size={28} className="mx-auto mb-2 text-gray-300 group-hover:text-[#005a7d] transition-colors" />
+                  <p className="text-gray-500 text-sm">ارفع صورة التقسيم الداخلي (مسقط أفقي)</p>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">

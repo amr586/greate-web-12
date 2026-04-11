@@ -88,7 +88,8 @@ export const FEATURED = [
 ];
 
 const DISTRICTS_FILTER = ['الكل', 'طريق السويس', 'التجمع الخامس', 'جولدن سكوير', 'العاصمة الإدارية', 'التجمع السادس'];
-const TYPES_FILTER = ['الكل', 'شقة', 'فيلا', 'شقة / فيلا'];
+const TYPES_FILTER = ['الكل', 'شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
+const PURPOSE_FILTER = ['الكل', 'بيع', 'إيجار', 'ريسيل'];
 
 function formatPrice(price: number) {
   if (!price) return 'تواصل للسعر';
@@ -103,6 +104,9 @@ export default function Properties() {
   const [search, setSearch] = useState('');
   const [district, setDistrict] = useState('الكل');
   const [type, setType] = useState('الكل');
+  const [purpose, setPurpose] = useState('الكل');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const [dbProperties, setDbProperties] = useState<any[]>([]);
@@ -124,25 +128,33 @@ export default function Properties() {
     loadProperties();
   }, []);
 
+  const purposeMap: Record<string,string> = { 'بيع': 'sale', 'إيجار': 'rent', 'ريسيل': 'resale' };
+
   const filtered = FEATURED.filter(p => {
     const matchSearch = !search || p.title.includes(search) || p.desc.includes(search) || p.district.includes(search);
     const matchDistrict = district === 'الكل' || p.district === district;
-    const matchType = type === 'الكل' || p.type.includes(type.replace('شقة / فيلا', ''));
-    return matchSearch && matchDistrict && matchType;
+    const matchType = type === 'الكل' || p.type.includes(type);
+    const matchPurpose = purpose === 'الكل' || true;
+    const matchMin = !minPrice || (Number(p.price?.replace(/[^0-9]/g,'')) >= Number(minPrice));
+    const matchMax = !maxPrice || (Number(p.price?.replace(/[^0-9]/g,'')) <= Number(maxPrice));
+    return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax;
   });
 
   const filteredDb = dbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
     const matchDistrict = district === 'الكل' || (p.district || '').includes(district);
-    const matchType = type === 'الكل' || (p.type || '').includes(type.replace('شقة / فيلا', ''));
-    return matchSearch && matchDistrict && matchType;
+    const matchType = type === 'الكل' || (p.type || '').includes(type);
+    const matchPurpose = purpose === 'الكل' || (p.purpose || '') === purposeMap[purpose];
+    const matchMin = !minPrice || Number(p.price) >= Number(minPrice);
+    const matchMax = !maxPrice || Number(p.price) <= Number(maxPrice);
+    return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax;
   });
 
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
 
-  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setType('الكل'); };
-  const activeCount = [search, district !== 'الكل' ? district : '', type !== 'الكل' ? type : ''].filter(Boolean).length;
+  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); };
+  const activeCount = [search, district !== 'الكل' ? district : '', type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20" dir="rtl">
@@ -219,7 +231,23 @@ export default function Properties() {
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+                <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">نوع الوحدة</label>
+                    <select value={type} onChange={e => setType(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    >
+                      {TYPES_FILTER.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">الغرض</label>
+                    <select value={purpose} onChange={e => setPurpose(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    >
+                      {PURPOSE_FILTER.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">المنطقة</label>
                     <select value={district} onChange={e => setDistrict(e.target.value)}
@@ -229,12 +257,18 @@ export default function Properties() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">النوع</label>
-                    <select value={type} onChange={e => setType(e.target.value)}
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">السعر الأدنى (ج)</label>
+                    <input type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)}
+                      placeholder="0"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
-                    >
-                      {TYPES_FILTER.map(t => <option key={t}>{t}</option>)}
-                    </select>
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">السعر الأقصى (ج)</label>
+                    <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+                      placeholder="غير محدد"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    />
                   </div>
                 </div>
               </motion.div>

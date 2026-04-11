@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import {
   Bed, Bath, Maximize, MapPin, Phone, MessageCircle, Heart,
   ArrowRight, Share2, Calendar, Building2, CheckCircle, Send,
-  Star, CreditCard, ChevronRight, Loader2, MessageSquare
+  Star, CreditCard, ChevronRight, Loader2, MessageSquare, Map, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -261,8 +261,8 @@ export function PropertyDetailEnhanced() {
   }
   if (images.length === 0) images.push(DEFAULT_IMAGE);
 
-  const purposeLabel = property.purpose === 'sale' ? 'للبيع' : 'للإيجار';
-  const purposeColor = property.purpose === 'sale' ? 'bg-[#7C3AED] text-white' : 'bg-[#005a7d] text-white';
+  const purposeLabel = property.purpose === 'sale' ? 'للبيع' : property.purpose === 'rent' ? 'للإيجار' : 'ريسيل';
+  const purposeColor = property.purpose === 'sale' ? 'bg-[#7C3AED] text-white' : property.purpose === 'resale' ? 'bg-amber-600 text-white' : 'bg-[#005a7d] text-white';
   const contactPhone = property.contact_phone || COMPANY_PHONE;
   const whatsappPhone = normalizePhone(contactPhone).startsWith('20') ? normalizePhone(contactPhone) : `2${normalizePhone(contactPhone)}`;
 
@@ -272,7 +272,10 @@ export function PropertyDetailEnhanced() {
     property.has_pool && 'حمام سباحة',
     property.has_garden && 'حديقة',
     property.is_furnished && 'مفروش',
+    property.finishing_type && property.finishing_type,
   ].filter(Boolean);
+
+  const purposeAr = property.purpose === 'sale' ? 'للبيع' : property.purpose === 'rent' ? 'للإيجار' : 'ريسيل';
 
   return (
     <div className="min-h-screen bg-[#F9F5FF] pt-20" dir="rtl">
@@ -417,6 +420,28 @@ export function PropertyDetailEnhanced() {
                     </div>
                   ))}
                 </div>
+              </motion.div>
+            )}
+
+            {property.floor_plan_image && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="bg-white rounded-2xl p-6 shadow-sm border border-purple-100">
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Map size={16} className="text-[#7C3AED]" />المسقط الأفقي (2D)
+                </h3>
+                <img src={property.floor_plan_image} alt="مسقط أفقي" className="w-full rounded-xl border border-gray-100" />
+              </motion.div>
+            )}
+
+            {property.google_maps_url && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-2xl p-6 shadow-sm border border-purple-100">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin size={16} className="text-[#7C3AED]" />الموقع على الخريطة
+                </h3>
+                <a href={property.google_maps_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-3 rounded-xl hover:bg-blue-100 transition-colors text-sm font-medium w-fit">
+                  <ExternalLink size={14} />
+                  فتح على جوجل ماب
+                </a>
               </motion.div>
             )}
           </div>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Home, Building2, Phone, LogIn, User, LayoutDashboard, LogOut, Heart, PlusCircle, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 // GS Logo Component
 function GSLogo({ size = 40 }: { size?: number }) {
@@ -83,6 +84,7 @@ export default function Navbar() {
 
           {/* Auth */}
           <div className="hidden lg:flex items-center gap-3">
+            {user && <NotificationBell />}
             {user ? (
               <div className="relative">
                 <button onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -132,9 +134,12 @@ export default function Navbar() {
             )}
           </div>
 
-          <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-[#e6f2f5] text-[#005a7d]">
-            {isOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="lg:hidden flex items-center gap-2">
+            {user && <NotificationBell />}
+            <button onClick={() => setIsOpen(!isOpen)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#e6f2f5] text-[#005a7d]">
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
       </div>
 
