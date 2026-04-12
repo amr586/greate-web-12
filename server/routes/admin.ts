@@ -77,6 +77,17 @@ router.patch('/properties/:id/approve', authenticate, requireAdmin, async (req: 
       WHERE id=$6`,
       [req.user!.id, contact_phone || null, typeof is_featured === 'boolean' ? is_featured : null, down_payment || null, delivery_status || null, req.params.id]
     );
+    // Notify property owner
+    try {
+      const propRes = await query('SELECT owner_id, title, title_ar FROM properties WHERE id=$1', [req.params.id]);
+      if (propRes.rows[0]?.owner_id) {
+        const prop = propRes.rows[0];
+        await query(
+          `INSERT INTO notifications (user_id, type, title, message, link) VALUES ($1,'property_approved','تمت الموافقة على عقارك',$2,$3)`,
+          [prop.owner_id, `تمت الموافقة على عقارك: ${prop.title_ar || prop.title}`, `/properties/${req.params.id}`]
+        );
+      }
+    } catch {}
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'خطأ' });
@@ -86,6 +97,17 @@ router.patch('/properties/:id/approve', authenticate, requireAdmin, async (req: 
 router.patch('/properties/:id/reject', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     await query("UPDATE properties SET status='rejected' WHERE id=$1", [req.params.id]);
+    // Notify property owner
+    try {
+      const propRes = await query('SELECT owner_id, title, title_ar FROM properties WHERE id=$1', [req.params.id]);
+      if (propRes.rows[0]?.owner_id) {
+        const prop = propRes.rows[0];
+        await query(
+          `INSERT INTO notifications (user_id, type, title, message) VALUES ($1,'property_rejected','تم رفض عقارك',$2)`,
+          [prop.owner_id, `للأسف، تم رفض عقارك: ${prop.title_ar || prop.title}. يمكنك التواصل مع الإدارة لمعرفة السبب.`]
+        );
+      }
+    } catch {}
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'خطأ' });

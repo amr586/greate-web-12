@@ -313,8 +313,8 @@ router.post('/register', async (req: Request, res: Response) => {
     if (!/[A-Z]/.test(password)) {
       return res.status(400).json({ error: 'كلمة المرور يجب أن تحتوي على حرف كبير على الأقل' });
     }
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      return res.status(400).json({ error: 'كلمة المرور يجب أن تحتوي على رمز خاص على الأقل' });
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?0-9]/.test(password)) {
+      return res.status(400).json({ error: 'كلمة المرور يجب أن تحتوي على رمز خاص أو رقم على الأقل' });
     }
     const existing = await query(
       'SELECT id FROM users WHERE email=$1 OR phone=$2',

@@ -26,7 +26,7 @@ function timeAgo(date: string) {
 
 function notifIcon(type: string) {
   if (type === 'property_added' || type === 'property_approved' || type === 'property_rejected') return <Home size={14} />;
-  if (type === 'payment' || type === 'payment_request') return <CreditCard size={14} />;
+  if (type === 'payment' || type === 'payment_request' || type === 'purchase_request') return <CreditCard size={14} />;
   if (type === 'support' || type === 'support_reply') return <Headphones size={14} />;
   if (type === 'chat' || type === 'message') return <MessageSquare size={14} />;
   return <Info size={14} />;
@@ -36,7 +36,7 @@ function notifColor(type: string) {
   if (type === 'property_approved') return 'bg-green-100 text-green-600';
   if (type === 'property_rejected') return 'bg-red-100 text-red-600';
   if (type === 'property_added') return 'bg-blue-100 text-blue-600';
-  if (type === 'payment' || type === 'payment_request') return 'bg-amber-100 text-amber-600';
+  if (type === 'payment' || type === 'payment_request' || type === 'purchase_request') return 'bg-amber-100 text-amber-600';
   if (type === 'support' || type === 'support_reply') return 'bg-purple-100 text-purple-600';
   return 'bg-gray-100 text-gray-600';
 }

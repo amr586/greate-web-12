@@ -298,8 +298,14 @@ export default function SuperAdminDashboard() {
                             <CreditCard size={16} className="text-[#005a7d]" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900">{p.user_name || 'مستخدم'}</div>
-                            <div className="text-xs text-gray-400">{Number(p.amount).toLocaleString()} ج · {p.payment_method}</div>
+                            <div className="font-medium text-sm text-gray-900">{p.buyer_name || p.user_name || 'مستخدم'}</div>
+                            <div className="text-xs text-gray-400">{Number(p.amount).toLocaleString()} ج · {p.payment_method === 'instapay' ? 'InstaPay' : 'فودافون كاش'}</div>
+                            {p.contact_phone && <div className="text-xs text-gray-400">رقم التحويل: {p.contact_phone}</div>}
+                            {p.screenshot_url && (
+                              <a href={p.screenshot_url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-[#005a7d] hover:underline font-medium"
+                              >📷 إيصال التحويل</a>
+                            )}
                           </div>
                           <button onClick={() => approvePayment(p.id)} className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors">
                             تأكيد

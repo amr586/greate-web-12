@@ -506,7 +506,13 @@ export default function SubAdminDashboard() {
                               <span>📞 {p.buyer_phone}</span>
                               <span>💰 {Number(p.amount).toLocaleString()} جنيه</span>
                               <span>💳 {p.payment_method === 'instapay' ? 'InstaPay' : 'فودافون كاش'}</span>
+                              {p.contact_phone && <span>📲 رقم التحويل: {p.contact_phone}</span>}
                             </div>
+                            {p.screenshot_url && (
+                              <a href={p.screenshot_url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-[#005a7d] hover:underline font-medium mt-1"
+                              >📷 عرض صورة إيصال التحويل</a>
+                            )}
                             <p className="text-gray-400 text-xs mt-1">{new Date(p.created_at).toLocaleDateString('ar-EG')}</p>
                           </div>
                           <div className="flex flex-col gap-2 items-end">

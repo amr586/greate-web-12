@@ -162,23 +162,23 @@ export default function PropertyDetail() {
               <div className="text-sm text-gray-500 mb-6">{property.district}، {property.city || 'الإسكندرية'}</div>
 
               {property.status === 'approved' && property.purpose === 'sale' && (
-                <button onClick={() => { if (!user) navigate('/login'); else setShowPayment(true); }}
+                <button onClick={() => { if (!user) navigate('/login'); else navigate(`/payment/${property.id}`); }}
                   className="w-full bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:shadow-[#ccdfed] transition-all mb-3 flex items-center justify-center gap-2"
                 >
                   <CreditCard size={16} />طلب الشراء
                 </button>
               )}
 
-              <a href="https://wa.me/201100111618" target="_blank" rel="noopener noreferrer"
+              <a href={`https://wa.me/20${(property.contact_phone || '01100111618').replace(/^0/, '')}?text=مرحباً، أريد الاستفسار عن: ${property.title_ar || property.title}`} target="_blank" rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-green-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-600 transition-all mb-3"
               >
                 <MessageCircle size={16} />تواصل عبر واتساب
               </a>
 
-              <a href="tel:+201100111618"
+              <a href={`tel:${property.contact_phone || '01100111618'}`}
                 className="w-full flex items-center justify-center gap-2 border-2 border-[#005a7d] text-[#005a7d] py-3 rounded-xl font-bold text-sm hover:bg-[#e6f2f5] transition-all"
               >
-                <Phone size={16} />01100111618
+                <Phone size={16} />{property.contact_phone || '01100111618'}
               </a>
 
               {property.status === 'sold' && (

@@ -211,9 +211,11 @@ async function runMigrations() {
     await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS google_maps_url TEXT');
     await query("ALTER TABLE properties ALTER COLUMN purpose DROP DEFAULT");
     try { await query("ALTER TABLE properties DROP CONSTRAINT IF EXISTS properties_purpose_check"); } catch {}
-    await query("ALTER TABLE properties ADD CONSTRAINT IF NOT EXISTS properties_purpose_check CHECK (purpose IN ('sale','rent','resale'))");
+    try { await query("ALTER TABLE properties ADD CONSTRAINT properties_purpose_check CHECK (purpose IN ('sale','rent','resale'))"); } catch {}
     await query("ALTER TABLE properties ALTER COLUMN purpose SET DEFAULT 'sale'");
     await query('ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT');
+    await query("ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS screenshot_url TEXT");
+    await query("ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(20)");
 
     // Seed default accounts (use ON CONFLICT DO NOTHING to be idempotent)
     const seedAccounts = [

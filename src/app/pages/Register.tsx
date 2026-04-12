@@ -22,7 +22,7 @@ export default function Register() {
     if (!form.password) errors.password = 'كلمة المرور مطلوبة';
     else if (form.password.length < 8) errors.password = 'كلمة المرور 8 أحرف على الأقل';
     else if (!/[A-Z]/.test(form.password)) errors.password = 'يجب أن تحتوي على حرف كبير (A-Z)';
-    else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password)) errors.password = 'يجب أن تحتوي على رمز خاص (!@#$ ...)';
+    else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?0-9]/.test(form.password)) errors.password = 'يجب أن تحتوي على رمز خاص أو رقم (!@#$ أو 0-9)';
     if (!form.confirmPassword) errors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
     else if (form.password !== form.confirmPassword) errors.confirmPassword = 'كلمتا المرور غير متطابقتين';
     setFieldErrors(errors);

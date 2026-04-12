@@ -479,7 +479,7 @@ export function PropertyDetailEnhanced() {
             {property.purpose === 'sale' && !property.is_static_featured && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
                 <Link to={`/payment/${property.id}`}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#9333EA] text-white py-3 rounded-2xl text-sm font-bold shadow-lg w-full hover:opacity-90 transition-all"
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-3 rounded-2xl text-sm font-bold shadow-lg w-full hover:opacity-90 transition-all"
                 >
                   <CreditCard size={16} />
                   طلب الشراء / الدفع

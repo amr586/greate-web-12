@@ -386,21 +386,33 @@ function PropertyReviewItem({ property, onApprove, onReject, onDetails }: { prop
 
 function PaymentItem({ payment, onApprove }: { payment: any; onApprove: () => void }) {
   return (
-    <div className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
-      <div className="w-10 h-10 bg-[#ccdfed] rounded-xl flex items-center justify-center flex-shrink-0">
-        <CreditCard size={18} className="text-[#005a7d]" />
+    <div className="p-4 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 bg-[#ccdfed] rounded-xl flex items-center justify-center flex-shrink-0">
+          <CreditCard size={18} className="text-[#005a7d]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-gray-900 text-sm">{payment.buyer_name || payment.user_name || 'مستخدم'}</div>
+          <div className="text-gray-400 text-xs">{Number(payment.amount).toLocaleString()} جنيه · {payment.payment_method === 'instapay' ? 'InstaPay' : payment.payment_method === 'vodafone' ? 'فودافون كاش' : payment.payment_method}</div>
+          {payment.contact_phone && <div className="text-gray-400 text-xs">رقم التحويل: {payment.contact_phone}</div>}
+        </div>
+        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${payment.status === 'completed' || payment.status === 'approved' ? 'bg-green-100 text-green-700' : payment.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+          {payment.status === 'completed' || payment.status === 'approved' ? 'موافق' : payment.status === 'rejected' ? 'مرفوض' : 'بانتظار'}
+        </span>
+        {payment.status === 'pending' && (
+          <button onClick={onApprove} className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors flex-shrink-0">
+            تأكيد
+          </button>
+        )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-gray-900 text-sm">{payment.user_name || 'مستخدم'}</div>
-        <div className="text-gray-400 text-xs">{Number(payment.amount).toLocaleString()} جنيه · {payment.payment_method}</div>
-      </div>
-      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${payment.status === 'approved' ? 'bg-green-100 text-green-700' : payment.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-        {payment.status === 'approved' ? 'موافق' : payment.status === 'rejected' ? 'مرفوض' : 'بانتظار'}
-      </span>
-      {payment.status === 'pending' && (
-        <button onClick={onApprove} className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition-colors flex-shrink-0">
-          تأكيد
-        </button>
+      {payment.screenshot_url && (
+        <div className="mt-2 mr-14">
+          <a href={payment.screenshot_url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-[#005a7d] hover:underline font-medium"
+          >
+            📷 عرض صورة إيصال التحويل
+          </a>
+        </div>
       )}
     </div>
   );
