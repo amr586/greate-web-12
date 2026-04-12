@@ -26,7 +26,7 @@ export default function SplashScreen({ visible }: SplashScreenProps) {
               animate={{ scale: [1, 1.04, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <img src="/logo_gs.png" alt="Great Society" className="w-40 h-40 object-cover rounded-full drop-shadow-2xl" />
+              <img src="/logo_gs.png" alt="Great Society" className="w-36 h-36 object-contain drop-shadow-2xl" />
             </motion.div>
 
 

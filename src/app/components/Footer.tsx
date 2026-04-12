@@ -12,8 +12,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
-              <div className="group-hover:scale-105 transition-transform flex-shrink-0 w-13 h-13 rounded-full overflow-hidden shadow-md">
-                <img src="/logo_gs.png" alt="Great Society" className="w-full h-full object-cover" />
+              <div className="group-hover:scale-105 transition-transform flex-shrink-0">
+                <img src="/logo_gs.png" alt="Great Society" className="w-12 h-12 object-contain" />
               </div>
               <div>
                 <div className="text-white font-black text-lg">GREAT SOCIETY</div>
