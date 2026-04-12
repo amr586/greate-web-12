@@ -51,14 +51,6 @@ export default function SplashScreen({ visible }: SplashScreenProps) {
               >
                 REALESTATE & CONSTRUCTION
               </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.4 }}
-                className="text-white font-bold text-lg mt-2 tracking-tight"
-              >
-                إسكنك
-              </motion.p>
             </div>
 
             {/* Loading dots */}
