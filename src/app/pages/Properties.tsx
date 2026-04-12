@@ -83,7 +83,7 @@ export default function Properties() {
       <div className="bg-gradient-to-r from-[#bca056] to-[#a68a47] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-white font-black text-3xl mb-2">تصفح العقارات</motion.h1>
-          <p className="text-white/80">{filtered.length + filteredDb.length} عقار في القاهرة الجديدة والعاصمة الإدارية</p>
+          <p className="text-white/80">أكثر من 100 عقار في مختلف الأماكن · ابحث، قارن وتواصل معنا</p>
         </div>
       </div>
 

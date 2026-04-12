@@ -102,6 +102,10 @@ export const api = {
   editProperty: (id: number, data: any) => request(`/admin/properties/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteProperty: (id: number) => request(`/admin/properties/${id}`, { method: 'DELETE' }),
   getAdminPurchaseRequests: () => request('/admin/payments'),
+  getPropertyImages: (id: number) => request(`/admin/properties/${id}/images`),
+  deletePropertyImage: (propId: number, imageId: number) => request(`/admin/properties/${propId}/images/${imageId}`, { method: 'DELETE' }),
+  addPropertyImage: (propId: number, url: string, is_primary?: boolean) => request(`/admin/properties/${propId}/images`, { method: 'POST', body: JSON.stringify({ url, is_primary }) }),
+  setPropertyImagePrimary: (propId: number, imageId: number) => request(`/admin/properties/${propId}/images/${imageId}/primary`, { method: 'PATCH' }),
 
   // Payments
   requestPayment: (data: any) => request('/payments', { method: 'POST', body: JSON.stringify(data) }),

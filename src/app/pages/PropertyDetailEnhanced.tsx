@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import {
   Bed, Bath, Maximize, MapPin, Phone, MessageCircle, Heart,
   ArrowRight, Share2, Calendar, Building2, CheckCircle, Send,
-  Star, CreditCard, ChevronRight, Loader2, MessageSquare, Map, ExternalLink
+  Star, CreditCard, ChevronRight, ChevronLeft, Loader2, MessageSquare, Map, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -262,10 +262,33 @@ export function PropertyDetailEnhanced() {
                 <img
                   src={images[activeImage]}
                   alt={property.title_ar || property.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-opacity duration-300"
                   onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setActiveImage(i => (i - 1 + images.length) % images.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-all"
+                    >
+                      <ChevronRight size={18} className="text-gray-800" />
+                    </button>
+                    <button
+                      onClick={() => setActiveImage(i => (i + 1) % images.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-all"
+                    >
+                      <ChevronLeft size={18} className="text-gray-800" />
+                    </button>
+                    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {images.map((_, i) => (
+                        <button key={i} onClick={() => setActiveImage(i)}
+                          className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeImage ? 'bg-white w-4' : 'bg-white/50'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <div className="absolute top-4 right-4 flex flex-wrap gap-2">
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold ${purposeColor}`}>{purposeLabel}</span>

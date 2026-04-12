@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import PropertyChat from '../components/PropertyChat';
 import ProfileTab from '../components/ProfileTab';
+import PropertyImageManager from '../components/PropertyImageManager';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=120&fit=crop';
 
@@ -680,6 +681,9 @@ export default function SuperAdminDashboard() {
                     placeholder="https://... رابط صورة المسقط الأفقي"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]" />
                 </div>
+              </div>
+              <div className="mt-4 border border-gray-100 rounded-xl p-4">
+                <PropertyImageManager propertyId={editProperty.id} />
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setEditProperty(null)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">إلغاء</button>

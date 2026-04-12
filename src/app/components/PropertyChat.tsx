@@ -73,7 +73,7 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
     }
   };
 
-  const isAdmin = user?.role === 'superadmin' || (user?.role === 'admin' && user?.sub_role === 'property_manager');
+  const isAdmin = user?.role === 'superadmin' || user?.role === 'admin';
   const formatTime = (dt: string) => new Date(dt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
   const formatDate = (dt: string) => new Date(dt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
 
@@ -151,7 +151,7 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
                       </span>
                       {isAdminMsg && (
                         <span className="text-xs bg-[#005a7d]/10 text-[#005a7d] px-1.5 py-0.5 rounded-md font-medium">
-                          {msg.sender_role === 'superadmin' ? 'سوبر أدمن' : 'مدير عقارات'}
+                          {msg.sender_role === 'superadmin' ? 'سوبر أدمن' : msg.sender_sub_role === 'data_entry' ? 'داتا انتري' : msg.sender_sub_role === 'property_manager' ? 'مدير عقارات' : 'إدارة'}
                         </span>
                       )}
                     </div>

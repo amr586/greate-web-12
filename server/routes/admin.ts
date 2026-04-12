@@ -158,6 +158,51 @@ router.delete('/properties/:id', authenticate, requireAdmin, async (req: AuthReq
   }
 });
 
+router.get('/properties/:id/images', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await query('SELECT * FROM property_images WHERE property_id=$1 ORDER BY order_index, id', [req.params.id]);
+    res.json(result.rows);
+  } catch {
+    res.status(500).json({ error: 'خطأ' });
+  }
+});
+
+router.delete('/properties/:id/images/:imageId', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    await query('DELETE FROM property_images WHERE id=$1 AND property_id=$2', [req.params.imageId, req.params.id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'خطأ في حذف الصورة' });
+  }
+});
+
+router.post('/properties/:id/images', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { url, is_primary } = req.body;
+    if (!url) return res.status(400).json({ error: 'رابط الصورة مطلوب' });
+    if (is_primary) {
+      await query('UPDATE property_images SET is_primary=false WHERE property_id=$1', [req.params.id]);
+    }
+    const result = await query(
+      'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,$3,0) RETURNING *',
+      [req.params.id, url, Boolean(is_primary)]
+    );
+    res.json(result.rows[0]);
+  } catch {
+    res.status(500).json({ error: 'خطأ في إضافة الصورة' });
+  }
+});
+
+router.patch('/properties/:id/images/:imageId/primary', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    await query('UPDATE property_images SET is_primary=false WHERE property_id=$1', [req.params.id]);
+    await query('UPDATE property_images SET is_primary=true WHERE id=$1 AND property_id=$2', [req.params.imageId, req.params.id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'خطأ' });
+  }
+});
+
 router.patch('/properties/:id/sold', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { buyer_id } = req.body;

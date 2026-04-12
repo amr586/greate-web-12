@@ -90,7 +90,7 @@ export default function Home() {
 
             
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="text-gray-200 mb-8 text-base leading-relaxed">
-              أكثر من 127 عقار متاح في القاهرة والعاصمة الإدارية. ابحث، قارن، وتواصل مع فريقنا المتخصص في Great Society اليوم.
+              أكثر من 100 عقار في مختلف الأماكن · ابحث، قارن وتواصل معنا.
             </motion.p>
 
             <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
