@@ -364,6 +364,9 @@ export default function SubAdminDashboard() {
                             <button onClick={() => setDeleteConfirm(prop.id)}
                               className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors"
                             ><Trash2 size={12} />حذف</button>
+                            <button onClick={() => setChatProperty({ id: prop.id, title: prop.title_ar || prop.title, ownerName: prop.owner_name })}
+                              className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                            ><MessageSquare size={12} />محادثة</button>
                           </div>
                         </div>
                       </div>
