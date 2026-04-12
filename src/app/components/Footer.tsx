@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { MapPin, Phone, Mail, Facebook, Instagram, Linkedin, MessageCircle, Music } from 'lucide-react';
-import GSCircleLogo from './GSCircleLogo';
 
 export default function Footer() {
   return (
@@ -14,7 +13,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
               <div className="group-hover:scale-105 transition-transform flex-shrink-0">
-                <GSCircleLogo size={48} />
+                <img src="/logo_gs.png" alt="Great Society" className="w-12 h-auto" />
               </div>
               <div>
                 <div className="text-white font-black text-lg">GREAT SOCIETY</div>

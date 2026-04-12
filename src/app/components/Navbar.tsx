@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Home, Building2, Phone, LogIn, User, LayoutDashboard, LogOut, Heart, PlusCircle, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
-import GSCircleLogo from './GSCircleLogo';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,7 +47,7 @@ export default function Navbar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
             <div className="group-hover:scale-105 transition-transform flex-shrink-0">
-              <GSCircleLogo size={44} />
+              <img src="/logo_gs.png" alt="Great Society" className="w-11 h-auto" />
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-[#bca056] font-black text-lg tracking-tight">GREAT SOCIETY</span>

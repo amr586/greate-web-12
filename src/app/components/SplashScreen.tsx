@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from 'motion/react';
-import GSCircleLogo from './GSCircleLogo';
 
 interface SplashScreenProps {
   visible: boolean;
@@ -27,28 +26,9 @@ export default function SplashScreen({ visible }: SplashScreenProps) {
               animate={{ scale: [1, 1.04, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <GSCircleLogo size={120} />
+              <img src="/logo_gs.png" alt="Great Society" className="w-36 h-auto drop-shadow-2xl" />
             </motion.div>
 
-            {/* Brand text */}
-            <div className="text-center">
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.4 }}
-                className="text-[#bca056] font-black text-2xl tracking-widest uppercase"
-              >
-                GREAT SOCIETY
-              </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.4 }}
-                className="text-white/80 text-sm tracking-wider mt-0.5"
-              >
-                REALESTATE & CONSTRUCTION
-              </motion.p>
-            </div>
 
             {/* Loading dots */}
             <motion.div
