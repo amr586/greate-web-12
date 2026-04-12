@@ -17,6 +17,7 @@ import AdminAddProperty from './pages/AdminAddProperty';
 import SubAdminDashboard from './pages/SubAdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
+import UserEditProperty from './pages/UserEditProperty';
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'saved', Component: SavedProperties },
       { path: 'privacy', Component: PrivacyPolicy },
       { path: 'terms', Component: Terms },
+      { path: 'edit-property/:id', Component: UserEditProperty },
     ],
   },
 ]);

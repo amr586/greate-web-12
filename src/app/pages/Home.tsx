@@ -55,7 +55,7 @@ export default function Home() {
         <AnimatePresence mode="wait">
           <motion.div key={heroSlide} initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }} className="absolute inset-0">
             <img src={SLIDES[heroSlide].bg} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#bca056]/90 via-[#bca056]/70 to-[#bca056]/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#005a7d]/90 via-[#005a7d]/70 to-[#005a7d]/40" />
           </motion.div>
         </AnimatePresence>
 
@@ -63,7 +63,7 @@ export default function Home() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[...Array(8)].map((_, i) => (
             <motion.div key={i} className="absolute rounded-full"
-              style={{ left: `${10 + i * 12}%`, top: `${15 + (i % 3) * 25}%`, width: i % 2 === 0 ? 6 : 4, height: i % 2 === 0 ? 6 : 4, background: `rgba(188,160,86,${0.3 + i * 0.05})` }}
+              style={{ left: `${10 + i * 12}%`, top: `${15 + (i % 3) * 25}%`, width: i % 2 === 0 ? 6 : 4, height: i % 2 === 0 ? 6 : 4, background: `rgba(255,255,255,${0.2 + i * 0.04})` }}
               animate={{ y: [-20, 20, -20], opacity: [0.3, 0.9, 0.3], scale: [1, 1.3, 1] }}
               transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.4 }}
             />
@@ -108,7 +108,7 @@ export default function Home() {
                 placeholder="ابحث بالموقع أو نوع العقار..."
                 className="flex-1 border-0 outline-none text-sm px-3 py-2.5 text-gray-800 bg-transparent placeholder:text-gray-400"
               />
-              <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-[#bca056]/30 transition-shadow">
+              <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-[#005a7d]/30 transition-shadow">
                 <Search size={16} />بحث
               </button>
             </motion.form>
@@ -126,14 +126,14 @@ export default function Home() {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
           {SLIDES.map((_, i) => (
             <button key={i} onClick={() => setHeroSlide(i)}
-              className={`transition-all duration-300 rounded-full ${i === heroSlide ? 'w-8 h-2 bg-[#bca056]' : 'w-2 h-2 bg-white/50'}`}
+              className={`transition-all duration-300 rounded-full ${i === heroSlide ? 'w-8 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`}
             />
           ))}
         </div>
       </section>
 
       {/* STATS */}
-      <section ref={statsRef} className="py-16 bg-gradient-to-br from-[#c8a95e] to-[#9a7535]">
+      <section ref={statsRef} className="py-16 bg-gradient-to-br from-[#005a7d] to-[#003d5a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, Heart, LogOut, CreditCard, MessageSquare, Phone, Send, ChevronRight, X, Plus, User } from 'lucide-react';
+import { Building2, Heart, LogOut, CreditCard, MessageSquare, Phone, Send, ChevronRight, X, Plus, User, Pencil } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import PropertyChat from '../components/PropertyChat';
@@ -10,7 +10,7 @@ import ProfileTab from '../components/ProfileTab';
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop';
 const COMPANY_PHONE = '01100111618';
 
-function PropertyRow({ property, onChat }: { property: any; onChat?: () => void }) {
+function PropertyRow({ property, onChat, onEdit }: { property: any; onChat?: () => void; onEdit?: () => void }) {
   const STATUS_LABEL: Record<string, string> = { pending: 'مراجعة', approved: 'موافق', rejected: 'مرفوض', sold: 'مباع' };
   const STATUS_COLOR: Record<string, string> = { pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', sold: 'bg-gray-100 text-gray-600' };
   return (
@@ -30,6 +30,11 @@ function PropertyRow({ property, onChat }: { property: any; onChat?: () => void 
         <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${STATUS_COLOR[property.status] || 'bg-gray-100 text-gray-600'}`}>
           {STATUS_LABEL[property.status] || property.status}
         </span>
+        {property.status === 'pending' && onEdit && (
+          <button onClick={onEdit} className="flex items-center gap-1 text-xs text-orange-600 bg-orange-50 hover:bg-orange-100 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+            <Pencil size={12} />تعديل
+          </button>
+        )}
         {onChat && (
           <button onClick={onChat} className="flex items-center gap-1 text-xs text-[#005a7d] bg-[#e6f2f5] hover:bg-[#ccdfed] px-2.5 py-1.5 rounded-lg font-medium transition-colors">
             <MessageSquare size={12} />محادثة
@@ -207,7 +212,10 @@ export default function UserDashboard() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {myProperties.map(p => (
-                      <PropertyRow key={p.id} property={p} onChat={() => setChatProperty({ id: p.id, title: p.title_ar || p.title })} />
+                      <PropertyRow key={p.id} property={p}
+                        onChat={() => setChatProperty({ id: p.id, title: p.title_ar || p.title })}
+                        onEdit={() => navigate(`/edit-property/${p.id}`)}
+                      />
                     ))}
                   </div>
                 )}

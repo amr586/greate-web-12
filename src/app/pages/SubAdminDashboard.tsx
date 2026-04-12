@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -63,6 +63,8 @@ export default function SubAdminDashboard() {
   const [editForm, setEditForm] = useState<any>({});
   const [editLoading, setEditLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [planUploading, setPlanUploading] = useState(false);
+  const planInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -180,6 +182,22 @@ export default function SubAdminDashboard() {
       setEditProperty(null);
     } catch (e: any) { alert(e.message || 'خطأ في التعديل'); }
     finally { setEditLoading(false); }
+  };
+
+  const handlePlanUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    setPlanUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل الرفع');
+      setEditForm((p: any) => ({ ...p, floor_plan_image: data.url }));
+    } catch (err: any) { alert(err.message || 'فشل رفع الصورة'); }
+    finally { setPlanUploading(false); e.target.value = ''; }
   };
 
   const handleDelete = async (id: number) => {
@@ -861,14 +879,24 @@ export default function SubAdminDashboard() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">رابط صورة المسقط الأفقي (2D)</label>
-                  <input
-                    type="text"
-                    value={editForm.floor_plan_image || ''}
-                    onChange={e => setEditForm((p: any) => ({ ...p, floor_plan_image: e.target.value }))}
-                    placeholder="https://... رابط صورة المسقط"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
-                  />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">صورة المسقط الأفقي (2D)</label>
+                  <input ref={planInputRef} type="file" accept="image/*" onChange={handlePlanUpload} className="hidden" />
+                  {editForm.floor_plan_image ? (
+                    <div className="relative inline-block w-full">
+                      <img src={editForm.floor_plan_image} alt="مسقط" className="w-full max-h-32 object-contain rounded-xl border border-gray-200" />
+                      <button type="button" onClick={() => setEditForm((p: any) => ({ ...p, floor_plan_image: '' }))}
+                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-lg text-xs">✕</button>
+                      <button type="button" onClick={() => planInputRef.current?.click()}
+                        className="mt-1 w-full text-xs text-[#005a7d] bg-[#e6f2f5] rounded-lg py-1.5 hover:bg-[#ccdfed] transition-colors">
+                        تغيير الصورة
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => planInputRef.current?.click()} disabled={planUploading}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-xs text-gray-500 hover:border-[#005a7d] hover:text-[#005a7d] transition-colors flex items-center justify-center gap-2">
+                      {planUploading ? 'جاري الرفع...' : '📁 رفع صورة المسقط من الجهاز'}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="mt-4 border border-gray-100 rounded-xl p-4">

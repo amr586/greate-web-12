@@ -5,7 +5,7 @@ import { Building2, MapPin, DollarSign, CheckCircle, X, Loader2, Image, Map } fr
 import { useAuth } from '../context/AuthContext';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
-const FINISHING_TYPES = ['', 'غير مشطب', 'نصف تشطيب', 'ثلاثة أرباع تشطيب', 'متشطبة كامل', 'سوبر لوكس'];
+const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
 
 export default function AdminAddProperty() {
   const { user, isAdmin, isSuperAdmin } = useAuth();
@@ -38,6 +38,7 @@ export default function AdminAddProperty() {
     has_elevator: false,
     has_pool: false,
     has_garden: false,
+    has_basement: false,
     finishing_type: '',
     google_maps_url: '',
     is_featured: false,
@@ -304,14 +305,6 @@ export default function AdminAddProperty() {
                 <input type="number" value={form.floor} onChange={e => update('floor', e.target.value)}
                   placeholder="0" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">نوع التشطيب</label>
-                <select value={form.finishing_type} onChange={e => update('finishing_type', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]">
-                  <option value="">غير محدد</option>
-                  {FINISHING_TYPES.filter(Boolean).map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
               <div className="md:col-span-2 flex items-center gap-3 mt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.is_featured} onChange={e => update('is_featured', e.target.checked)}
@@ -328,12 +321,22 @@ export default function AdminAddProperty() {
                 { key: 'has_elevator', label: 'مصعد' },
                 { key: 'has_pool', label: 'حمام سباحة' },
                 { key: 'has_garden', label: 'حديقة' },
+                { key: 'has_basement', label: 'بيزمنت' },
               ].map(item => (
                 <label key={item.key} className="flex items-center gap-2 cursor-pointer bg-gray-50 rounded-xl px-3 py-2.5 hover:bg-gray-100 transition-colors">
                   <input type="checkbox" checked={form[item.key as keyof typeof form] as boolean}
                     onChange={e => update(item.key, e.target.checked)}
                     className="w-4 h-4 accent-[#bca056] rounded" />
                   <span className="text-gray-700 text-sm">{item.label}</span>
+                </label>
+              ))}
+              {FINISHING_OPTIONS.map(f => (
+                <label key={f} className="flex items-center gap-2 cursor-pointer bg-gray-50 rounded-xl px-3 py-2.5 hover:bg-gray-100 transition-colors">
+                  <input type="checkbox"
+                    checked={form.finishing_type === f}
+                    onChange={e => update('finishing_type', e.target.checked ? f : '')}
+                    className="w-4 h-4 accent-[#bca056] rounded" />
+                  <span className="text-gray-700 text-sm">{f}</span>
                 </label>
               ))}
             </div>

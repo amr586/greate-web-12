@@ -119,7 +119,8 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
     const {
       title, title_ar, description, description_ar, price, area, rooms, bedrooms, bathrooms, district,
       city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status,
-      google_maps_url, floor_plan_image
+      google_maps_url, floor_plan_image, is_furnished, has_parking, has_elevator, has_pool, has_garden,
+      has_basement, finishing_type
     } = req.body;
     await query(
       `UPDATE properties SET
@@ -133,13 +134,25 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
         delivery_status=COALESCE($19,delivery_status),
         google_maps_url=COALESCE($20,google_maps_url),
         floor_plan_image=COALESCE($21,floor_plan_image),
+        is_furnished=COALESCE($22,is_furnished), has_parking=COALESCE($23,has_parking),
+        has_elevator=COALESCE($24,has_elevator), has_pool=COALESCE($25,has_pool),
+        has_garden=COALESCE($26,has_garden), has_basement=COALESCE($27,has_basement),
+        finishing_type=COALESCE($28,finishing_type),
         updated_at=NOW()
-      WHERE id=$22`,
+      WHERE id=$29`,
       [
         title, title_ar, description, description_ar, price, area, rooms, bedrooms || rooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
         typeof is_featured === 'boolean' ? is_featured : null, down_payment, delivery_status,
-        google_maps_url || null, floor_plan_image || null, req.params.id
+        google_maps_url || null, floor_plan_image || null,
+        typeof is_furnished === 'boolean' ? is_furnished : null,
+        typeof has_parking === 'boolean' ? has_parking : null,
+        typeof has_elevator === 'boolean' ? has_elevator : null,
+        typeof has_pool === 'boolean' ? has_pool : null,
+        typeof has_garden === 'boolean' ? has_garden : null,
+        typeof has_basement === 'boolean' ? has_basement : null,
+        finishing_type || null,
+        req.params.id
       ]
     );
     res.json({ success: true });

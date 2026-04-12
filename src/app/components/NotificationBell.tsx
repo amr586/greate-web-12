@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, X, CheckCheck, MessageSquare, Home, CreditCard, Headphones, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router';
 
 interface Notification {
   id: number;
@@ -43,6 +44,7 @@ function notifColor(type: string) {
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -111,6 +113,24 @@ export default function NotificationBell() {
     if (!open) fetchNotifications();
   };
 
+  const handleNotifClick = async (n: Notification) => {
+    if (!n.is_read) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`/api/notifications/mark-read/${n.id}`, {
+          method: 'PATCH',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x));
+        setUnread(prev => Math.max(0, prev - 1));
+      } catch {}
+    }
+    if (n.link) {
+      setOpen(false);
+      navigate(n.link);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -164,7 +184,8 @@ export default function NotificationBell() {
                 notifications.map(n => (
                   <div
                     key={n.id}
-                    className={`flex gap-3 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-blue-50/40' : ''}`}
+                    onClick={() => handleNotifClick(n)}
+                    className={`flex gap-3 px-4 py-3 border-b border-gray-50 transition-colors ${n.link ? 'cursor-pointer hover:bg-[#e6f2f5]' : 'hover:bg-gray-50'} ${!n.is_read ? 'bg-blue-50/40' : ''}`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${notifColor(n.type)}`}>
                       {notifIcon(n.type)}

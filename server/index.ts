@@ -216,6 +216,7 @@ async function runMigrations() {
     await query('ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT');
     await query("ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS screenshot_url TEXT");
     await query("ALTER TABLE payment_requests ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(20)");
+    await query('ALTER TABLE properties ADD COLUMN IF NOT EXISTS has_basement BOOLEAN DEFAULT false');
 
     // Seed default accounts (use ON CONFLICT DO NOTHING to be idempotent)
     const seedAccounts = [

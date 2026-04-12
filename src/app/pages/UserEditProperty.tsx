@@ -1,18 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { Building2, CheckCircle, X, Loader2, Clock, Map } from 'lucide-react';
+import { Building2, CheckCircle, X, Loader2, Map, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
 
-export default function UserAddProperty() {
+export default function UserEditProperty() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const planInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -46,12 +48,67 @@ export default function UserAddProperty() {
   });
 
   useEffect(() => {
-    if (user?.phone) setForm(p => ({ ...p, contact_phone: user.phone || '' }));
-  }, [user?.phone]);
-
-  useEffect(() => {
     if (!user) navigate('/login');
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchProperty = async () => {
+      setFetching(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/properties/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل تحميل العقار');
+        if (data.owner_id !== user?.id) {
+          navigate('/dashboard');
+          return;
+        }
+        if (data.status !== 'pending') {
+          setError('لا يمكن تعديل عقار بعد الموافقة عليه');
+          setFetching(false);
+          return;
+        }
+        setForm({
+          title: data.title || '',
+          title_ar: data.title_ar || data.title || '',
+          description: data.description || '',
+          type: data.type || 'شقة',
+          purpose: data.purpose || 'sale',
+          price: data.price ? String(data.price) : '',
+          area: data.area ? String(data.area) : '',
+          bedrooms: data.bedrooms ? String(data.bedrooms) : '',
+          bathrooms: data.bathrooms ? String(data.bathrooms) : '',
+          floor: data.floor ? String(data.floor) : '',
+          district: data.district || '',
+          address: data.address || '',
+          contact_phone: data.contact_phone || '',
+          down_payment: data.down_payment || '',
+          delivery_status: data.delivery_status || '',
+          is_furnished: Boolean(data.is_furnished),
+          has_parking: Boolean(data.has_parking),
+          has_elevator: Boolean(data.has_elevator),
+          has_pool: Boolean(data.has_pool),
+          has_garden: Boolean(data.has_garden),
+          has_basement: Boolean(data.has_basement),
+          finishing_type: data.finishing_type || '',
+          google_maps_url: data.google_maps_url || '',
+        });
+        const imgs = Array.isArray(data.images)
+          ? data.images.map((img: any) => typeof img === 'string' ? img : img?.url).filter(Boolean)
+          : [];
+        setUploadedImages(imgs);
+        if (data.floor_plan_image) setFloorPlanImage(data.floor_plan_image);
+      } catch (err: any) {
+        setError(err.message || 'فشل تحميل العقار');
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchProperty();
+  }, [id, user?.id]);
 
   if (!user) return null;
 
@@ -123,8 +180,8 @@ export default function UserAddProperty() {
         images: uploadedImages,
         floor_plan_image: floorPlanImage || null,
       };
-      const res = await fetch('/api/properties', {
-        method: 'POST',
+      const res = await fetch(`/api/properties/${id}/user-edit`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -132,9 +189,9 @@ export default function UserAddProperty() {
         body: JSON.stringify(propertyData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'فشل إضافة العقار');
+      if (!res.ok) throw new Error(data.error || 'فشل تعديل العقار');
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 2500);
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err: any) {
       setError(err.message || 'حدث خطأ');
     } finally {
@@ -142,22 +199,30 @@ export default function UserAddProperty() {
     }
   };
 
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center" dir="rtl">
+        <div className="w-10 h-10 border-4 border-[#99c8db] border-t-[#005a7d] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-20" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#005a7d] to-[#007a9a] rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center">
               <Building2 size={24} className="text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-gray-900">أضف عقارك</h1>
-              <p className="text-gray-500 text-sm">سيتم مراجعة العقار من قِبل الإدارة خلال 24 ساعة</p>
+              <h1 className="text-3xl font-black text-gray-900">تعديل العقار</h1>
+              <p className="text-gray-500 text-sm">يمكنك التعديل طالما لم تتم الموافقة على عقارك بعد</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
-            <Clock size={16} className="flex-shrink-0" />
-            <span>بعد الإضافة سيظهر العقار في حسابك كـ "قيد المراجعة" حتى يوافق عليه الأدمن</span>
+          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl p-3 text-sm text-orange-700">
+            <AlertTriangle size={16} className="flex-shrink-0" />
+            <span>بعد الحفظ سيعود العقار إلى قائمة المراجعة</span>
           </div>
         </motion.div>
 
@@ -166,8 +231,8 @@ export default function UserAddProperty() {
             className="mb-6 bg-green-50 border border-green-200 rounded-2xl p-5 flex items-center gap-3">
             <CheckCircle size={22} className="text-green-600 flex-shrink-0" />
             <div>
-              <p className="text-green-700 font-bold">تم إرسال العقار بنجاح!</p>
-              <p className="text-green-600 text-sm">ستتلقى إشعاراً بعد مراجعته من الإدارة خلال 24 ساعة</p>
+              <p className="text-green-700 font-bold">تم حفظ التعديلات بنجاح!</p>
+              <p className="text-green-600 text-sm">جاري التحويل إلى حسابك...</p>
             </div>
           </motion.div>
         )}
@@ -183,7 +248,6 @@ export default function UserAddProperty() {
         <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl p-8 border border-gray-200 space-y-8">
 
-          {/* Basic Info */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">المعلومات الأساسية</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -192,12 +256,6 @@ export default function UserAddProperty() {
                 <input type="text" value={form.title_ar} onChange={e => update('title_ar', e.target.value)}
                   placeholder="مثال: شقة 3 غرف في التجمع الخامس"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">العنوان (إنجليزي)</label>
-                <input type="text" value={form.title} onChange={e => update('title', e.target.value)}
-                  placeholder="مثال: 3 Bedroom Apartment"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">نوع العقار</label>
@@ -215,16 +273,21 @@ export default function UserAddProperty() {
                   <option value="resale">ريسيل</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">رقم تواصلك <span className="text-red-500">*</span></label>
+                <input type="tel" value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
+                  placeholder="مثال: 01100000000" dir="ltr" required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] text-right" />
+              </div>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">الوصف</label>
               <textarea value={form.description} onChange={e => update('description', e.target.value)}
-                placeholder="وصف تفصيلي للعقار — المميزات، الحالة، التفاصيل..."
-                rows={4} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] resize-none" />
+                placeholder="وصف تفصيلي للعقار..." rows={4}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] resize-none" />
             </div>
           </div>
 
-          {/* Pricing & Location */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">السعر والموقع</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,10 +306,10 @@ export default function UserAddProperty() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">المنطقة <span className="text-red-500">*</span></label>
                 <input type="text" value={form.district} onChange={e => update('district', e.target.value)}
-                  placeholder="مثال: التجمع الخامس، العاصمة الإدارية..."
+                  placeholder="مثال: التجمع الخامس..."
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]"
-                  list="user-districts-list" required />
-                <datalist id="user-districts-list">
+                  list="edit-districts-list" required />
+                <datalist id="edit-districts-list">
                   {['التجمع الخامس','مصر الجديدة','العاصمة الإدارية','طريق السويس','التجمع السادس','جولدن سكوير','النرجس الجديدة','بيت الوطن','شمال الرحاب','مدينة نصر','هليوبوليس'].map(d => (
                     <option key={d} value={d} />
                   ))}
@@ -257,13 +320,6 @@ export default function UserAddProperty() {
                 <input type="text" value={form.address} onChange={e => update('address', e.target.value)}
                   placeholder="مثال: شارع النيل، المبنى 5"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]" />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">رقم تواصلك <span className="text-red-500">*</span></label>
-                <input type="tel" value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
-                  placeholder="مثال: 01100000000" dir="ltr" required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d] text-right" />
-                <p className="text-xs text-gray-400 mt-1">سيتواصل معك فريقنا على هذا الرقم للتحقق من الطلب.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">المقدم</label>
@@ -288,7 +344,6 @@ export default function UserAddProperty() {
             </div>
           </div>
 
-          {/* Details */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">التفاصيل</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -339,7 +394,6 @@ export default function UserAddProperty() {
             </div>
           </div>
 
-          {/* Property Images */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">صور العقار</h2>
             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-[#005a7d] transition-colors group"
@@ -353,7 +407,7 @@ export default function UserAddProperty() {
               ) : (
                 <>
                   <Building2 size={32} className="mx-auto mb-2 text-gray-300 group-hover:text-[#005a7d] transition-colors" />
-                  <p className="text-gray-500 text-sm font-medium">اضغط لرفع صور العقار</p>
+                  <p className="text-gray-500 text-sm font-medium">اضغط لرفع صور إضافية</p>
                   <p className="text-gray-400 text-xs mt-1">يمكنك اختيار أكثر من صورة دفعة واحدة</p>
                 </>
               )}
@@ -374,7 +428,6 @@ export default function UserAddProperty() {
             )}
           </div>
 
-          {/* Floor Plan */}
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100 flex items-center gap-2">
               <Map size={18} />مسقط أفقي (2D) - اختياري
@@ -401,8 +454,8 @@ export default function UserAddProperty() {
 
           <div className="flex gap-3 pt-2">
             <button type="submit" disabled={loading || success}
-              className="flex-1 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-3.5 rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
-              {loading ? <><Loader2 size={20} className="animate-spin" />جاري الإرسال...</> : 'إرسال العقار للمراجعة'}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3.5 rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              {loading ? <><Loader2 size={20} className="animate-spin" />جاري الحفظ...</> : 'حفظ التعديلات'}
             </button>
             <button type="button" onClick={() => navigate('/dashboard')}
               className="px-6 bg-gray-100 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-200 transition-all">
