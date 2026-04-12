@@ -46,8 +46,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
-            <div className="group-hover:scale-105 transition-transform flex-shrink-0 w-12 h-12 rounded-full bg-[#005a7d] flex items-center justify-center shadow-md">
-              <img src="/logo_gs.png" alt="Great Society" className="w-9 h-9 object-contain" />
+            <div className="group-hover:scale-105 transition-transform flex-shrink-0 w-12 h-12 rounded-full overflow-hidden shadow-md">
+              <img src="/logo_gs.png" alt="Great Society" className="w-full h-full object-cover" />
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-[#bca056] font-black text-lg tracking-tight">GREAT SOCIETY</span>
