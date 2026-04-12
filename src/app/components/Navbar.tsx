@@ -4,20 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Home, Building2, Phone, LogIn, User, LayoutDashboard, LogOut, Heart, PlusCircle, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './NotificationBell';
-
-// GS Logo Component
-function GSLogo({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Diamond shape */}
-      <path d="M50 5L95 50L50 95L5 50L50 5Z" fill="#bca056"/>
-      {/* Inner diamond */}
-      <path d="M50 15L85 50L50 85L15 50L50 15Z" fill="#ffffff"/>
-      {/* GS Letters */}
-      <text x="50" y="58" textAnchor="middle" fill="#bca056" fontSize="28" fontWeight="bold" fontFamily="Arial, sans-serif">GS</text>
-    </svg>
-  );
-}
+import GSCircleLogo from './GSCircleLogo';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -60,8 +47,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
-            <div className="group-hover:scale-105 transition-transform">
-              <GSLogo size={44} />
+            <div className="group-hover:scale-105 transition-transform flex-shrink-0">
+              <GSCircleLogo size={44} />
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-[#bca056] font-black text-lg tracking-tight">GREAT SOCIETY</span>

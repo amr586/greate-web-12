@@ -1,33 +1,20 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
-import { Building2, MapPin, Phone, Mail, Facebook, Instagram, Linkedin, MessageCircle, Music } from 'lucide-react';
-
-// GS Logo Component
-function GSLogo({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Diamond shape */}
-      <path d="M50 5L95 50L50 95L5 50L50 5Z" fill="#bca056"/>
-      {/* Inner diamond */}
-      <path d="M50 15L85 50L50 85L15 50L50 15Z" fill="#005a7d"/>
-      {/* GS Letters */}
-      <text x="50" y="58" textAnchor="middle" fill="#bca056" fontSize="28" fontWeight="bold" fontFamily="Arial, sans-serif">GS</text>
-    </svg>
-  );
-}
+import { MapPin, Phone, Mail, Facebook, Instagram, Linkedin, MessageCircle, Music } from 'lucide-react';
+import GSCircleLogo from './GSCircleLogo';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#bca056] text-white" dir="rtl">
+    <footer className="bg-[#005a7d] text-white" dir="rtl">
       <div className="w-full overflow-hidden leading-none -mb-1">
-        <svg viewBox="0 0 1440 60" fill="none" className="w-full"><path d="M0 60V30C180 0 360 60 540 30C720 0 900 60 1080 30C1260 0 1380 40 1440 30V60H0Z" fill="#bca056"/></svg>
+        <svg viewBox="0 0 1440 60" fill="none" className="w-full"><path d="M0 60V30C180 0 360 60 540 30C720 0 900 60 1080 30C1260 0 1380 40 1440 30V60H0Z" fill="#005a7d"/></svg>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
-              <div className="group-hover:scale-105 transition-transform">
-                <GSLogo size={44} />
+              <div className="group-hover:scale-105 transition-transform flex-shrink-0">
+                <GSCircleLogo size={48} />
               </div>
               <div>
                 <div className="text-white font-black text-lg">GREAT SOCIETY</div>
