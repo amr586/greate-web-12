@@ -1,13 +1,25 @@
 import { Outlet, useLocation } from 'react-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AIChat from '../components/AIChat';
+import SplashScreen from '../components/SplashScreen';
 
 
 export default function Root() {
   const location = useLocation();
+  const [showSplash, setShowSplash] = useState(() => {
+    if (sessionStorage.getItem('splashShown')) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!showSplash) return;
+    sessionStorage.setItem('splashShown', '1');
+    const timer = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(timer);
+  }, [showSplash]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -17,6 +29,7 @@ export default function Root() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      <SplashScreen visible={showSplash} />
       <Navbar />
       <main className="flex-1">
         <AnimatePresence mode="wait">
