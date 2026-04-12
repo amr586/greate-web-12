@@ -106,6 +106,10 @@ npx tsx server/setup-db.ts
 - **Footer Links**: Privacy policy and terms of service links open Google Drive PDFs in a new tab.
 - **Enhanced Property Cards**: Property cards open detail pages, show down payment and delivery status when available, and use an "اتصل الآن" button that dials directly without exposing the phone number in the card button text.
 - **Featured Listing Workflow**: User submissions and admin edits can mark properties as normal or featured. Approved DB properties with `is_featured=true` appear in the featured section alongside curated featured listings.
+- **6 Curated Featured Properties**: Seeded directly in DB (server/index.ts onStartup) with Arabic titles, real Cairo/NAC pricing, Google Maps URLs, 2D floor plan images, contact_phone=01100111618, status='approved', is_featured=true. These are fully editable/deletable by admin roles.
+- **Payment Wallet Flow**: Users can submit purchase requests via InstaPay or Vodafone Cash. They upload a payment screenshot and the system notifies superadmin + property_manager + data_entry with full purchase details. Route: server/routes/payments.ts.
+- **Google Maps & 2D Floor Plan**: Property detail page (PropertyDetailEnhanced.tsx) shows Google Maps iframe and floor plan image when the DB fields google_maps_url and floor_plan_image are set. Both fields are editable via SuperAdminDashboard and SubAdminDashboard edit forms.
+- **Contact Phone per Property**: Each property has a contact_phone field (default 01100111618) shown on the detail page. Editable by superadmin, data_entry, and property_manager via edit form.
 
 ## Notifications System
 - Route: `server/routes/notifications.ts` registered at `/api/notifications`

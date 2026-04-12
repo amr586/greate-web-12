@@ -165,6 +165,8 @@ export default function SubAdminDashboard() {
       is_featured: Boolean(prop.is_featured),
       down_payment: prop.down_payment || '',
       delivery_status: prop.delivery_status || '',
+      google_maps_url: prop.google_maps_url || '',
+      floor_plan_image: prop.floor_plan_image || '',
     });
   };
 
@@ -843,6 +845,26 @@ export default function SubAdminDashboard() {
                     <option value="normal">عادي</option>
                     <option value="featured">مميز</option>
                   </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">رابط جوجل ماب</label>
+                  <input
+                    type="text"
+                    value={editForm.google_maps_url || ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, google_maps_url: e.target.value }))}
+                    placeholder="https://maps.google.com/?q=..."
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">رابط صورة المسقط الأفقي (2D)</label>
+                  <input
+                    type="text"
+                    value={editForm.floor_plan_image || ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, floor_plan_image: e.target.value }))}
+                    placeholder="https://... رابط صورة المسقط"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                  />
                 </div>
               </div>
               <div className="flex gap-3 mt-5">

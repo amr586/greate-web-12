@@ -8,8 +8,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { FEATURED } from './Properties';
-
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=500&fit=crop';
 const WHATSAPP_NUMBER = '201281378331';
 const COMPANY_PHONE = '01100111618';
@@ -23,30 +21,6 @@ function formatDetailPrice(price: any) {
   const numeric = Number(price);
   if (!numeric) return 'تواصل للسعر';
   return `${numeric.toLocaleString()} جنيه`;
-}
-
-function staticFeaturedProperty(id: string) {
-  const item = FEATURED.find(p => p.id === id);
-  if (!item) return null;
-  return {
-    id: item.id,
-    title: item.title,
-    title_ar: item.title,
-    description: item.desc,
-    description_ar: item.desc,
-    type: item.type,
-    purpose: 'sale',
-    price: item.price,
-    district: item.district,
-    rooms: item.rooms,
-    bedrooms: item.rooms,
-    images: [item.image],
-    contact_phone: COMPANY_PHONE,
-    down_payment: item.down,
-    delivery_status: item.badge.includes('استلام') ? item.badge : undefined,
-    is_featured: true,
-    is_static_featured: true,
-  };
 }
 
 function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTitle: string }) {
@@ -193,12 +167,6 @@ export function PropertyDetailEnhanced() {
 
   useEffect(() => {
     if (!id) return;
-    const staticProperty = staticFeaturedProperty(id);
-    if (staticProperty) {
-      setProperty(staticProperty);
-      setLoading(false);
-      return;
-    }
     api.getProperty(Number(id))
       .then(data => {
         setProperty(data);
@@ -214,7 +182,6 @@ export function PropertyDetailEnhanced() {
 
   const toggleSave = async () => {
     if (!user) { navigate('/login'); return; }
-    if (property.is_static_featured) return;
     try {
       if (isSaved) {
         await api.unsaveProperty(property.id);
@@ -476,7 +443,7 @@ export function PropertyDetailEnhanced() {
               </div>
             </motion.div>
 
-            {property.purpose === 'sale' && !property.is_static_featured && (
+            {property.purpose === 'sale' && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
                 <Link to={`/payment/${property.id}`}
                   className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-3 rounded-2xl text-sm font-bold shadow-lg w-full hover:opacity-90 transition-all"
@@ -488,11 +455,9 @@ export function PropertyDetailEnhanced() {
               </motion.div>
             )}
 
-            {!property.is_static_featured && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-                <ChatBox propertyId={property.id} propertyTitle={property.title_ar || property.title} />
-              </motion.div>
-            )}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+              <ChatBox propertyId={property.id} propertyTitle={property.title_ar || property.title} />
+            </motion.div>
           </div>
         </div>
       </div>

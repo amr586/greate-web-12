@@ -118,7 +118,8 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
   try {
     const {
       title, title_ar, description, description_ar, price, area, rooms, bedrooms, bathrooms, district,
-      city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status
+      city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status,
+      google_maps_url, floor_plan_image
     } = req.body;
     await query(
       `UPDATE properties SET
@@ -129,12 +130,16 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
         city=COALESCE($11,city), address=COALESCE($12,address), type=COALESCE($13,type),
         purpose=COALESCE($14,purpose), floor=COALESCE($15,floor), contact_phone=COALESCE($16,contact_phone),
         is_featured=COALESCE($17,is_featured), down_payment=COALESCE($18,down_payment),
-        delivery_status=COALESCE($19,delivery_status), updated_at=NOW()
-      WHERE id=$20`,
+        delivery_status=COALESCE($19,delivery_status),
+        google_maps_url=COALESCE($20,google_maps_url),
+        floor_plan_image=COALESCE($21,floor_plan_image),
+        updated_at=NOW()
+      WHERE id=$22`,
       [
         title, title_ar, description, description_ar, price, area, rooms, bedrooms || rooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
-        typeof is_featured === 'boolean' ? is_featured : null, down_payment, delivery_status, req.params.id
+        typeof is_featured === 'boolean' ? is_featured : null, down_payment, delivery_status,
+        google_maps_url || null, floor_plan_image || null, req.params.id
       ]
     );
     res.json({ success: true });

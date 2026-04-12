@@ -242,7 +242,100 @@ async function runMigrations() {
     console.error('[migration] error:', err);
   }
 }
-runMigrations();
+
+async function seedFeaturedProperties() {
+  try {
+    const adminRes = await query("SELECT id FROM users WHERE role='superadmin' LIMIT 1");
+    if (!adminRes.rows[0]) return;
+    const adminId = adminRes.rows[0].id;
+
+    const FLOOR_PLAN = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop';
+
+    const featured = [
+      {
+        title_ar: 'شقة 3 غرف متشطبة بالكامل – طريق السويس',
+        description_ar: 'في أقوى لوكيشن على طريق السويس مباشرةً، جنب أول جامعة ومستشفى بريطانية في مصر.\n• مبنية بنسبة إنشاءات 40% على أرض الواقع\n• مقدم 750,000 جنيه\n• أسعار تبدأ من 3,200,000 جنيه\nللمعاينة والتفاصيل سجّل بياناتك الآن',
+        type: 'شقة', purpose: 'sale', price: 3200000, area: 120, bedrooms: 3, rooms: 3, bathrooms: 2,
+        district: 'طريق السويس', city: 'القاهرة', address: 'طريق السويس – بجوار الجامعة البريطانية',
+        contact_phone: '01100111618', down_payment: 'مقدم 750,000 ج', delivery_status: null,
+        image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=طريق+السويس+القاهرة+الجديدة',
+        floor_plan_image: FLOOR_PLAN,
+      },
+      {
+        title_ar: 'فيلات وشقق – استلام فوري في قلب التجمع الخامس',
+        description_ar: 'شقق وفيلات استلام فوري في أفضل مواقع التجمع الخامس:\n• شقق 3 غرف بمقدم 1,200,000 ج، متوسط أسعار 12 مليون\n• فيلات بمقدم 2,000,000 ج، متوسط أسعار 20 مليون\n• تقسيط يصل لـ 10 سنوات\nدقائق من التسعين الجنوبي ومطار القاهرة',
+        type: 'شقة', purpose: 'sale', price: 12000000, area: 200, bedrooms: 3, rooms: 3, bathrooms: 2,
+        district: 'التجمع الخامس', city: 'القاهرة', address: 'التجمع الخامس – بالقرب من التسعين الجنوبي',
+        contact_phone: '01100111618', down_payment: 'مقدم 1,200,000 ج', delivery_status: 'استلام فوري',
+        image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=التجمع+الخامس+القاهرة',
+        floor_plan_image: FLOOR_PLAN,
+      },
+      {
+        title_ar: 'شقة 3 غرف ماستر – قلب التجمع الخامس | جولدن سكوير',
+        description_ar: 'فرصة سكن واستثمار في موقع لا يتكرر:\n• خطوات من النادي الأهلي والتسعين الجنوبي\n• قريب من الفيوزون وشارع النوادي\n• 600 متر للنادي الأهلي\n• استلام فوري وخلال 6 شهور\n• مقدم يبدأ من 1,800,000 ج | تقسيط مريح 5 سنوات',
+        type: 'شقة', purpose: 'sale', price: 15000000, area: 180, bedrooms: 3, rooms: 3, bathrooms: 3,
+        district: 'جولدن سكوير', city: 'القاهرة', address: 'جولدن سكوير – التجمع الخامس',
+        contact_phone: '01100111618', down_payment: 'مقدم 1,800,000 ج', delivery_status: 'استلام خلال 6 شهور',
+        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=جولدن+سكوير+التجمع+الخامس+القاهرة',
+        floor_plan_image: FLOOR_PLAN,
+      },
+      {
+        title_ar: 'شقق في أفضل مواقع التجمع – استلام فوري بمقدم 50%',
+        description_ar: 'شقق 3 غرف في أفضل المواقع:\n• النرجس الجديدة\n• النورث هاوس\n• بيت الوطن\n• شمال الرحاب\nأسعار تبدأ من 4,000,000 جنيه\nاستلام فوري بمقدم 50%',
+        type: 'شقة', purpose: 'sale', price: 4000000, area: 150, bedrooms: 3, rooms: 3, bathrooms: 2,
+        district: 'التجمع الخامس', city: 'القاهرة', address: 'النرجس الجديدة – التجمع الخامس',
+        contact_phone: '01100111618', down_payment: 'مقدم 50%', delivery_status: 'استلام فوري',
+        image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=النرجس+الجديدة+التجمع+الخامس',
+        floor_plan_image: FLOOR_PLAN,
+      },
+      {
+        title_ar: 'فيلتك بسعر شقة – قلب R8 | العاصمة الإدارية',
+        description_ar: 'مع أقوى مطور في العاصمة الإدارية:\n• مقدم 10% فقط\n• قسط شهري 60,000 جنيه\n• خصم وسعر الطرح الأول\nللحجز والاستفادة من الخصم وأسعار لن تتكرر',
+        type: 'فيلا', purpose: 'sale', price: 8000000, area: 350, bedrooms: 4, rooms: 4, bathrooms: 4,
+        district: 'العاصمة الإدارية', city: 'القاهرة', address: 'R8 – العاصمة الإدارية الجديدة',
+        contact_phone: '01100111618', down_payment: 'مقدم 10% فقط', delivery_status: 'قيد الإنشاء',
+        image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=العاصمة+الإدارية+الجديدة+مصر',
+        floor_plan_image: FLOOR_PLAN,
+      },
+      {
+        title_ar: 'شقق بأسعار مذهلة – التجمع السادس أمام كمبوند الكازار',
+        description_ar: 'في أفضل لوكيشن في التجمع السادس، 10 دقائق من الجامعة الأمريكية:\n• شقة غرفة واحدة: 3,000,000 جنيه\n• شقة غرفتين: 4,500,000 جنيه\n• مقدم 300,000 جنيه فقط\nكلمنا دلوقتي',
+        type: 'شقة', purpose: 'sale', price: 3000000, area: 90, bedrooms: 1, rooms: 1, bathrooms: 1,
+        district: 'التجمع السادس', city: 'القاهرة', address: 'التجمع السادس – أمام كمبوند الكازار',
+        contact_phone: '01100111618', down_payment: 'مقدم 300,000 ج', delivery_status: null,
+        image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&q=80',
+        google_maps_url: 'https://maps.google.com/?q=التجمع+السادس+القاهرة+الجامعة+الأمريكية',
+        floor_plan_image: FLOOR_PLAN,
+      },
+    ];
+
+    for (const prop of featured) {
+      const exists = await query('SELECT id FROM properties WHERE title_ar=$1 AND is_featured=true LIMIT 1', [prop.title_ar]);
+      if (exists.rows.length > 0) continue;
+      const result = await query(
+        `INSERT INTO properties (title, title_ar, description, description_ar, type, purpose, price, area, bedrooms, rooms, bathrooms,
+          district, city, address, contact_phone, down_payment, delivery_status, is_featured, status, owner_id,
+          google_maps_url, floor_plan_image)
+         VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true,'approved',$17,$18,$19) RETURNING id`,
+        [prop.title_ar, prop.title_ar, prop.description_ar, prop.type, prop.purpose, prop.price, prop.area,
+         prop.bedrooms, prop.rooms, prop.bathrooms, prop.district, prop.city, prop.address,
+         prop.contact_phone, prop.down_payment, prop.delivery_status, adminId, prop.google_maps_url, prop.floor_plan_image]
+      );
+      const propId = result.rows[0].id;
+      await query('INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,true,0)', [propId, prop.image]);
+      console.log(`[seed] created featured property: ${prop.title_ar}`);
+    }
+  } catch (err) {
+    console.error('[seed] featured properties error:', err);
+  }
+}
+
+runMigrations().then(() => seedFeaturedProperties());
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
