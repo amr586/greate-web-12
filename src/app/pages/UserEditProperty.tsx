@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { Building2, CheckCircle, X, Loader2, Map, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { compressAndUploadMultiple, compressImage } from '../lib/imageUtils';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
@@ -120,16 +121,9 @@ export default function UserEditProperty() {
     setUploadingImages(true);
     const token = localStorage.getItem('token');
     try {
-      const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('images', f));
-      const res = await fetch('/api/upload/multiple', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'فشل الرفع');
-      setUploadedImages(prev => [...prev, ...data.urls]);
+      const urls = await compressAndUploadMultiple(Array.from(files), token);
+      if (urls.length === 0) throw new Error('فشل رفع الصور');
+      setUploadedImages(prev => [...prev, ...urls]);
     } catch (err: any) {
       setError(err.message || 'فشل رفع الصور');
     } finally {
@@ -143,8 +137,9 @@ export default function UserEditProperty() {
     if (!file) return;
     const token = localStorage.getItem('token');
     try {
+      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},

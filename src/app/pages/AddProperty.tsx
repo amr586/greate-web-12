@@ -6,13 +6,40 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const TYPES = ['شقة', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض', 'دوبلكس', 'بنتهاوس'];
-const DISTRICTS = ['سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب'];
+const DISTRICTS = ['سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب', 'أخرى'];
 
 interface UploadedImage {
   url: string;
   preview: string;
   uploading?: boolean;
   error?: string;
+}
+
+async function compressImage(file: File, maxW = 1280, quality = 0.82): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxW) {
+        height = Math.round((height * maxW) / width);
+        width = maxW;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => resolve(blob || file),
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
 }
 
 export default function AddProperty() {
@@ -24,6 +51,7 @@ export default function AddProperty() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [customDistrict, setCustomDistrict] = useState('');
   const [form, setForm] = useState({
     title: '', title_ar: '', description: '', description_ar: '',
     type: 'شقة', purpose: 'sale', price: '', area: '',
@@ -32,6 +60,33 @@ export default function AddProperty() {
   });
 
   const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
+
+  const uploadSingle = async (file: File, idx: number, startIdx: number) => {
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل الرفع');
+      setUploadedImages(prev => {
+        const updated = [...prev];
+        updated[startIdx + idx] = { ...updated[startIdx + idx], url: data.url, uploading: false };
+        return updated;
+      });
+    } catch {
+      setUploadedImages(prev => {
+        const updated = [...prev];
+        updated[startIdx + idx] = { ...updated[startIdx + idx], uploading: false, error: 'فشل الرفع' };
+        return updated;
+      });
+    }
+  };
 
   const handleFileSelect = async (files: FileList | null) => {
     if (!files) return;
@@ -45,47 +100,26 @@ export default function AddProperty() {
       uploading: true,
     }));
 
-    setUploadedImages(prev => [...prev, ...newImages]);
     const startIdx = uploadedImages.length;
+    setUploadedImages(prev => [...prev, ...newImages]);
 
-    for (let i = 0; i < toUpload.length; i++) {
-      const file = toUpload[i];
-      try {
-        const formData = new FormData();
-        formData.append('image', file);
-        const token = localStorage.getItem('token');
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'فشل الرفع');
-        setUploadedImages(prev => {
-          const updated = [...prev];
-          updated[startIdx + i] = { ...updated[startIdx + i], url: data.url, uploading: false };
-          return updated;
-        });
-      } catch (err: any) {
-        setUploadedImages(prev => {
-          const updated = [...prev];
-          updated[startIdx + i] = { ...updated[startIdx + i], uploading: false, error: 'فشل الرفع' };
-          return updated;
-        });
-      }
-    }
+    await Promise.all(toUpload.map((file, i) => uploadSingle(file, i, startIdx)));
   };
 
   const removeImage = (idx: number) => {
-    setUploadedImages(prev => {
-      const updated = prev.filter((_, i) => i !== idx);
-      return updated;
-    });
+    setUploadedImages(prev => prev.filter((_, i) => i !== idx));
   };
+
+  const getDistrict = () => form.district === 'أخرى' ? customDistrict.trim() : form.district;
 
   const handleSubmit = async () => {
     if (!user) return navigate('/login');
     setError('');
+    const district = getDistrict();
+    if (!district) {
+      setError('يرجى إدخال اسم المنطقة');
+      return;
+    }
     const readyImages = uploadedImages.filter(img => img.url && !img.uploading);
     if (readyImages.length === 0) {
       setError('يرجى رفع صورة واحدة على الأقل');
@@ -99,6 +133,7 @@ export default function AddProperty() {
     try {
       await api.addProperty({
         ...form,
+        district,
         price: Number(form.price),
         area: Number(form.area),
         rooms: Number(form.rooms) || 0,
@@ -125,7 +160,7 @@ export default function AddProperty() {
         <div className="flex gap-3">
           <button onClick={() => navigate('/properties')} className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">تصفح العقارات</button>
           <button onClick={() => {
-            setSuccess(false); setStep(1); setUploadedImages([]);
+            setSuccess(false); setStep(1); setUploadedImages([]); setCustomDistrict('');
             setForm({ title: '', title_ar: '', description: '', description_ar: '', type: 'شقة', purpose: 'sale', price: '', area: '', rooms: '', bathrooms: '', floor: '', district: 'سيدي جابر', city: 'الإسكندرية', address: '' });
           }}
             className="flex-1 bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold"
@@ -246,6 +281,14 @@ export default function AddProperty() {
                 >
                   {DISTRICTS.map(d => <option key={d}>{d}</option>)}
                 </select>
+                {form.district === 'أخرى' && (
+                  <input
+                    value={customDistrict}
+                    onChange={e => setCustomDistrict(e.target.value)}
+                    placeholder="اكتب اسم المنطقة..."
+                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d] transition-all mt-2"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">العنوان التفصيلي</label>
@@ -257,7 +300,6 @@ export default function AddProperty() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">صور العقار</label>
                 <p className="text-xs text-gray-400 mb-3">ارفع حتى 5 صور من جهازك (JPG, PNG, WebP - بحد أقصى 10 ميجا للصورة)</p>
 
-                {/* Upload area */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -286,7 +328,6 @@ export default function AddProperty() {
                   </button>
                 )}
 
-                {/* Image previews */}
                 {uploadedImages.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                     {uploadedImages.map((img, idx) => (

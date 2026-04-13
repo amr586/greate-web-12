@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Star, Upload, Loader2, ImagePlus } from 'lucide-react';
 import { api } from '../lib/api';
+import { compressImage } from '../lib/imageUtils';
 
 interface PropertyImage {
   id: number;
@@ -52,9 +53,10 @@ export default function PropertyImageManager({ propertyId }: Props) {
     setUploading(true);
     try {
       const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
-      for (const file of Array.from(files)) {
+      await Promise.all(Array.from(files).map(async (file, idx) => {
+        const compressed = await compressImage(file);
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
         const resp = await fetch(`${API_BASE}/api/upload`, {
           method: 'POST',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -62,10 +64,10 @@ export default function PropertyImageManager({ propertyId }: Props) {
         });
         const result = await resp.json();
         if (result.url) {
-          const newImg = await api.addPropertyImage(propertyId, result.url, images.length === 0);
+          const newImg = await api.addPropertyImage(propertyId, result.url, images.length === 0 && idx === 0);
           if (newImg) setImages(prev => [...prev, newImg as PropertyImage]);
         }
-      }
+      }));
     } catch { alert('خطأ في رفع الصور'); }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = '';
