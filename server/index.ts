@@ -238,6 +238,77 @@ async function runMigrations() {
       }
     }
 
+    // Seed featured properties
+    const featuredSeed = [
+      {
+        title: 'Suez Road Finished Apartment',
+        title_ar: 'شقة 3 غرف متشطبة بالكامل - طريق السويس',
+        description_ar: 'شقة 3 غرف متشطبة بالكامل بمقدم 750 ألف في أقوى لوكيشن على طريق السويس مباشرة جمب أول جامعة ومستشفى بريطانية في مصر. مبنية بنسبة إنشاءات 40% على أرض الواقع. للمعاينة والتفاصيل سجل بياناتك.',
+        type: 'apartment',
+        price: 3200000,
+        area: 140,
+        bedrooms: 3,
+        bathrooms: 2,
+        district: 'طريق السويس',
+        city: 'القاهرة',
+        address: 'طريق السويس مباشرة، جمب أول جامعة ومستشفى بريطانية في مصر',
+        contact_phone: '01100111618',
+        down_payment: '750,000 ج',
+        delivery_status: 'مبنية بنسبة إنشاءات 40%',
+        finishing_type: 'متشطبة بالكامل',
+        google_maps_url: 'https://maps.google.com/?q=طريق+السويس+القاهرة',
+        images: [
+          'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop',
+        ],
+      },
+      {
+        title: 'Fifth Settlement Villas & Apartments',
+        title_ar: 'فيلات وشقق استلام فوري - قلب التجمع الخامس',
+        description_ar: 'فيلات وشقق استلام فوري في قلب التجمع الخامس بمقدم 1.8 مليون وأقساط تصل إلى 10 سنوات. موقع فريد دقائق من التسعين الجنوبي ومطار القاهرة الدولي. فخامة وخصوصية وتصميم عصري مع واجهات مميزة.',
+        type: 'villa',
+        price: 18000000,
+        area: 300,
+        bedrooms: 4,
+        bathrooms: 3,
+        district: 'التجمع الخامس',
+        city: 'القاهرة',
+        address: 'قلب التجمع الخامس - دقائق من التسعين الجنوبي ومطار القاهرة',
+        contact_phone: '01100111618',
+        down_payment: '1,800,000 ج',
+        delivery_status: 'استلام فوري',
+        finishing_type: 'سوبر لوكس',
+        google_maps_url: 'https://maps.google.com/?q=التجمع+الخامس+القاهرة',
+        images: [
+          'https://images.unsplash.com/photo-1512917774080-9ac466fb0635?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop',
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=500&fit=crop',
+        ],
+      },
+    ];
+
+    for (const prop of featuredSeed) {
+      const exists = await query('SELECT id FROM properties WHERE title_ar=$1', [prop.title_ar]);
+      if (exists.rows.length === 0) {
+        const res = await query(
+          `INSERT INTO properties (title, title_ar, description_ar, type, price, area, bedrooms, bathrooms, district, city, address, contact_phone, down_payment, delivery_status, finishing_type, google_maps_url, status, is_featured, purpose)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'approved',true,'sale') RETURNING id`,
+          [prop.title, prop.title_ar, prop.description_ar, prop.type, prop.price, prop.area, prop.bedrooms, prop.bathrooms, prop.district, prop.city, prop.address, prop.contact_phone, prop.down_payment, prop.delivery_status, prop.finishing_type, prop.google_maps_url]
+        );
+        const propId = res.rows[0].id;
+        for (let i = 0; i < prop.images.length; i++) {
+          await query(
+            `INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,$3,$4)`,
+            [propId, prop.images[i], i === 0, i]
+          );
+        }
+        console.log(`[migration] seeded featured property: ${prop.title_ar}`);
+      }
+    }
+
     console.log('[migration] all tables and columns ready');
   } catch (err) {
     console.error('[migration] error:', err);

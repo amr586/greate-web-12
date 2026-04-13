@@ -229,7 +229,9 @@ export default function Home() {
                     </div>
                     {/* Details */}
                     <div className="p-5">
-                      <h3 className="font-black text-gray-900 text-lg mb-1 line-clamp-2">{prop.title_ar}</h3>
+                      <Link to={`/properties/${prop.id}`} className="block">
+                      <h3 className="font-black text-gray-900 text-lg mb-1 line-clamp-2 hover:text-[#005a7d] transition-colors cursor-pointer">{prop.title_ar}</h3>
+                      </Link>
                       <div className="flex items-center gap-1 text-[#005a7d] text-sm mb-3">
                         <MapPin size={13} className="text-[#bca056]" />
                         <span>{prop.district}{prop.city ? '، ' + prop.city : ''}</span>
@@ -257,7 +259,7 @@ export default function Home() {
                               className="flex items-center gap-1.5 bg-[#005a7d] hover:bg-[#004a68] text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow"
                             ><PhoneCall size={14} />اتصل</a>
                           )}
-                          <Link to={`/property/${prop.id}`}
+                          <Link to={`/properties/${prop.id}`}
                             className="flex items-center gap-1.5 bg-[#bca056] hover:bg-[#d7b777] text-[#005a7d] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow"
                           >التفاصيل <ChevronLeft size={14} /></Link>
                         </div>
