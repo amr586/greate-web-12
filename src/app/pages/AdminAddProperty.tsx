@@ -204,6 +204,14 @@ export default function AdminAddProperty() {
                   <option value="resale">ريسيل</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">نوع العقار</label>
+                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]">
+                  <option value="normal">عادي</option>
+                  <option value="featured">مميز</option>
+                </select>
+              </div>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">الوصف</label>

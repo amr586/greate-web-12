@@ -678,6 +678,14 @@ export default function SuperAdminDashboard() {
                       <option value="rent">إيجار</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">نوع العقار</label>
+                    <select value={editForm.is_featured ? 'featured' : 'normal'} onChange={e => setEditForm((p: any) => ({ ...p, is_featured: e.target.value === 'featured' }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]">
+                      <option value="normal">عادي</option>
+                      <option value="featured">مميز</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">رابط جوجل ماب</label>

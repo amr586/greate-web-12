@@ -38,6 +38,7 @@ export default function Properties() {
   const [purpose, setPurpose] = useState('الكل');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [featuredFilter, setFeaturedFilter] = useState('الكل');
   const [showFilters, setShowFilters] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
   const [showDistrictSuggestions, setShowDistrictSuggestions] = useState(false);
@@ -82,7 +83,8 @@ export default function Properties() {
     const matchPurpose = purpose === 'الكل' || (p.purpose || '') === purposeMap[purpose];
     const matchMin = !minPrice || Number(p.price) >= Number(minPrice);
     const matchMax = !maxPrice || Number(p.price) <= Number(maxPrice);
-    return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax;
+    const matchFeatured = featuredFilter === 'الكل' || (featuredFilter === 'مميز' ? Boolean(p.is_featured) : !p.is_featured);
+    return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
   });
 
   const filteredAreas = districtSearch.trim()
@@ -92,8 +94,8 @@ export default function Properties() {
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
 
-  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); };
-  const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice].filter(Boolean).length;
+  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setFeaturedFilter('الكل'); };
+  const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice, featuredFilter !== 'الكل' ? featuredFilter : ''].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20" dir="rtl">
@@ -182,6 +184,16 @@ export default function Properties() {
                         )}
                       </div>
                     )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">نوع الإعلان</label>
+                    <select value={featuredFilter} onChange={e => setFeaturedFilter(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    >
+                      <option value="الكل">الكل</option>
+                      <option value="مميز">مميز</option>
+                      <option value="عادي">عادي</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">السعر الأدنى (ج)</label>

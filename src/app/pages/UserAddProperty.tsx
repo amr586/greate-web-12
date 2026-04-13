@@ -44,6 +44,7 @@ export default function UserAddProperty() {
     has_basement: false,
     finishing_type: '',
     google_maps_url: '',
+    is_featured: false,
   });
 
   useEffect(() => {
@@ -208,6 +209,14 @@ export default function UserAddProperty() {
                   <option value="sale">بيع</option>
                   <option value="rent">إيجار</option>
                   <option value="resale">ريسيل</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">نوع الإعلان</label>
+                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
+                  <option value="normal">عادي</option>
+                  <option value="featured">مميز</option>
                 </select>
               </div>
             </div>
