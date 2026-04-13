@@ -119,6 +119,9 @@ export default function Home() {
                   className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded-lg backdrop-blur-sm border border-white/20 transition-all"
                 >{area}</button>
               ))}
+              <button onClick={() => navigate('/properties')}
+                className="px-3 py-1 bg-[#bca056]/80 hover:bg-[#bca056] text-white text-xs rounded-lg backdrop-blur-sm border border-[#bca056]/50 transition-all font-medium"
+              >مناطق أخرى ›</button>
             </div>
           </div>
         </div>

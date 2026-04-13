@@ -8,7 +8,17 @@ const COMPANY_PHONE = '01100111618';
 
 export const FEATURED: any[] = [];
 
-const DISTRICTS_FILTER = ['الكل', 'طريق السويس', 'التجمع الخامس', 'جولدن سكوير', 'العاصمة الإدارية', 'التجمع السادس'];
+const DISTRICTS_FILTER = ['الكل', 'طريق السويس', 'التجمع الخامس', 'جولدن سكوير', 'العاصمة الإدارية', 'التجمع السادس', 'مناطق أخرى'];
+const SEARCH_AREAS = [
+  'سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب',
+  'جليم', 'بولكلي', 'رشدي', 'المعمورة', 'أبو قير', 'العصافرة', 'السيوف', 'سيدي بشر', 'لوران',
+  'التجمع الخامس', 'التجمع السادس', 'العاصمة الإدارية', 'مصر الجديدة', 'جولدن سكوير', 'النرجس الجديدة',
+  'بيت الوطن', 'شمال الرحاب', 'مدينة نصر', 'هليوبوليس', 'طريق السويس', 'الرحاب',
+  'الشيخ زايد', 'أكتوبر السادس', 'الجيزة', 'الدقي', 'المهندسين', 'الزمالك', 'المعادي',
+  'التجمع الأول', 'التجمع الثالث', 'القاهرة الجديدة', 'الشروق', 'المقطم', 'حلوان',
+  'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'المنصورة', 'طنطا', 'الإسكندرية',
+  'القاهرة', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'الغردقة', 'شرم الشيخ',
+];
 const TYPES_FILTER = ['الكل', 'شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const PURPOSE_FILTER = ['الكل', 'بيع', 'إيجار', 'ريسيل'];
 
@@ -29,6 +39,8 @@ export default function Properties() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [showDistrictSuggestions, setShowDistrictSuggestions] = useState(false);
 
   const [dbProperties, setDbProperties] = useState<any[]>([]);
   const [loadingProps, setLoadingProps] = useState(true);
@@ -61,9 +73,11 @@ export default function Properties() {
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax;
   });
 
+  const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
+
   const filteredDb = dbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
-    const matchDistrict = district === 'الكل' || (p.district || '').includes(district);
+    const matchDistrict = !activeDistrict || activeDistrict === 'الكل' || (p.district || '').includes(activeDistrict);
     const matchType = type === 'الكل' || (p.type || '').includes(type);
     const matchPurpose = purpose === 'الكل' || (p.purpose || '') === purposeMap[purpose];
     const matchMin = !minPrice || Number(p.price) >= Number(minPrice);
@@ -71,11 +85,15 @@ export default function Properties() {
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax;
   });
 
+  const filteredAreas = districtSearch.trim()
+    ? SEARCH_AREAS.filter(a => a.includes(districtSearch.trim()))
+    : SEARCH_AREAS.slice(0, 10);
+
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
 
-  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); };
-  const activeCount = [search, district !== 'الكل' ? district : '', type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice].filter(Boolean).length;
+  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); };
+  const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20" dir="rtl">
@@ -137,11 +155,33 @@ export default function Properties() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">المنطقة</label>
-                    <select value={district} onChange={e => setDistrict(e.target.value)}
+                    <select value={district} onChange={e => { setDistrict(e.target.value); setDistrictSearch(''); setShowDistrictSuggestions(false); }}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
                     >
                       {DISTRICTS_FILTER.map(d => <option key={d}>{d}</option>)}
                     </select>
+                    {district === 'مناطق أخرى' && (
+                      <div className="mt-1.5 relative">
+                        <input
+                          value={districtSearch}
+                          onChange={e => { setDistrictSearch(e.target.value); setShowDistrictSuggestions(true); }}
+                          onFocus={() => setShowDistrictSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowDistrictSuggestions(false), 150)}
+                          placeholder="ابحث عن منطقة..."
+                          className="w-full border border-[#005a7d]/40 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                        />
+                        {showDistrictSuggestions && filteredAreas.length > 0 && (
+                          <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                            {filteredAreas.map(area => (
+                              <button key={area} type="button"
+                                onMouseDown={() => { setDistrictSearch(area); setShowDistrictSuggestions(false); }}
+                                className="w-full text-right px-3 py-2 text-sm text-gray-700 hover:bg-[#e6f2f5] hover:text-[#005a7d] transition-colors border-b border-gray-50 last:border-0"
+                              >{area}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">السعر الأدنى (ج)</label>
