@@ -49,20 +49,52 @@ router.post('/:propertyId/messages', authenticate, async (req: AuthRequest, res:
     const userResult = await query('SELECT name, role, sub_role FROM users WHERE id=$1', [req.user!.id]);
     const sender = userResult.rows[0];
 
-    // Notify admins when a user sends an inquiry
+    const propTitle = prop.rows[0].title_ar || prop.rows[0].title;
+    const propLink = `/properties/${propertyId}`;
+
+    // Notify all admin/staff when a user sends an inquiry
     if (!isAdmin) {
       try {
-        const adminsRes = await query("SELECT id FROM users WHERE role IN ('admin','superadmin') AND is_active=true");
-        const propTitle = prop.rows[0].title_ar || prop.rows[0].title;
+        const adminsRes = await query(
+          "SELECT id FROM users WHERE role IN ('admin','superadmin') AND is_active=true"
+        );
         for (const admin of adminsRes.rows) {
           await query(
-            `INSERT INTO notifications (user_id, type, title, message)
-             VALUES ($1,'property_inquiry','استفسار جديد عن عقار',$2)`,
-            [admin.id, `${sender.name} سأل عن: ${propTitle} - "${content.trim().substring(0, 80)}"`]
+            `INSERT INTO notifications (user_id, type, title, message, link)
+             VALUES ($1,'property_inquiry','استفسار جديد عن عقار',$2,$3)`,
+            [
+              admin.id,
+              `${sender.name} سأل عن: ${propTitle} - "${content.trim().substring(0, 80)}"`,
+              propLink,
+            ]
           );
         }
       } catch (notifyErr) {
         console.error('notify inquiry error:', notifyErr);
+      }
+    }
+
+    // Notify users when admin/staff replies in property chat
+    if (isAdmin) {
+      try {
+        const usersRes = await query(
+          `SELECT DISTINCT sender_id FROM property_chat_messages
+           WHERE property_id=$1 AND is_admin=false AND sender_id!=$2`,
+          [propertyId, req.user!.id]
+        );
+        for (const u of usersRes.rows) {
+          await query(
+            `INSERT INTO notifications (user_id, type, title, message, link)
+             VALUES ($1,'property_reply','رد جديد على استفسارك',$2,$3)`,
+            [
+              u.sender_id,
+              `${sender.name} رد على استفسارك في عقار: ${propTitle} - "${content.trim().substring(0, 80)}"`,
+              propLink,
+            ]
+          );
+        }
+      } catch (notifyErr) {
+        console.error('notify reply error:', notifyErr);
       }
     }
 

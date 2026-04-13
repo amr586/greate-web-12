@@ -3,12 +3,12 @@
 ## Project Overview
 A fullstack React + Node.js real estate platform for the Egyptian market. Features property browsing, search, AI-powered property assistant, image uploads, and multi-role dashboards. UI is primarily in Arabic (RTL).
 
-## Demo Accounts (password: Admin@2024)
-- **Super Admin**: superadmin@iskantek.com — full control
-- **Data Entry**: dataentry@iskantek.com — add, edit, delete properties
-- **Property Manager**: propmanager@iskantek.com — approve/reject user-submitted properties
-- **Analytics**: analytics@iskantek.com — view reports, revenue, and case stats
-- **Support**: support@iskantek.com — manage support tickets, see user phone numbers
+## Demo Accounts
+- **Super Admin**: admin@greatsociety.com / Admin@GreatSociety1
+- **Data Entry**: dataentry@greatsociety.com / DataEntry@123
+- **Property Manager**: propmanager@greatsociety.com / PropMgr@123
+- **Support**: support@greatsociety.com / Support@123
+- **Test User**: user@greatsociety.com / User@123
 
 ## Role System
 - `superadmin`: Full access (users, properties, payments, analytics)

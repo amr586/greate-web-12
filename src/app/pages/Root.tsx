@@ -26,10 +26,11 @@ export default function Root() {
   }, [location.pathname]);
 
   const noFooter = ['/login', '/register'].includes(location.pathname);
+  const noSplash = ['/login', '/register', '/forgot-password'].includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <SplashScreen visible={showSplash} />
+      <SplashScreen visible={showSplash && !noSplash} />
       <Navbar />
       <main className="flex-1">
         <AnimatePresence mode="wait">

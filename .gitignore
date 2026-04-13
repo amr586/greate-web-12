@@ -362,3 +362,15 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 .vercel
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Build output
+dist/
+
+# Uploaded files (user content)
+uploads/*
+!uploads/.gitkeep
