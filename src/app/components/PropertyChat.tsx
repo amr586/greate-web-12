@@ -31,11 +31,15 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
   };
 
   const loadMessages = async () => {
@@ -116,7 +120,7 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50" style={{ minHeight: 0 }}>
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50" style={{ minHeight: 0 }}>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-6 h-6 border-2 border-[#005a7d]/30 border-t-[#005a7d] rounded-full animate-spin" />

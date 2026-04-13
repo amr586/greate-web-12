@@ -30,6 +30,7 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sent, setSent] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstLoad = useRef(true);
 
@@ -45,7 +46,10 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
       return;
     }
     if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      }
     }
   }, [messages]);
 
@@ -108,7 +112,7 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
         <span className="text-purple-200 text-xs mr-auto">الرد خلال 24 ساعة</span>
       </div>
 
-      <div className="h-48 overflow-y-auto p-3 space-y-2 bg-gray-50">
+      <div ref={messagesContainerRef} className="h-48 overflow-y-auto p-3 space-y-2 bg-gray-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 size={20} className="animate-spin text-gray-400" />
