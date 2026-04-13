@@ -309,6 +309,26 @@ async function runMigrations() {
       }
     }
 
+    // Update property 2 (التجمع الخامس) images to be visually distinct from property 1
+    const oldVillaImg = 'https://images.unsplash.com/photo-1512917774080-9ac466fb0635?w=800&h=500&fit=crop';
+    const propTwoOld = await query(`SELECT id FROM property_images WHERE url = $1`, [oldVillaImg]);
+    if (propTwoOld.rows.length > 0) {
+      await query(`DELETE FROM property_images WHERE property_id = 2`);
+      const newVillaImages = [
+        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1560184897-ae75f418493e?w=800&h=500&fit=crop',
+      ];
+      for (let i = 0; i < newVillaImages.length; i++) {
+        await query(
+          `INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES (2, $1, $2, $3)`,
+          [newVillaImages[i], i === 0, i]
+        );
+      }
+      console.log('[migration] updated property 2 images to villa theme');
+    }
+
     console.log('[migration] all tables and columns ready');
   } catch (err) {
     console.error('[migration] error:', err);

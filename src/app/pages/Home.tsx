@@ -45,9 +45,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    api.getFeatured().then((data: any[]) => {
-      if (Array.isArray(data)) setFeaturedProps(data.slice(0, 2));
-    }).catch(() => {});
+    Promise.all([api.getProperty(1), api.getProperty(2)])
+      .then(([p1, p2]) => {
+        const results = [p1, p2].filter(Boolean);
+        setFeaturedProps(results);
+      })
+      .catch(() => {});
   }, []);
 
   const slideImg = (propId: number, dir: number, total: number) => {
