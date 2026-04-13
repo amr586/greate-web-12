@@ -87,7 +87,7 @@ export default function Properties() {
 
   const filteredAreas = districtSearch.trim()
     ? SEARCH_AREAS.filter(a => a.includes(districtSearch.trim()))
-    : SEARCH_AREAS.slice(0, 10);
+    : [];
 
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
