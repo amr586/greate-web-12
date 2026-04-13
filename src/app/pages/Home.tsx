@@ -272,6 +272,13 @@ export default function Home() {
                 );
               })}
             </div>
+            <div className="text-center mt-10">
+              <Link to="/properties"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] hover:from-[#004a68] hover:to-[#005a7d] text-white px-8 py-3 rounded-2xl text-base font-bold shadow-lg hover:shadow-xl transition-all"
+              >
+                عرض المزيد <ChevronLeft size={18} />
+              </Link>
+            </div>
           </div>
         </section>
       )}

@@ -860,15 +860,6 @@ export default function SubAdminDashboard() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">نوع العرض</label>
-                  <select value={editForm.is_featured ? 'featured' : 'normal'} onChange={e => setEditForm((p: any) => ({ ...p, is_featured: e.target.value === 'featured' }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
-                  >
-                    <option value="normal">عادي</option>
-                    <option value="featured">مميز</option>
-                  </select>
-                </div>
-                <div className="col-span-2">
                   <label className="block text-xs font-semibold text-gray-600 mb-1">رابط جوجل ماب</label>
                   <input
                     type="text"

@@ -203,14 +203,6 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]" dir="ltr" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">نوع العرض</label>
-                    <select value={reviewForm.is_featured ? 'featured' : 'normal'} onChange={e => setReviewForm((p: any) => ({ ...p, is_featured: e.target.value === 'featured' }))}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED]">
-                      <option value="normal">عادي</option>
-                      <option value="featured">مميز</option>
-                    </select>
-                  </div>
-                  <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">المقدم</label>
                     <input value={reviewForm.down_payment} onChange={e => setReviewForm((p: any) => ({ ...p, down_payment: e.target.value }))}
                       placeholder="مثال: مقدم 750,000 جنيه"
