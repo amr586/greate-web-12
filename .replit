@@ -106,3 +106,12 @@ externalPort = 8099
 deploymentTarget = "autoscale"
 build = ["pnpm", "run", "build"]
 run = ["bash", "-c", "NODE_ENV=production npx tsx server/index.ts"]
+
+[userenv]
+
+[userenv.production]
+JWT_SECRET = "bb0f2dafd91237a0a36ca7fe58931b0b242812cbba85ba80035ed387ac791617f181696986adb03dbeb487a35d7c7d8f6d630c12a8da2d53981b882104cc5aa2"
+NODE_ENV = "production"
+
+[userenv.development]
+JWT_SECRET = "bb0f2dafd91237a0a36ca7fe58931b0b242812cbba85ba80035ed387ac791617f181696986adb03dbeb487a35d7c7d8f6d630c12a8da2d53981b882104cc5aa2"

@@ -6,7 +6,9 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 const router = Router();
 
 function getOpenAI() {
-  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const apiKey =
+    process.env.AI_INTEGRATIONS_OPENAI_API_KEY ||
+    process.env.OPENAI_API_KEY;
   const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
   return new OpenAI({
     apiKey: apiKey || 'no-key',
