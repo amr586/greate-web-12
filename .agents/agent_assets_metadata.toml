@@ -5,4 +5,4 @@ generated = []
 id = "CUTZdUYdxZsBwcRAHe6fk"
 uri = "file://cloud-deploy/env-template.txt"
 type = "text"
-title = "Cloud Environment Variables — Great Society"
+title = "Cloud Setup Guide — Variables + Database"
