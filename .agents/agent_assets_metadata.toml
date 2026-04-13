@@ -1,5 +1,40 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "fikJw5Z6oAuWC8CzyjDtW"
+uri = "file://public/prop1_exterior.png"
+type = "image"
+title = "suez road apartment exterior"
+
+[[generated]]
+id = "NGXNs3DYf6LSlJ9DK9Pf5"
+uri = "file://public/prop1_interior.png"
+type = "image"
+title = "luxury apartment interior"
+
+[[generated]]
+id = "6-hzF6cDGjNv2V1qRFWno"
+uri = "file://public/prop1_floorplan.png"
+type = "image"
+title = "3 bedroom apartment floor plan 2D"
+
+[[generated]]
+id = "_MR0yQN1DpcT14VT6IJH0"
+uri = "file://public/prop2_exterior.png"
+type = "image"
+title = "fifth settlement villa compound"
+
+[[generated]]
+id = "zy1MBk9Dlpq9na_gLfHuz"
+uri = "file://public/prop2_interior.png"
+type = "image"
+title = "fifth settlement furnished apartment"
+
+[[generated]]
+id = "GtvgMoIQkNDy9_kgdad2D"
+uri = "file://public/prop2_floorplan.png"
+type = "image"
+title = "villa floor plan 2D blueprint"
 
 [[outputs]]
 id = "CUTZdUYdxZsBwcRAHe6fk"

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion, useInView, AnimatePresence } from 'motion/react';
-import { Search, Building2, TrendingUp, Users, Star, MapPin, CheckCircle, Phone, Shield, Award, Clock, ChevronRight } from 'lucide-react';
+import { Search, Building2, TrendingUp, Users, Star, MapPin, CheckCircle, Phone, Shield, Award, Clock, ChevronRight, ChevronLeft, Bed, Bath, Maximize2, LayoutGrid, PhoneCall } from 'lucide-react';
+import { api } from '../lib/api';
 
 function CountUp({ end, duration = 2 }: { end: number; duration?: number }) {
   const [count, setCount] = useState(0);
@@ -31,6 +32,9 @@ export default function Home() {
   const [heroSlide, setHeroSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('all');
+  const [featuredProps, setFeaturedProps] = useState<any[]>([]);
+  const [propSlide, setPropSlide] = useState<Record<number, number>>({});
+  const [showFloor, setShowFloor] = useState<Record<number, boolean>>({});
   const navigate = useNavigate();
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
@@ -39,6 +43,16 @@ export default function Home() {
     const t = setInterval(() => setHeroSlide(p => (p + 1) % SLIDES.length), 5000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    api.getFeatured().then((data: any[]) => {
+      if (Array.isArray(data)) setFeaturedProps(data.slice(0, 2));
+    }).catch(() => {});
+  }, []);
+
+  const slideImg = (propId: number, dir: number, total: number) => {
+    setPropSlide(prev => ({ ...prev, [propId]: ((prev[propId] ?? 0) + dir + total) % total }));
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +168,108 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* FEATURED PROPERTIES */}
+      {featuredProps.length > 0 && (
+        <section className="py-16 bg-gradient-to-b from-white to-[#f0f8fb]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-[#bca056] text-sm font-medium mb-1">عروض حصرية</motion.p>
+              <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-gray-900 text-3xl font-black">عقارات مميزة</motion.h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {featuredProps.map((prop, idx) => {
+                const imgs: string[] = prop.images?.length ? prop.images.map((i: any) => i.url) : ['/placeholder-property.jpg'];
+                const curImg = propSlide[prop.id] ?? 0;
+                const floorPlan = prop.floor_plan_image;
+                const isShowingFloor = showFloor[prop.id] ?? false;
+                const toggleFloor = () => setShowFloor(prev => ({ ...prev, [prop.id]: !prev[prop.id] }));
+                return (
+                  <motion.div key={prop.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.15 }}
+                    className="bg-white rounded-3xl shadow-xl overflow-hidden border border-[#e6f2f5] hover:shadow-2xl transition-shadow group"
+                  >
+                    {/* Image Carousel */}
+                    <div className="relative h-64 overflow-hidden bg-gray-100">
+                      <AnimatePresence mode="wait">
+                        <motion.img key={isShowingFloor ? 'floor' : curImg}
+                          src={isShowingFloor && floorPlan ? floorPlan : imgs[curImg]}
+                          alt={prop.title_ar}
+                          initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+                          className="w-full h-full object-cover"
+                          onError={e => { (e.target as HTMLImageElement).src = '/placeholder-property.jpg'; }}
+                        />
+                      </AnimatePresence>
+                      {/* Nav arrows */}
+                      {!isShowingFloor && imgs.length > 1 && (
+                        <>
+                          <button onClick={() => slideImg(prop.id, -1, imgs.length)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all"><ChevronRight size={16} /></button>
+                          <button onClick={() => slideImg(prop.id, 1, imgs.length)} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all"><ChevronLeft size={16} /></button>
+                        </>
+                      )}
+                      {/* Image dots */}
+                      {!isShowingFloor && imgs.length > 1 && (
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                          {imgs.map((_: string, i: number) => (
+                            <button key={i} onClick={() => setPropSlide(p => ({ ...p, [prop.id]: i }))}
+                              className={`rounded-full transition-all ${i === curImg ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50'}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {/* Featured badge */}
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        <span className="bg-[#bca056] text-[#005a7d] text-xs font-bold px-3 py-1 rounded-full shadow">⭐ مميز</span>
+                      </div>
+                      {/* Floor plan toggle */}
+                      {floorPlan && (
+                        <button onClick={toggleFloor}
+                          className={`absolute top-3 left-3 flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full shadow transition-all ${isShowingFloor ? 'bg-[#005a7d] text-white' : 'bg-white/90 text-[#005a7d] hover:bg-white'}`}
+                        ><LayoutGrid size={12} />{isShowingFloor ? 'الصور' : 'مسقط 2D'}</button>
+                      )}
+                    </div>
+                    {/* Details */}
+                    <div className="p-5">
+                      <h3 className="font-black text-gray-900 text-lg mb-1 line-clamp-2">{prop.title_ar}</h3>
+                      <div className="flex items-center gap-1 text-[#005a7d] text-sm mb-3">
+                        <MapPin size={13} className="text-[#bca056]" />
+                        <span>{prop.district}{prop.city ? '، ' + prop.city : ''}</span>
+                      </div>
+                      {prop.description_ar && (
+                        <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-3">{prop.description_ar}</p>
+                      )}
+                      {/* Specs row */}
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-4 flex-wrap">
+                        {prop.bedrooms > 0 && <span className="flex items-center gap-1"><Bed size={14} className="text-[#005a7d]" />{prop.bedrooms} غرف</span>}
+                        {prop.bathrooms > 0 && <span className="flex items-center gap-1"><Bath size={14} className="text-[#005a7d]" />{prop.bathrooms} حمام</span>}
+                        {prop.area > 0 && <span className="flex items-center gap-1"><Maximize2 size={14} className="text-[#005a7d]" />{prop.area} م²</span>}
+                        {prop.finishing_type && <span className="bg-[#e6f2f5] text-[#005a7d] px-2 py-0.5 rounded-lg text-xs font-medium">{prop.finishing_type}</span>}
+                      </div>
+                      {/* Price */}
+                      <div className="flex items-end justify-between flex-wrap gap-3">
+                        <div>
+                          <div className="text-[#005a7d] font-black text-2xl">{Number(prop.price).toLocaleString('ar-EG')} ج</div>
+                          {prop.down_payment && <div className="text-[#bca056] text-sm font-bold mt-0.5">مقدم {Number(prop.down_payment).toLocaleString('ar-EG')} ج</div>}
+                          {prop.delivery_status && <div className="text-gray-400 text-xs mt-0.5">{prop.delivery_status}</div>}
+                        </div>
+                        <div className="flex gap-2">
+                          {prop.contact_phone && (
+                            <a href={`tel:${prop.contact_phone}`}
+                              className="flex items-center gap-1.5 bg-[#005a7d] hover:bg-[#004a68] text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow"
+                            ><PhoneCall size={14} />اتصل</a>
+                          )}
+                          <Link to={`/property/${prop.id}`}
+                            className="flex items-center gap-1.5 bg-[#bca056] hover:bg-[#d7b777] text-[#005a7d] px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow"
+                          >التفاصيل <ChevronLeft size={14} /></Link>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* SERVICES */}
       <section className="py-16 bg-white">
