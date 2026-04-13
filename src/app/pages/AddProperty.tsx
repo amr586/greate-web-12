@@ -6,7 +6,17 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const TYPES = ['شقة', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض', 'دوبلكس', 'بنتهاوس'];
-const DISTRICTS = ['سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب', 'أخرى'];
+const DISTRICTS = ['سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب', 'مناطق أخرى'];
+const ALL_AREAS = [
+  'سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب',
+  'جليم', 'بولكلي', 'رشدي', 'المعمورة', 'أبو قير', 'العصافرة', 'السيوف', 'سيدي بشر', 'لوران',
+  'التجمع الخامس', 'التجمع السادس', 'العاصمة الإدارية', 'مصر الجديدة', 'جولدن سكوير', 'النرجس الجديدة',
+  'بيت الوطن', 'شمال الرحاب', 'مدينة نصر', 'هليوبوليس', 'طريق السويس', 'الرحاب',
+  'الشيخ زايد', 'أكتوبر السادس', 'الجيزة', 'الدقي', 'المهندسين', 'الزمالك', 'المعادي',
+  'التجمع الأول', 'التجمع الثالث', 'القاهرة الجديدة', 'الشروق', 'المقطم', 'حلوان',
+  'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'المنصورة', 'طنطا', 'الإسكندرية',
+  'القاهرة', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'الغردقة', 'شرم الشيخ',
+];
 
 interface UploadedImage {
   url: string;
@@ -52,6 +62,8 @@ export default function AddProperty() {
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [customDistrict, setCustomDistrict] = useState('');
+  const [areaSearch, setAreaSearch] = useState('');
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
   const [form, setForm] = useState({
     title: '', title_ar: '', description: '', description_ar: '',
     type: 'شقة', purpose: 'sale', price: '', area: '',
@@ -110,7 +122,11 @@ export default function AddProperty() {
     setUploadedImages(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const getDistrict = () => form.district === 'أخرى' ? customDistrict.trim() : form.district;
+  const getDistrict = () => form.district === 'مناطق أخرى' ? customDistrict.trim() : form.district;
+
+  const filteredAreas = areaSearch.trim()
+    ? ALL_AREAS.filter(a => a.includes(areaSearch.trim()))
+    : ALL_AREAS.slice(0, 12);
 
   const handleSubmit = async () => {
     if (!user) return navigate('/login');
@@ -160,7 +176,7 @@ export default function AddProperty() {
         <div className="flex gap-3">
           <button onClick={() => navigate('/properties')} className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">تصفح العقارات</button>
           <button onClick={() => {
-            setSuccess(false); setStep(1); setUploadedImages([]); setCustomDistrict('');
+            setSuccess(false); setStep(1); setUploadedImages([]); setCustomDistrict(''); setAreaSearch(''); setShowAreaSuggestions(false);
             setForm({ title: '', title_ar: '', description: '', description_ar: '', type: 'شقة', purpose: 'sale', price: '', area: '', rooms: '', bathrooms: '', floor: '', district: 'سيدي جابر', city: 'الإسكندرية', address: '' });
           }}
             className="flex-1 bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold"
@@ -276,18 +292,67 @@ export default function AddProperty() {
               <h2 className="text-xl font-black text-gray-900 mb-6">الصور والموقع</h2>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">الحي/المنطقة</label>
-                <select value={form.district} onChange={e => update('district', e.target.value)}
+                <select value={form.district} onChange={e => { update('district', e.target.value); setCustomDistrict(''); setAreaSearch(''); setShowAreaSuggestions(false); }}
                   className="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d]"
                 >
                   {DISTRICTS.map(d => <option key={d}>{d}</option>)}
                 </select>
-                {form.district === 'أخرى' && (
-                  <input
-                    value={customDistrict}
-                    onChange={e => setCustomDistrict(e.target.value)}
-                    placeholder="اكتب اسم المنطقة..."
-                    className="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d] transition-all mt-2"
-                  />
+
+                {form.district === 'مناطق أخرى' && (
+                  <div className="mt-2 relative">
+                    <label className="block text-xs font-medium text-[#005a7d] mb-1.5">ابحث عن منطقتك أو اكتب اسماً جديداً</label>
+                    <div className="relative">
+                      <input
+                        value={areaSearch}
+                        onChange={e => {
+                          setAreaSearch(e.target.value);
+                          setCustomDistrict(e.target.value);
+                          setShowAreaSuggestions(true);
+                        }}
+                        onFocus={() => setShowAreaSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowAreaSuggestions(false), 150)}
+                        placeholder="ابحث عن منطقة... مثال: التجمع، الزمالك..."
+                        className="w-full border-2 border-[#005a7d]/30 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d] transition-all pr-10"
+                      />
+                      <MapPin size={16} className="absolute top-1/2 -translate-y-1/2 right-3 text-[#005a7d]/50" />
+                    </div>
+
+                    {showAreaSuggestions && filteredAreas.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {filteredAreas.map(area => (
+                          <button
+                            key={area}
+                            type="button"
+                            onMouseDown={() => {
+                              setAreaSearch(area);
+                              setCustomDistrict(area);
+                              setShowAreaSuggestions(false);
+                            }}
+                            className="w-full text-right px-4 py-2.5 text-sm text-gray-700 hover:bg-[#e6f2f5] hover:text-[#005a7d] transition-colors border-b border-gray-50 last:border-0"
+                          >
+                            {area}
+                          </button>
+                        ))}
+                        {areaSearch.trim() && !ALL_AREAS.includes(areaSearch.trim()) && (
+                          <button
+                            type="button"
+                            onMouseDown={() => {
+                              setCustomDistrict(areaSearch.trim());
+                              setShowAreaSuggestions(false);
+                            }}
+                            className="w-full text-right px-4 py-2.5 text-sm text-[#005a7d] font-semibold hover:bg-[#e6f2f5] transition-colors flex items-center gap-2"
+                          >
+                            <span className="text-[#005a7d]">+</span>
+                            إضافة "{areaSearch.trim()}" كمنطقة جديدة
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {customDistrict && (
+                      <p className="text-xs text-green-600 mt-1.5 font-medium">المنطقة المختارة: {customDistrict}</p>
+                    )}
+                  </div>
                 )}
               </div>
               <div>
