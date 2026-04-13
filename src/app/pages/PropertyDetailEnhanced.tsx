@@ -31,6 +31,7 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
   const [loading, setLoading] = useState(true);
   const [sent, setSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
     loadMessages();
@@ -39,7 +40,13 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
   }, [propertyId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const loadMessages = async () => {

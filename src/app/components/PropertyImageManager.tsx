@@ -14,7 +14,7 @@ interface Props {
   propertyId: number;
 }
 
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+const API_BASE = '';
 
 export default function PropertyImageManager({ propertyId }: Props) {
   const [images, setImages] = useState<PropertyImage[]>([]);
