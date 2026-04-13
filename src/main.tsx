@@ -19,6 +19,7 @@ import PaymentPage from './app/pages/PaymentPage';
 import AdminNotifications from './app/pages/AdminNotifications';
 import { SavedProperties } from './app/pages/SavedProperties';
 import ForgotPassword from './app/pages/ForgotPassword';
+import UserEditProperty from './app/pages/UserEditProperty';
 import './styles/globals.css';
 
 const router = createBrowserRouter([
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: 'admin/add-property', element: <AdminAddProperty /> },
       { path: 'sub-admin', element: <SubAdminDashboard /> },
       { path: 'superadmin', element: <SuperAdminDashboard /> },
+      { path: 'edit-property/:id', element: <UserEditProperty /> },
       { path: 'payment/:id', element: <PaymentPage /> },
     ],
   },
