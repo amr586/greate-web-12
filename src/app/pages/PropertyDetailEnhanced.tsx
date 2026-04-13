@@ -23,6 +23,25 @@ function formatDetailPrice(price: any) {
   return `${numeric.toLocaleString()} جنيه`;
 }
 
+function getPropertyImage(property: any) {
+  if (property?.primary_image) return property.primary_image;
+  if (Array.isArray(property?.images)) {
+    const image = property.images.find((img: any) => img?.url || typeof img === 'string');
+    if (typeof image === 'string') return image;
+    if (image?.url) return image.url;
+  }
+  return DEFAULT_IMAGE;
+}
+
+function getRecommendationScore(current: any, candidate: any) {
+  let score = 0;
+  if (candidate.is_featured) score += 4;
+  if (candidate.district && current.district && candidate.district === current.district) score += 3;
+  if (candidate.type && current.type && candidate.type === current.type) score += 2;
+  if (candidate.purpose && current.purpose && candidate.purpose === current.purpose) score += 1;
+  return score;
+}
+
 function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTitle: string }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
@@ -171,6 +190,7 @@ export function PropertyDetailEnhanced() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [property, setProperty] = useState<any>(null);
+  const [recommendedProperty, setRecommendedProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
@@ -178,6 +198,7 @@ export function PropertyDetailEnhanced() {
 
   useEffect(() => {
     if (!id) return;
+    setRecommendedProperty(null);
     api.getProperty(Number(id))
       .then(data => {
         setProperty(data);
@@ -190,6 +211,25 @@ export function PropertyDetailEnhanced() {
       .catch(() => navigate('/properties'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!property?.id) return;
+    let cancelled = false;
+    api.getProperties({ limit: 12 })
+      .then(data => {
+        if (cancelled) return;
+        const list = (data?.properties || data || [])
+          .filter((item: any) => item.id !== property.id && item.status !== 'sold');
+        if (list.length === 0) {
+          setRecommendedProperty(null);
+          return;
+        }
+        const [bestMatch] = [...list].sort((a: any, b: any) => getRecommendationScore(property, b) - getRecommendationScore(property, a));
+        setRecommendedProperty(bestMatch);
+      })
+      .catch(() => setRecommendedProperty(null));
+    return () => { cancelled = true; };
+  }, [property]);
 
   const toggleSave = async () => {
     if (!user) { navigate('/login'); return; }
@@ -494,6 +534,98 @@ export function PropertyDetailEnhanced() {
             </motion.div>
           </div>
         </div>
+
+        {recommendedProperty && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-8 bg-white rounded-2xl shadow-sm border border-purple-100 overflow-hidden"
+          >
+            <div className="p-5 border-b border-purple-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold text-[#7C3AED] mb-1">توصية لك</p>
+                <h3 className="text-xl font-black text-gray-900">عقار آخر قد يعجبك</h3>
+              </div>
+              <Link to="/properties" className="text-sm font-bold text-[#7C3AED] hover:text-[#6D28D9]">
+                عرض كل العقارات
+              </Link>
+            </div>
+            <Link to={`/properties/${recommendedProperty.id}`} className="grid grid-cols-1 md:grid-cols-[320px_1fr] group">
+              <div className="relative h-56 md:h-full min-h-56 overflow-hidden">
+                <img
+                  src={getPropertyImage(recommendedProperty)}
+                  alt={recommendedProperty.title_ar || recommendedProperty.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }}
+                />
+                <div className="absolute top-3 right-3 flex gap-2">
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                    recommendedProperty.purpose === 'sale'
+                      ? 'bg-[#7C3AED] text-white'
+                      : recommendedProperty.purpose === 'resale'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-[#005a7d] text-white'
+                  }`}>
+                    {recommendedProperty.purpose === 'sale' ? 'للبيع' : recommendedProperty.purpose === 'rent' ? 'للإيجار' : 'ريسيل'}
+                  </span>
+                  {recommendedProperty.is_featured && (
+                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white">
+                      مميز
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {recommendedProperty.type && (
+                      <span className="px-3 py-1 rounded-lg text-xs font-medium bg-purple-50 text-[#7C3AED]">
+                        {recommendedProperty.type}
+                      </span>
+                    )}
+                    <span className="text-[#7C3AED] font-black text-lg">
+                      {formatDetailPrice(recommendedProperty.price)}
+                    </span>
+                  </div>
+                  <h4 className="text-lg font-black text-gray-900 mb-2 group-hover:text-[#7C3AED] transition-colors">
+                    {recommendedProperty.title_ar || recommendedProperty.title}
+                  </h4>
+                  {recommendedProperty.district && (
+                    <div className="flex items-center gap-1 text-gray-500 text-sm mb-4">
+                      <MapPin size={14} className="text-[#7C3AED]" />
+                      <span>{recommendedProperty.district}{recommendedProperty.address ? ` - ${recommendedProperty.address}` : ''}</span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {recommendedProperty.area && (
+                      <div className="bg-purple-50 rounded-xl p-3 text-center">
+                        <Maximize size={16} className="text-[#7C3AED] mx-auto mb-1" />
+                        <div className="font-bold text-gray-900 text-xs">{Number(recommendedProperty.area)} م²</div>
+                      </div>
+                    )}
+                    {(recommendedProperty.bedrooms || recommendedProperty.rooms) > 0 && (
+                      <div className="bg-purple-50 rounded-xl p-3 text-center">
+                        <Bed size={16} className="text-[#7C3AED] mx-auto mb-1" />
+                        <div className="font-bold text-gray-900 text-xs">{recommendedProperty.bedrooms || recommendedProperty.rooms} غرف</div>
+                      </div>
+                    )}
+                    {recommendedProperty.bathrooms > 0 && (
+                      <div className="bg-purple-50 rounded-xl p-3 text-center">
+                        <Bath size={16} className="text-[#7C3AED] mx-auto mb-1" />
+                        <div className="font-bold text-gray-900 text-xs">{recommendedProperty.bathrooms} حمام</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="inline-flex items-center gap-2 text-[#7C3AED] font-bold text-sm">
+                  عرض التفاصيل
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        )}
       </div>
     </div>
   );
