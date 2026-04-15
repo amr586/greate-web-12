@@ -35,10 +35,10 @@ async function request(path: string, options: RequestInit = {}) {
     return data;
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      throw new Error('انتهت مهلة الاتصال - تأكد من تشغيل الخادم: npm run dev');
+      throw new Error('انتهت مهلة الاتصال - تحقق من الاتصال بالخادم');
     }
     if (err instanceof TypeError && err.message.includes('fetch')) {
-      throw new Error('لا يمكن الاتصال بالخادم - تأكد من تشغيل: npm run dev');
+      throw new Error('لا يمكن الاتصال بالخادم');
     }
     throw err;
   }
@@ -54,15 +54,17 @@ export const api = {
   },
   register: (data: { name: string; email: string; phone: string; password: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-  sendOTP: (data: { name: string; email: string; phone: string; password: string; otpMethod?: string }) =>
+sendOTP: (data: { name: string; email: string; phone: string; password: string; otpMethod?: string }) =>
     request('/auth/send-otp', { method: 'POST', body: JSON.stringify(data) }),
-  verifyOTP: (email: string, otp: string) =>
-    request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
-  verifyLoginOTP: (email: string, otp: string, rememberDevice?: boolean, deviceName?: string) =>
-    request('/auth/verify-login-otp', { 
-      method: 'POST', 
-      body: JSON.stringify({ email, otp, rememberDevice, deviceName }) 
-    }),
+  resendRegisterOTP: (email: string) =>
+    request('/auth/resend-register-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyLoginOTP: (email: string, otp: string, rememberMe?: boolean) => {
+    const deviceId = getDeviceId();
+    return request('/auth/verify-login-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp, rememberDevice: rememberMe, deviceId })
+    });
+  },
   resendLoginOTP: (email: string) =>
     request('/auth/resend-login-otp', { method: 'POST', body: JSON.stringify({ email }) }),
   sendForgotPassword: (email: string) =>
@@ -78,7 +80,7 @@ export const api = {
     request('/auth/change-password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
 
   sendEmailVerification: () => request('/auth/send-email-verification', { method: 'POST' }),
-  verifyEmail: (otp: string) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ otp }) }),
+  verifyEmail: (email: string, otp: string) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email, otp }) }),
   getTrustedDevices: () => request('/auth/trusted-devices'),
   removeTrustedDevice: (deviceId: string) => request(`/auth/trusted-devices/${deviceId}`, { method: 'DELETE' }),
 

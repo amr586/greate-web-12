@@ -17,6 +17,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [devOtp, setDevOtp] = useState<string | undefined>();
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleCheckEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,9 @@ export default function ForgotPassword() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
+      
+      // Auto-send OTP after email verification
+      await sendOTP();
       setStep('otp');
     } catch (err: any) {
       setError(err.message || 'خطأ في التحقق من البريد الإلكتروني');
@@ -39,8 +43,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendOTP = async () => {
     setError('');
     setLoading(true);
     try {
@@ -52,6 +55,7 @@ export default function ForgotPassword() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setDevOtp(data.devOtp);
+      setOtpSent(true);
     } catch (err: any) {
       setError(err.message || 'خطأ في إرسال رمز التحقق');
     } finally {
@@ -127,7 +131,7 @@ export default function ForgotPassword() {
             <p className="text-[#bca056] text-sm mt-1">
               {step === 'email' && 'أدخل بريدك الإلكتروني للتحقق من حسابك'}
               {step === 'otp' && 'أدخل رمز التحقق المرسل إلى بريدك'}
-              {(step === 'newPassword' || step === 'otp' && stepIndex[step] >= stepIndex.newPassword) && 'أدخل كلمة مرورك الجديدة'}
+              {step === 'newPassword' && 'أدخل كلمة مرورك الجديدة'}
               {step === 'success' && 'تم تغيير كلمة المرور بنجاح'}
             </p>
           </div>
@@ -184,14 +188,16 @@ export default function ForgotPassword() {
 
               {step === 'otp' && (
                 <motion.form key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleVerifyOTP} className="space-y-4" noValidate>
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                    <p className="text-blue-600 text-sm">
-                      تم إرسال رمز التحقق إلى <strong>{email}</strong>
-                    </p>
-                    {devOtp && (
-                      <p className="text-xs text-blue-500 mt-2">رمز التطوير: {devOtp}</p>
-                    )}
-                  </div>
+                  {otpSent && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                      <p className="text-blue-600 text-sm">
+                        تم إرسال رمز التحقق إلى <strong>{email}</strong>
+                      </p>
+                      {devOtp && (
+                        <p className="text-xs text-blue-500 mt-2">رمز التطوير: {devOtp}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">رمز التحقق</label>
@@ -222,14 +228,15 @@ export default function ForgotPassword() {
 
                   <button 
                     type="button" 
-                    onClick={handleSendOTP}
+                    onClick={sendOTP}
+                    disabled={loading}
                     className="w-full text-gray-500 text-sm hover:text-[#005a7d] transition-colors"
                   >
                     إعادة إرسال الرمز
                   </button>
 
-                  <button type="button" onClick={() => { setStep('email'); setError(''); }} className="w-full text-gray-400 text-sm hover:text-gray-600 transition-colors">
-                    ← تغيير البريد الإلكتروني
+                  <button type="button" onClick={() => { setStep('email'); setError(''); setOtpSent(false); }} className="w-full text-gray-400 text-sm hover:text-gray-600 transition-colors">
+                    ← تغيير البريد الإلكت��ون��
                   </button>
                 </motion.form>
               )}

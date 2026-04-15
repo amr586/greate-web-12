@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { motion } from 'motion/react';
-import { Building2, Mail, Lock, Eye, EyeOff, User, Phone, AlertCircle, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Building2, Mail, Lock, Eye, EyeOff, User, Phone, AlertCircle, ArrowRight, CheckCircle } from 'lucide-react';
 import { api } from '../lib/api';
+
+type Step = 'register' | 'verify' | 'success';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -11,6 +13,9 @@ export default function Register() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [step, setStep] = useState<Step>('register');
+  const [otp, setOtp] = useState('');
+  const [devOtp, setDevOtp] = useState<string | undefined>();
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -42,12 +47,53 @@ export default function Register() {
         phone: form.phone,
         password: form.password,
       });
-      localStorage.setItem('token', data.token);
-      window.location.href = '/';
+      
+      if (data.emailVerificationPending) {
+        setDevOtp(data.devOtp);
+        setStep('verify');
+      } else {
+        localStorage.setItem('token', data.token);
+        setStep('success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
+      }
     } catch (err: any) {
       setError(err.message || 'خطأ في إنشاء الحساب');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!otp.trim()) return setError('رمز التحقق مطلوب');
+
+    setLoading(true);
+    try {
+      const data = await api.verifyEmail(form.email, otp);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      setStep('success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'رمز التحقق غير صحيح');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    try {
+      const data = await api.resendRegisterOTP(form.email);
+      setDevOtp(data.devOtp);
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -75,7 +121,11 @@ export default function Register() {
               <Building2 size={32} className="text-white" />
             </motion.div>
             <h1 className="text-white font-black text-2xl">GREAT SOCIETY</h1>
-            <p className="text-white/80 text-sm mt-1">إنشاء حساب جديد</p>
+            <p className="text-white/80 text-sm mt-1">
+              {step === 'register' && 'إنشاء حساب جديد'}
+              {step === 'verify' && 'التحقق من البريد الإلكتروني'}
+              {step === 'success' && 'تم إنشاء الحساب'}
+            </p>
           </div>
 
           <div className="px-8 py-8">
@@ -89,129 +139,125 @@ export default function Register() {
               </motion.div>
             )}
 
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">الاسم الكامل</label>
-                <div className="relative">
-                  <User size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="أدخل الاسم الكامل"
-                    className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
-                  />
-                </div>
-                {fieldErrors.name && <p className="text-red-600 text-xs mt-1">{fieldErrors.name}</p>}
-              </div>
+            <AnimatePresence mode="wait">
+              {step === 'success' && (
+                <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }} className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle size={40} className="text-green-600" />
+                  </motion.div>
+                  <p className="text-gray-700 font-semibold text-lg">تم إنشاء الحساب بنجاح!</p>
+                  <p className="text-gray-500 text-sm mt-2">جارٍ التوجيه للصفحة الرئيسية...</p>
+                </motion.div>
+              )}
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">البريد الإلكتروني</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                    placeholder="أدخل البريد الإلكتروني"
-                    className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
-                  />
-                </div>
-                {fieldErrors.email && <p className="text-red-600 text-xs mt-1">{fieldErrors.email}</p>}
-              </div>
+              {step === 'verify' && (
+                <motion.div key="verify" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-center">
+                    <p className="text-blue-700 font-semibold mb-2">التحقق من البريد الإلكتروني</p>
+                    <p className="text-blue-600 text-sm">
+                      تم إرسال رمز التحقق إلى <strong>{form.email}</strong>
+                    </p>
+                    {devOtp && (
+                      <p className="text-xs text-blue-500 mt-2">Dev OTP: {devOtp}</p>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">رقم الهاتف</label>
-                <div className="relative">
-                  <Phone size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="01xxxxxxxxx"
-                    className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
-                  />
-                </div>
-                {fieldErrors.phone && <p className="text-red-600 text-xs mt-1">{fieldErrors.phone}</p>}
-              </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">رمز التحقق</label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="######"
+                      maxLength={6}
+                      className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-mono outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">كلمة المرور</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                    placeholder="كلمة المرور"
-                    className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-10 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
-                  />
-                  <button
+                  <motion.button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={handleVerifyEmail}
+                    disabled={loading || otp.length < 6}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-[#bca056]/20 hover:shadow-[#bca056]/30 transition-all disabled:opacity-70 mt-2"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {loading ? 'جاري التحقق...' : 'تحقق من البريد الإلكتروني'}
+                  </motion.button>
+
+                  <button type="button" onClick={handleResend} className="w-full text-gray-500 text-sm hover:text-[#005a7d] transition-colors">
+                    إعادة إرسال الرمز
                   </button>
-                </div>
-                {fieldErrors.password && <p className="text-red-600 text-xs mt-1">{fieldErrors.password}</p>}
+                </motion.div>
+              )}
+
+              {step === 'register' && (
+                <motion.form key="register" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleRegister} className="space-y-4" noValidate>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">الاسم بالكامل</label>
+                    <div className="relative">
+                      <User size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="أدخل الاسم" className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056]" />
+                    </div>
+                    {fieldErrors.name && <p className="text-red-600 text-xs mt-1">{fieldErrors.name}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">البريد الإلكتروني</label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="example@email.com" className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056]" />
+                    </div>
+                    {fieldErrors.email && <p className="text-red-600 text-xs mt-1">{fieldErrors.email}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">رقم الهاتف</label>
+                    <div className="relative">
+                      <Phone size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type="tel" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="01xxxxxxxxx" className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:border-[#bca056]" />
+                    </div>
+                    {fieldErrors.phone && <p className="text-red-600 text-xs mt-1">{fieldErrors.phone}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">كلمة المرور</label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="كلمة المرور" className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-10 py-3 text-sm outline-none focus:border-[#bca056]" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {fieldErrors.password && <p className="text-red-600 text-xs mt-1">{fieldErrors.password}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">تأكيد كلمة المرور</label>
+                    <div className="relative">
+                      <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input type={showConfirm ? 'text' : 'password'} value={form.confirmPassword} onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))} placeholder="أعد كلمة المرور" className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-10 py-3 text-sm outline-none focus:border-[#bca056]" />
+                      <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {fieldErrors.confirmPassword && <p className="text-red-600 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                  </div>
+
+                  <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="w-full bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white py-3.5 rounded-xl text-sm font-bold shadow-lg mt-4">
+                    {loading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
+                  </motion.button>
+                </motion.form>
+              )}
+            </AnimatePresence>
+
+            {step === 'register' && (
+              <div className="mt-6 text-center">
+                <p className="text-gray-500 text-sm">
+                 هل لديك حساب بالفعل？ <Link to="/login" className="text-[#bca056] font-semibold"> تسجيل الدخول</Link>
+                </p>
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">تأكيد كلمة المرور</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={form.confirmPassword}
-                    onChange={e => setForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                    placeholder="أعد كتابة كلمة المرور"
-                    className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-10 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-                {fieldErrors.confirmPassword && <p className="text-red-600 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
-              </div>
-
-              <motion.button
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                className="w-full bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-[#bca056]/20 hover:shadow-[#bca056]/30 transition-all disabled:opacity-70 mt-4"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    جاري إنشاء الحساب...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    إنشاء الحساب
-                    <ArrowRight size={16} />
-                  </span>
-                )}
-              </motion.button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-500 text-sm">
-                هل لديك حساب بالفعل؟{' '}
-                <Link to="/login" className="text-[#bca056] font-semibold hover:text-[#a68a47] transition-colors">تسجيل الدخول</Link>
-              </p>
-
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 pt-4 border-t border-gray-200">
-                <a href="https://drive.google.com/file/d/1ZMjlODUmm0o7C6zf00iPyelXDH4gFTy0/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="hover:text-[#005a7d] transition-colors">سياسة الخصوصية</a>
-                <span className="text-gray-300">|</span>
-                <a href="https://drive.google.com/file/d/1sgHp8G35p6LDGmFQx_La2IZ54gjCTVyu/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="hover:text-[#005a7d] transition-colors">الشروط والأحكام</a>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </motion.div>
