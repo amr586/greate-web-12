@@ -1,19 +1,17 @@
 services:
   - type: web
-    name: great-society-realestate
+    name: great-society-api
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: npm run start:server
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        sync: false
+      - key: PORT
+        value: "3001"
       - key: JWT_SECRET
         generateValue: true
-      - key: OPENAI_API_KEY
-        sync: false
 
 databases:
   - name: great-society-db
