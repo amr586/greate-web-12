@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Building2, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle } from 'lucide-react';
+import { api } from '../lib/api';
 
-type Step = 'email' | 'newPassword' | 'success';
+type Step = 'email' | 'otp' | 'newPassword' | 'success';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [devOtp, setDevOtp] = useState<string | undefined>();
 
   const handleCheckEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,9 +31,51 @@ export default function ForgotPassword() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      setStep('newPassword');
+      setStep('otp');
     } catch (err: any) {
       setError(err.message || 'خطأ في التحقق من البريد الإلكتروني');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setDevOtp(data.devOtp);
+    } catch (err: any) {
+      setError(err.message || 'خطأ في إرسال رمز التحقق');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!otp.trim()) return setError('رمز التحقق مطلوب');
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/verify-forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setStep('newPassword');
+    } catch (err: any) {
+      setError(err.message || 'رمز التحقق غير صحيح');
     } finally {
       setLoading(false);
     }
@@ -47,13 +92,7 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/auth/reset-password-direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      const response = await api.resetPassword(email, otp, newPassword);
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'خطأ في تعيين كلمة المرور');
@@ -62,7 +101,7 @@ export default function ForgotPassword() {
     }
   };
 
-  const stepIndex = { email: 0, newPassword: 1, success: 2 };
+  const stepIndex = { email: 0, otp: 1, newPassword: 2, success: 3 };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-white to-[#e6f2f5] flex items-center justify-center px-4 py-20" dir="rtl">
@@ -87,19 +126,10 @@ export default function ForgotPassword() {
             </h1>
             <p className="text-[#bca056] text-sm mt-1">
               {step === 'email' && 'أدخل بريدك الإلكتروني للتحقق من حسابك'}
-              {step === 'newPassword' && 'أدخل كلمة مرورك الجديدة'}
+              {step === 'otp' && 'أدخل رمز التحقق المرسل إلى بريدك'}
+              {(step === 'newPassword' || step === 'otp' && stepIndex[step] >= stepIndex.newPassword) && 'أدخل كلمة مرورك الجديدة'}
               {step === 'success' && 'تم تغيير كلمة المرور بنجاح'}
             </p>
-            <div className="flex items-center justify-center gap-1 mt-4">
-              {(['email', 'newPassword', 'success'] as const).map((s, i) => (
-                <div
-                  key={i}
-                  className={`h-2 rounded-full transition-all ${
-                    stepIndex[step] >= i ? 'w-6 bg-white' : 'w-2 bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
           </div>
 
           <div className="px-8 py-6">
@@ -149,6 +179,58 @@ export default function ForgotPassword() {
                       </span>
                     )}
                   </motion.button>
+                </motion.form>
+              )}
+
+              {step === 'otp' && (
+                <motion.form key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleVerifyOTP} className="space-y-4" noValidate>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                    <p className="text-blue-600 text-sm">
+                      تم إرسال رمز التحقق إلى <strong>{email}</strong>
+                    </p>
+                    {devOtp && (
+                      <p className="text-xs text-blue-500 mt-2">رمز التطوير: {devOtp}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">رمز التحقق</label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="######"
+                      maxLength={6}
+                      className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-mono outline-none focus:border-[#005a7d] focus:shadow-[0_0_0_4px_rgba(0,90,125,0.1)] transition-all"
+                    />
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={loading || otp.length < 6}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className="w-full bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-[#005a7d]/20 hover:shadow-[#005a7d]/30 transition-all disabled:opacity-70 mt-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        جاري التحقق...
+                      </span>
+                    ) : 'تحقق من الرمز'}
+                  </motion.button>
+
+                  <button 
+                    type="button" 
+                    onClick={handleSendOTP}
+                    className="w-full text-gray-500 text-sm hover:text-[#005a7d] transition-colors"
+                  >
+                    إعادة إرسال الرمز
+                  </button>
+
+                  <button type="button" onClick={() => { setStep('email'); setError(''); }} className="w-full text-gray-400 text-sm hover:text-gray-600 transition-colors">
+                    ← تغيير البريد الإلكتروني
+                  </button>
                 </motion.form>
               )}
 
@@ -203,10 +285,6 @@ export default function ForgotPassword() {
                       </span>
                     ) : 'تعيين كلمة المرور الجديدة'}
                   </motion.button>
-
-                  <button type="button" onClick={() => { setStep('email'); setError(''); }} className="w-full text-gray-400 text-sm hover:text-gray-600 transition-colors mt-1">
-                    ← تغيير البريد الإلكتروني
-                  </button>
                 </motion.form>
               )}
 

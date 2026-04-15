@@ -122,7 +122,7 @@ export default function Home() {
                 <option value="rent">للإيجار</option>
               </select>
               <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="ابحث بالموقع أو نوع العقار..."
+                placeholder="ابحث بالموقع أو نوع العقار أو بالسعر..."
                 className="flex-1 border-0 outline-none text-sm px-3 py-2.5 text-gray-800 bg-transparent placeholder:text-gray-400"
               />
               <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-[#005a7d]/30 transition-shadow">

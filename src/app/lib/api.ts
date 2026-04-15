@@ -6,6 +6,15 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+function getDeviceId(): string {
+  let deviceId = localStorage.getItem('device_id');
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem('device_id', deviceId);
+  }
+  return deviceId;
+}
+
 async function request(path: string, options: RequestInit = {}) {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -16,7 +25,7 @@ async function request(path: string, options: RequestInit = {}) {
   
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const timeout = setTimeout(() => controller.abort(), 5000);
     
     const res = await fetch(BASE_URL + path, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
@@ -36,19 +45,26 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  // Auth
-  login: (emailOrPhone: string, password: string) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ emailOrPhone, password }) }),
+  login: async (emailOrPhone: string, password: string) => {
+    const deviceId = getDeviceId();
+    return request('/auth/login', { 
+      method: 'POST', 
+      body: JSON.stringify({ emailOrPhone, password, deviceId }) 
+    });
+  },
   register: (data: { name: string; email: string; phone: string; password: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   sendOTP: (data: { name: string; email: string; phone: string; password: string; otpMethod?: string }) =>
     request('/auth/send-otp', { method: 'POST', body: JSON.stringify(data) }),
   verifyOTP: (email: string, otp: string) =>
     request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
-  sendLoginOTP: (emailOrPhone: string, password: string) =>
-    request('/auth/send-login-otp', { method: 'POST', body: JSON.stringify({ emailOrPhone, password }) }),
-  verifyLoginOTP: (email: string, otp: string) =>
-    request('/auth/verify-login-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  verifyLoginOTP: (email: string, otp: string, rememberDevice?: boolean, deviceName?: string) =>
+    request('/auth/verify-login-otp', { 
+      method: 'POST', 
+      body: JSON.stringify({ email, otp, rememberDevice, deviceName }) 
+    }),
+  resendLoginOTP: (email: string) =>
+    request('/auth/resend-login-otp', { method: 'POST', body: JSON.stringify({ email }) }),
   sendForgotPassword: (email: string) =>
     request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyForgotPassword: (email: string, otp: string) =>
@@ -61,11 +77,14 @@ export const api = {
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/auth/change-password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
 
-  // Properties
+  sendEmailVerification: () => request('/auth/send-email-verification', { method: 'POST' }),
+  verifyEmail: (otp: string) => request('/auth/verify-email', { method: 'POST', body: JSON.stringify({ otp }) }),
+  getTrustedDevices: () => request('/auth/trusted-devices'),
+  removeTrustedDevice: (deviceId: string) => request(`/auth/trusted-devices/${deviceId}`, { method: 'DELETE' }),
+
   getProperties: async (params: Record<string, any> = {}) => {
     const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v !== undefined).map(([k, v]) => [k, String(v)]));
     const result = await request('/properties?' + q.toString());
-    // Fallback to mock data if server is unavailable
     if (!result) {
       return PROPERTIES.filter(p => p.status !== 'sold');
     }
@@ -73,7 +92,6 @@ export const api = {
   },
   getFeatured: async () => {
     const result = await request('/properties/featured');
-    // Fallback to mock data if server is unavailable
     if (!result) {
       return PROPERTIES.filter(p => p.featured && p.status !== 'sold');
     }
@@ -85,7 +103,6 @@ export const api = {
   unsaveProperty: (id: number) => request(`/properties/${id}/save`, { method: 'DELETE' }),
   getSaved: () => request('/properties/user/saved'),
 
-  // Admin
   getStats: () => request('/admin/stats'),
   getAllProperties: () => request('/admin/properties'),
   getAdminProperty: (id: number) => request(`/admin/properties/${id}`),
@@ -107,40 +124,34 @@ export const api = {
   addPropertyImage: (propId: number, url: string, is_primary?: boolean) => request(`/admin/properties/${propId}/images`, { method: 'POST', body: JSON.stringify({ url, is_primary }) }),
   setPropertyImagePrimary: (propId: number, imageId: number) => request(`/admin/properties/${propId}/images/${imageId}/primary`, { method: 'PATCH' }),
 
-  // Payments
   requestPayment: (data: any) => request('/payments', { method: 'POST', body: JSON.stringify(data) }),
   myPayments: () => request('/payments/my-payments'),
 
-  // Support
   createTicket: (subject: string) => request('/support/tickets', { method: 'POST', body: JSON.stringify({ subject }) }),
   getTickets: () => request('/support/tickets'),
   getTicketMessages: (id: number) => request(`/support/tickets/${id}/messages`),
   sendTicketMessage: (id: number, content: string) => request(`/support/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
   closeTicket: (id: number) => request(`/support/tickets/${id}/close`, { method: 'PATCH' }),
 
-  // Contact
   submitContact: (data: { name: string; email: string; phone: string; subject: string; message: string }) =>
     request('/contact', { method: 'POST', body: JSON.stringify(data) }),
   getContactMessages: () => request('/contact'),
   markContactRead: (id: number) => request(`/contact/${id}/read`, { method: 'PATCH' }),
 
-  // AI
   getRecommendations: (params: any) => request('/ai/recommend', { method: 'POST', body: JSON.stringify(params) }),
 
-  // Property Chat
   getPropertyChatMessages: (propertyId: number) => request(`/property-chat/${propertyId}/messages`),
   sendPropertyChatMessage: (propertyId: number, content: string) =>
     request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
   getMyPropertyChats: () => request('/property-chat/my-chats'),
 };
 
-// Streaming AI chat
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {
   const token = getToken();
   
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout for streaming
+    const timeout = setTimeout(() => controller.abort(), 30000);
     
     const res = await fetch(BASE_URL + '/ai/chat', {
       method: 'POST',
