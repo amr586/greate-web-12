@@ -1,0 +1,16 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Render
+        uses: bitovi/github-action-render-deploy@v1.0.0
+        with:
+          render-api-key: ${{ secrets.RENDER_API_KEY }}

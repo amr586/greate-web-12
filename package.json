@@ -9,6 +9,7 @@
     "dev:client": "vite",
     "dev:server": "tsx server/index.ts",
     "start": "NODE_ENV=production npx tsx server/index.ts",
+    "start:server": "NODE_ENV=production npx tsx server/index.ts",
     "seed:properties": "npx tsx scripts/seed-great-society-properties.ts",
     "setup:db": "npx tsx server/setup-db.ts"
   },
