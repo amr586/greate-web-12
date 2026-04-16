@@ -50,6 +50,33 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Cron job endpoint (runs daily at 5 AM UTC)
+app.get('/api/cron', async (req, res) => {
+  if (req.headers['x-vercel-cron'] !== 'true') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  try {
+    console.log('[CRON] Running scheduled tasks...');
+    
+    // Example: Clean old OTP codes older than 24 hours
+    const deletedOtp = await query(
+      'DELETE FROM otp_codes WHERE created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND used = true'
+    );
+    
+    console.log('[CRON] Old OTP codes cleaned');
+    
+    res.json({ 
+      ok: true, 
+      message: 'Cron executed successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('[CRON] Error:', err.message);
+    res.status(500).json({ error: 'Cron failed', message: err.message });
+  }
+});
+
 // Dynamic route loader
 async function loadRoutes() {
   const routes = [
