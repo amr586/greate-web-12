@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "pnpm run vite -- build && cp -r server backend && cp package.json backend/",
-    "start": "NODE_ENV=production npx tsx backend/index.ts",
+    "build": "npm install --legacy-peer-deps && npx vite build && cp -r server backend && cp package.json backend/",
+    "start": "NODE_ENV=production node ./node_modules/tsx/dist/cli.js backend/index.ts",
     "vite": "vite"
   },
   "dependencies": {
