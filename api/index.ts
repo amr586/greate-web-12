@@ -690,14 +690,19 @@ export default async function handler(req: any, res: any) {
 
       const [rows]: any = await pool.query(`
         SELECT p.*, u.name as owner_name,
-          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
-          (SELECT json_agg(pi2.url) FROM property_images pi2 WHERE pi2.property_id = p.id LIMIT 5) as images
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
         FROM properties p
         LEFT JOIN users u ON u.id = p.owner_id
         ${where}
         ORDER BY p.is_featured DESC, p.created_at DESC
         LIMIT ? OFFSET ?
       `, [...params, Number(limit), offset]);
+      
+      // Get images separately for each property
+      for (const prop of rows) {
+        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ? LIMIT 5', [prop.id]);
+        prop.images = imgs;
+      }
 
       return res.json({ properties: rows, page: Number(page) });
     } catch (err: any) {
@@ -711,11 +716,16 @@ export default async function handler(req: any, res: any) {
     try {
       const [rows]: any = await pool.query(`
         SELECT p.*,
-          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
-          (SELECT json_agg(json_build_object('id', pi2.id, 'url', pi2.url, 'is_primary', pi2.is_primary)) FROM property_images pi2 WHERE pi2.property_id = p.id) as images
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
         FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
         ORDER BY p.created_at DESC LIMIT 6
       `);
+      
+      for (const prop of rows) {
+        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [prop.id]);
+        prop.images = imgs;
+      }
+      
       return res.json(rows);
     } catch {
       return res.status(500).json({ error: 'خطأ' });
@@ -730,14 +740,17 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       
       const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email,
-          (SELECT json_agg(json_build_object('id', pi.id, 'url', pi.url, 'is_primary', pi.is_primary)) FROM property_images pi WHERE pi.property_id = p.id) as images
+        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
         FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
       `, [id]);
 
       if (rows.length === 0) {
         return res.status(404).json({ error: 'العقار غير موجود' });
       }
+      
+      // Get images separately
+      const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [id]);
+      rows[0].images = imgs;
 
       await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
 
@@ -1302,8 +1315,9 @@ export default async function handler(req: any, res: any) {
   // GET /api/cron
   if (method === 'GET' && url?.includes('/api/cron')) {
     try {
-      // Cleanup old OTPs
-      await pool.query(`DELETE FROM otp_codes WHERE expires_at < NOW() OR (used = true AND created_at < NOW() - INTERVAL '24 hours')`);
+      // Cleanup old OTPs (MySQL syntax)
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+      await pool.query(`DELETE FROM otp_codes WHERE expires_at < NOW() OR (used = true AND created_at < ?)`, [yesterday]);
       console.log('[CRON] Cleanup completed');
       return res.json({ success: true });
     } catch (err: any) {
