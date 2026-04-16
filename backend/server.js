@@ -1,76 +1,64 @@
-// server.js - ESM with ts-node-style loader
-import 'tsx/register';
-
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
+// server.js - Pure JavaScript, no TypeScript
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'https://greatsociety-eg.com' : '*',
+  origin: '*',
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Health endpoints
+// Simple health endpoint - works immediately
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, service: 'إسكنك API', db: process.env.DATABASE_URL ? 'connected' : 'disconnected' });
+  res.json({ 
+    ok: true, 
+    service: 'إسكنك API', 
+    db: process.env.DATABASE_URL ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, service: 'Great Society API', version: '1.0.0', endpoints: '/api/*' });
+  res.json({ 
+    ok: true, 
+    service: 'Great Society API', 
+    version: '1.0.0',
+    endpoints: ['/api/health', '/api/auth/login', '/api/properties', '/api/admin/*']
+  });
 });
 
-// Import and use routes with dynamic import
+// Import routes dynamically
 async function loadRoutes() {
-  const routeFiles = [
-    { prefix: 'auth', file: './routes/auth.ts' },
-    { prefix: 'properties', file: './routes/properties.ts' },
-    { prefix: 'admin', file: './routes/admin.ts' },
-    { prefix: 'ai-chat', file: './routes/ai-chat.ts' },
-    { prefix: 'support', file: './routes/support.ts' },
-    { prefix: 'payments', file: './routes/payments.ts' },
-    { prefix: 'upload', file: './routes/upload.ts' },
-    { prefix: 'notifications', file: './routes/notifications.ts' },
-    { prefix: 'property-chat', file: './routes/property-chat.ts' },
-    { prefix: 'contact', file: './routes/contact.ts' },
+  const routes = [
+    { name: 'auth', file: './routes/auth.ts' },
+    { name: 'properties', file: './routes/properties.ts' },
+    { name: 'admin', file: './routes/admin.ts' },
   ];
-
-  for (const route of routeFiles) {
+  
+  for (const route of routes) {
     try {
       const mod = await import(route.file);
-      app.use(`/api/${route.prefix}`, mod.default || mod);
-      console.log(`[ROUTE] /api/${route.prefix} loaded`);
-    } catch (e) {
-      console.log(`[ROUTE] ${route.prefix} failed:`, e.message);
+      app.use(`/api/${route.name}`, mod.default);
+      console.log(`✓ Loaded /api/${route.name}`);
+    } catch (err) {
+      console.log(`✗ Failed /api/${route.name}: ${err.message}`);
     }
   }
 }
 
-// Also try loading from index.ts
-async function tryLoadFromIndex() {
-  try {
-    const index = await import('./index.ts');
-    console.log('[INDEX] Loaded from index.ts');
-  } catch (e) {
-    console.log('[INDEX] Could not load index.ts:', e.message);
-  }
-}
-
+// Start server
 loadRoutes().then(() => {
-  console.log('[SERVER] All routes loaded');
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏠 API running on port ${PORT}`);
-  });
+  console.log(`🏠 Server running on port ${PORT}`);
+  app.listen(PORT, '0.0.0.0');
 }).catch(err => {
-  console.error('[ERROR]:', err);
-  process.exit(1);
+  console.error('Error:', err);
+  // Still start even if routes fail
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🏠 Server running on port ${PORT} (some routes may not loaded)`);
+  });
 });
