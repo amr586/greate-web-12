@@ -396,13 +396,21 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
 
+      // Debug: find user
+      const [allRows]: any = await pool.query(
+        'SELECT id, name, email, phone, role, is_active FROM users WHERE email=? OR phone=?',
+        [emailOrPhone, emailOrPhone]
+      );
+      console.log('[LOGIN] User lookup:', emailOrPhone, 'found:', allRows.length);
+      
+      // With is_active check
       const [rows]: any = await pool.query(
         'SELECT * FROM users WHERE (email=? OR phone=?) AND is_active=true',
         [emailOrPhone, emailOrPhone]
       );
 
       if (rows.length === 0) {
-        return res.status(401).json({ error: 'بيانات غير صحيحة' });
+        return res.status(401).json({ error: 'بيانات غير صحيحة', debug: { found: allRows.length, email: emailOrPhone } });
       }
 
       const userData = rows[0];
