@@ -389,13 +389,17 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
 
+      const cleanEmail = emailOrPhone.trim().toLowerCase();
       const [rows]: any = await pool.query(
-        'SELECT * FROM users WHERE email=? OR phone=?',
-        [emailOrPhone, emailOrPhone]
+        'SELECT * FROM users WHERE LOWER(email)=? OR phone=?',
+        [cleanEmail, emailOrPhone]
       );
 
       if (rows.length === 0) {
-        return res.status(401).json({ error: 'بيانات غير صحيحة' });
+        // Check without trim
+        const [rows2]: any = await pool.query('SELECT * FROM users WHERE email LIKE ?', [`%${emailOrPhone}%`]);
+        await pool.end();
+        return res.status(401).json({ error: 'بيانات غير صحيحة', debug: { tried: cleanEmail, found: rows2.length, emails: rows2.map((r:any)=>r.email) } });
       }
       
       if (rows[0].is_active === 0) {
