@@ -207,6 +207,84 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// ========== EMAIL (SMTP) ==========
+
+const SMTP_USER = process.env.SMTP_USER || 'great.society.team@gmail.com';
+const SMTP_PASS = process.env.SMTP_PASS || 'iiir uixk rguu psii';
+
+async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
+  const nodemailer = await import('nodemailer');
+  
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: { minVersion: 'TLSv1.2' }
+  });
+
+  const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
+  const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#005a7d,#007a9a);padding:36px 32px;text-align:center;">
+            <p style="margin:0 0 4px;color:#bca056;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;">GREAT SOCIETY</p>
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:900;">منصة إسكنك العقارية</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.7);font-size:14px;">Alexandria, Egypt</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 32px;text-align:center;">
+            <p style="margin:0 0 8px;color:#374151;font-size:16px;">مرحباً <strong style="color:#005a7d;">${name}</strong></p>
+            <p style="margin:0 0 28px;color:#6b7280;font-size:14px;line-height:1.6;">
+              طلبت <strong>${actionLabel}</strong>.<br/>
+              استخدم الرمز التالي لإتمام العملية:
+            </p>
+            <div style="display:inline-block;background:linear-gradient(135deg,#005a7d,#007a9a);border-radius:16px;padding:24px 40px;margin-bottom:28px;">
+              <span style="color:#ffffff;font-size:40px;font-weight:900;letter-spacing:14px;display:block;">${otp}</span>
+            </div>
+            <table width="100%" style="background:#fef3cd;border:1px solid #fde68a;border-radius:12px;margin-bottom:24px;">
+              <tr><td style="padding:14px 16px;text-align:center;">
+                <p style="margin:0;color:#92400e;font-size:13px;">⏱️ هذا الرمز صالح لمدة <strong>5 دقائق فقط</strong></p>
+                <p style="margin:6px 0 0;color:#92400e;font-size:12px;">🔒 لديك 3 محاولات قبل الحجب المؤ��ت</p>
+              </td></tr>
+            </table>
+            <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.7;">إذا لم تطلب هذا الرمز، تجاهل هذا البريد فوراً.<br/>لا تشارك هذا الرمز مع أي شخص.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+            <p style="margin:0;color:#9ca3af;font-size:11px;">&copy; 2026 Great Society Real Estate · الإسكندرية، مصر</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Great Society إسكنك" <${SMTP_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(`[EMAIL] ✅ Sent to ${to}`);
+    return true;
+  } catch (err: any) {
+    console.error('[EMAIL] ❌ Failed:', err?.message || err);
+    return false;
+  }
+}
+
 // ========== SECURITY HELPERS ==========
 
 // Rate limiting storage
@@ -634,6 +712,9 @@ export default async function handler(req: any, res: any) {
         `INSERT INTO otp_codes (identifier, code, type, user_data, expires_at) VALUES (?, ?, 'register', ?, ?)`,
         [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
       );
+
+      // Send email with OTP (don't await, fire and forget)
+      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch(() => {});
 
       return res.json({ success: true, devOtp: otp, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
