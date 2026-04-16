@@ -384,12 +384,9 @@ export default async function handler(req: any, res: any) {
   // POST /api/auth/login
   if (method === 'POST' && url?.includes('/api/auth/login')) {
     try {
-      // Rate limit check
-      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-      const rateCheck = checkRateLimit(`login:${clientIP}`);
-      if (!rateCheck.allowed) {
-        return res.status(429).json({ error: 'تجاوزت الحد. حاول لاحقاً' });
-      }
+      // Rate limit disabled for serverless (in-memory doesn't persist)
+      // const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      // const rateCheck = checkRateLimit(`login:${clientIP}`);
 
       const { emailOrPhone, password } = body;
       if (!emailOrPhone || !password) {
@@ -403,14 +400,18 @@ export default async function handler(req: any, res: any) {
       );
       console.log('[LOGIN] User lookup:', emailOrPhone, 'found:', allRows.length);
       
-      // With is_active check
+      // With is_active check (try without first)
       const [rows]: any = await pool.query(
-        'SELECT * FROM users WHERE (email=? OR phone=?) AND is_active=true',
+        'SELECT * FROM users WHERE email=? OR phone=?',
         [emailOrPhone, emailOrPhone]
       );
 
       if (rows.length === 0) {
-        return res.status(401).json({ error: 'بيانات غير صحيحة', debug: { found: allRows.length, email: emailOrPhone } });
+        return res.status(401).json({ error: 'بيانات غير صحيحة' });
+      }
+      
+      if (rows[0].is_active === 0 || rows[0].is_active === false) {
+        return res.status(401).json({ error: 'الحساب معطل' });
       }
 
       const userData = rows[0];
