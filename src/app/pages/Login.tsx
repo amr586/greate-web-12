@@ -308,9 +308,9 @@ export default function Login() {
                 </Link>
 
                 <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 pt-4 border-t border-gray-200">
-                  <a href="https://drive.google.com/file/d/1ZMjlODUmm0o7C6zf00iPyelXDH4gFTy0/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="hover:text-[#005a7d] transition-colors">سياسة الخصوصية</a>
+                  <Link to="/privacy" className="hover:text-[#005a7d] transition-colors">سياسة الخصوصية</Link>
                   <span className="text-gray-300">|</span>
-                  <a href="https://drive.google.com/file/d/1sgHp8G35p6LDGmFQx_La2IZ54gjCTVyu/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="hover:text-[#005a7d] transition-colors">الشروط والأحكام</a>
+                  <Link to="/terms" className="hover:text-[#005a7d] transition-colors">الشروط والأحكام</Link>
                 </div>
               </div>
             )}
