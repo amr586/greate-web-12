@@ -55,6 +55,10 @@ async function main() {
 
     app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'إسكنك API', db: process.env.DATABASE_URL ? 'connected' : 'disconnected' }));
 
+    app.get('/', (_req, res) => {
+      res.json({ ok: true, service: 'Great Society API', version: '1.0.0', endpoints: '/api/*' });
+    });
+
     if (isProd) {
       const distPath = path.join(projectRoot, 'dist');
       const rootPath = path.join(projectRoot);
