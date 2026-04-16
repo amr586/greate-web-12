@@ -5,10 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm install --legacy-peer-deps && npm install --legacy-peer-deps --include=dev && npm run vite -- build",
-    "dev": "concurrently \"npm run vite\" \"npm run tsx:server\"",
-    "dev:client": "npm run vite",
-    "tsx:server": "npm run tsx server/index.ts",
-    "start": "NODE_ENV=production npx tsx server/index.ts",
+    "start": "NODE_ENV=production node ./node_modules/tsx/bin/tsx.cjs server/index.ts",
     "vite": "vite"
   },
   "dependencies": {
