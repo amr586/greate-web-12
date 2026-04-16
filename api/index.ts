@@ -694,6 +694,65 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // POST /api/auth/register/verify/resend
+  if (method === 'POST' && url?.includes('/api/auth/register/verify/resend')) {
+    try {
+      const { email } = body;
+      const rateCheck = checkRateLimit(`otp:${email}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((rateCheck.resetAt - Date.now()) / 1000)} ثانية` });
+      }
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type='register' AND used=false`,
+        [email]
+      );
+
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, expires_at) VALUES (?, ?, 'register', ?)`,
+        [email, otp, expiresAt]
+      );
+
+      return res.json({ success: true, devOtp: otp, message: `تم إعادة إرسال رمز التحقق` });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/auth/verify-email (for email verification after login)
+  if (method === 'POST' && url?.includes('/api/auth/verify-email')) {
+    try {
+      const { email, otp } = body;
+      if (!email || !otp) {
+        return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
+      }
+
+      const sanitizedEmail = sanitizeEmail(email);
+      const result = await consumeOTP(sanitizedEmail, otp, 'email_verify', pool);
+      if (!result.valid) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      await pool.query(
+        `UPDATE users SET email_verified=true, email_verified_at=NOW() WHERE email=?`,
+        [sanitizedEmail]
+      );
+
+      await pool.query(
+        `UPDATE email_verification SET is_verified=true, verified_at=NOW() WHERE user_id=(SELECT id FROM users WHERE email=?)`,
+        [sanitizedEmail]
+      );
+
+      return res.json({ success: true, message: 'تم التحقق من البريد الإلكتروني بنجاح' });
+    } catch (err: any) {
+      console.log('[ERROR] Verify email:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
   // POST /api/auth/send-otp
   if (method === 'POST' && url?.includes('/api/auth/send-otp')) {
     try {

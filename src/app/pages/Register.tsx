@@ -48,10 +48,10 @@ export default function Register() {
         password: form.password,
       });
       
-      if (data.emailVerificationPending) {
+      if (data.success && data.devOtp) {
         setDevOtp(data.devOtp);
         setStep('verify');
-      } else {
+      } else if (data.token) {
         localStorage.setItem('token', data.token);
         setStep('success');
         setTimeout(() => {
@@ -72,14 +72,14 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const data = await api.verifyEmail(form.email, otp);
+      const data = await api.verifyRegister(form.email, otp);
       if (data.token) {
         localStorage.setItem('token', data.token);
+        setStep('success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       }
-      setStep('success');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1500);
     } catch (err: any) {
       setError(err.message || 'رمز التحقق غير صحيح');
     } finally {
