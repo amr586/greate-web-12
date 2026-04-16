@@ -231,6 +231,10 @@ function checkRateLimit(identifier: string): { allowed: boolean; remaining: numb
   return { allowed: true, remaining: RATE_LIMIT_MAX - record.count, resetAt: record.resetAt };
 }
 
+function clearRateLimit(identifier: string) {
+  rateLimitStore.delete(identifier);
+}
+
 // Input sanitization
 function sanitizeString(str: string | undefined, maxLength = 300): string {
   if (!str) return '';
@@ -408,6 +412,9 @@ export default async function handler(req: any, res: any) {
       );
       
       if (!rows || rows.length === 0) {
+        // Record failed attempt
+        checkRateLimit(emailKey); // increment
+        checkRateLimit(ipKey);
         return res.status(401).json({ error: 'بيانات غير صحيحة' });
       }
       
@@ -417,6 +424,9 @@ export default async function handler(req: any, res: any) {
       const valid = await bcrypt.compare(password, userData.password_hash);
       
       if (!valid) {
+        // Record failed attempt
+        checkRateLimit(emailKey); // increment
+        checkRateLimit(ipKey);
         return res.status(401).json({ error: 'بيانات غير صحيحة' });
       }
 
@@ -437,6 +447,10 @@ export default async function handler(req: any, res: any) {
           email: userData.email,
           deviceId: clientDeviceId
         });
+        
+        // Clear rate limits on success
+        clearRateLimit(emailKey);
+        clearRateLimit(ipKey);
         
         const { password_hash, ...safeUser } = userData;
         return res.json({ user: safeUser, token: newToken, isTrustedDevice: true });
@@ -512,6 +526,10 @@ export default async function handler(req: any, res: any) {
         email: userData.email,
         deviceId: finalDeviceId
       });
+
+      // Clear rate limits on success
+      clearRateLimit(`login:${email}`);
+      clearRateLimit(`ip:${clientIP}`);
 
       const { password_hash, ...safeUser } = userData;
       return res.json({ user: safeUser, token, isTrustedDevice: !!rememberDevice });
@@ -626,6 +644,7 @@ export default async function handler(req: any, res: any) {
 
   // POST /api/auth/register/verify - Step 2: Verify OTP and create user
   if (method === 'POST' && url?.includes('/api/auth/register/verify')) {
+    let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
       if (!email || !otp) {
@@ -652,6 +671,8 @@ export default async function handler(req: any, res: any) {
         `INSERT INTO users (name, email, phone, password_hash, role, email_verified) VALUES (?, ?, ?, ?, 'user', false)`,
         [userData.name, sanitizedEmail, userData.phone, userData.passwordHash]
       );
+
+      userIdForCleanup = insertResult.insertId;
 
       await pool.query(
         `INSERT INTO email_verification (user_id, is_verified) VALUES (?, false)`,
@@ -690,6 +711,9 @@ export default async function handler(req: any, res: any) {
       });
     } catch (err: any) {
       console.log('[ERROR] Register verify:', err.message);
+      if (userIdForCleanup) {
+        await pool.query('DELETE FROM users WHERE id=?', [userIdForCleanup]).catch(() => {});
+      }
       return res.status(500).json({ error: 'خطأ في التحقق' });
     }
   }
