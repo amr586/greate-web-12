@@ -214,21 +214,21 @@ const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 10; // 10 requests per minute per identifier
 
-function checkRateLimit(identifier: string): { allowed: boolean; remaining: number } {
+function checkRateLimit(identifier: string): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
   const record = rateLimitStore.get(identifier);
   
   if (!record || now > record.resetAt) {
     rateLimitStore.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW };
   }
   
   if (record.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0 };
+    return { allowed: false, remaining: 0, resetAt: record.resetAt };
   }
   
   record.count++;
-  return { allowed: true, remaining: RATE_LIMIT_MAX - record.count };
+  return { allowed: true, remaining: RATE_LIMIT_MAX - record.count, resetAt: record.resetAt };
 }
 
 // Input sanitization
@@ -384,11 +384,23 @@ export default async function handler(req: any, res: any) {
   // POST /api/auth/login
   if (method === 'POST' && url?.includes('/api/auth/login')) {
     try {
-      const { emailOrPhone, password } = body;
+      const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
+
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const clientDeviceId = deviceId || Buffer.from(clientIP + (headers['user-agent'] || 'unknown')).toString('base64').slice(0, 64);
       
+      const emailKey = `login:${emailOrPhone}`;
+      const ipKey = `ip:${clientIP}`;
+      const emailRateLimit = checkRateLimit(emailKey);
+      const ipRateLimit = checkRateLimit(ipKey);
+      
+      if (!emailRateLimit.allowed || !ipRateLimit.allowed) {
+        return res.status(429).json({ error: 'تجاوزت الحد الأقصى للمحاولات. حاول لاحقاً' });
+      }
+
       const cleanEmail = emailOrPhone.trim().toLowerCase();
       const [rows] = await pool.query(
         'SELECT * FROM users WHERE (LOWER(email)=? OR phone=?) AND is_active != 0',
@@ -407,41 +419,163 @@ export default async function handler(req: any, res: any) {
       if (!valid) {
         return res.status(401).json({ error: 'بيانات غير صحيحة' });
       }
+
+      // Check if trusted device
+      const [trusted]: any = await pool.query(
+        'SELECT id FROM trusted_devices WHERE user_id=? AND device_id=?',
+        [userData.id, clientDeviceId]
+      );
+
+      if (trusted.length > 0) {
+        // Trusted device - direct login
+        await pool.query('UPDATE trusted_devices SET last_used=NOW() WHERE user_id=? AND device_id=?', [userData.id, clientDeviceId]);
+        
+        const newToken = generateToken({
+          id: userData.id,
+          role: userData.role,
+          sub_role: userData.sub_role,
+          email: userData.email,
+          deviceId: clientDeviceId
+        });
+        
+        const { password_hash, ...safeUser } = userData;
+        return res.json({ user: safeUser, token: newToken, isTrustedDevice: true });
+      }
+
+      // New device - send OTP
+      const otpRateCheck = checkRateLimit(`otp:${userData.email}`);
+      if (!otpRateCheck.allowed) {
+        return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((otpRateCheck.resetAt - Date.now()) / 1000)} ثانية` });
+      }
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
       
-      const newToken = generateToken({
-        id: userData.id,
-        role: userData.role,
-        sub_role: userData.sub_role,
-        email: userData.email
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type='login' AND used=false`,
+        [userData.email]
+      );
+
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, user_data, device_id, expires_at) VALUES (?, ?, 'login', ?, ?, ?)`,
+        [userData.email, otp, JSON.stringify({ userId: userData.id }), clientDeviceId, expiresAt]
+      );
+
+      return res.json({ 
+        requiresOTP: true, 
+        email: userData.email, 
+        devOtp: otp,
+        message: `تم إرسال رمز التحقق إلى ${userData.email}`
       });
-      
-      const { password_hash, ...safeUser } = userData;
-      return res.json({ user: safeUser, token: newToken });
     } catch (err: any) {
       console.log('[ERROR] Login:', err.message);
       return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
     }
-    return;
+  }
+
+  // POST /api/auth/login/verify-otp
+  if (method === 'POST' && url?.includes('/api/auth/login/verify-otp')) {
+    try {
+      const { email, otp, rememberDevice, deviceName } = body;
+      if (!email || !otp) {
+        return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
+      }
+
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const clientDeviceId = Buffer.from(clientIP + (headers['user-agent'] || 'unknown')).toString('base64').slice(0, 64);
+
+      const result = await consumeOTP(email, otp, 'login', pool);
+      if (!result.valid) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      const [rows]: any = await pool.query('SELECT * FROM users WHERE email=? AND is_active != 0', [email]);
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'الحساب غير موجود' });
+      }
+
+      const userData = rows[0];
+      const deviceIdResult = typeof result.userData === 'string' ? JSON.parse(result.userData) : result.userData;
+      const finalDeviceId = deviceIdResult?.deviceId || clientDeviceId;
+
+      if (rememberDevice) {
+        await pool.query(
+          `INSERT IGNORE INTO trusted_devices (user_id, device_id, device_name, last_used) VALUES (?, ?, ?, NOW())`,
+          [userData.id, finalDeviceId, deviceName || null]
+        );
+      }
+
+      const token = generateToken({
+        id: userData.id,
+        role: userData.role,
+        sub_role: userData.sub_role,
+        email: userData.email,
+        deviceId: finalDeviceId
+      });
+
+      const { password_hash, ...safeUser } = userData;
+      return res.json({ user: safeUser, token, isTrustedDevice: !!rememberDevice });
+    } catch (err: any) {
+      console.log('[ERROR] Login OTP verify:', err.message);
+      return res.status(500).json({ error: 'خطأ في التحقق' });
+    }
+  }
+
+  // POST /api/auth/resend-login-otp
+  if (method === 'POST' && url?.includes('/api/auth/resend-login-otp')) {
+    try {
+      const { email } = body;
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+      const rateCheck = checkRateLimit(`otp:${email}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((rateCheck.resetAt - Date.now()) / 1000)} ثانية` });
+      }
+
+      const [userRows]: any = await pool.query('SELECT id, name FROM users WHERE email=? AND is_active != 0', [email]);
+      if (userRows.length === 0) {
+        return res.status(404).json({ error: 'الحساب غير موجود' });
+      }
+
+      const user = userRows[0];
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const clientDeviceId = Buffer.from(clientIP + (headers['user-agent'] || 'unknown')).toString('base64').slice(0, 64);
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type='login' AND used=false`,
+        [email]
+      );
+
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, user_data, device_id, expires_at) VALUES (?, ?, 'login', ?, ?, ?)`,
+        [email, otp, JSON.stringify({ userId: user.id }), clientDeviceId, expiresAt]
+      );
+
+      return res.json({ success: true, devOtp: otp, message: `تم إرسال رمز التحقق إلى ${email}` });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'خطأ' });
+    }
   }
 
   
 
-  // POST /api/auth/register
+  // POST /api/auth/register - Step 1: Send OTP
   if (method === 'POST' && url?.includes('/api/auth/register')) {
     try {
-      // Rate limit check
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
       if (!rateCheck.allowed) {
         return res.status(429).json({ error: 'تجاوزت الحد. حاول لاحقاً' });
       }
 
-      const { name, email, phone, password, deviceId } = body;
+      const { name, email, phone, password } = body;
       if (!name || !email || !phone || !password) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
 
-      // Input validation
       const sanitizedEmail = sanitizeEmail(email);
       const sanitizedPhone = sanitizePhone(phone);
       const sanitizedName = sanitizeString(name, 200);
@@ -460,27 +594,103 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'البريد الإلكتروني أو رقم الهاتف مسجل مسبقاً' });
       }
 
-      const bcrypt = await import('bcryptjs');
-      const hash = await bcrypt.hash(password, 12);
+      // Rate limit on OTP sending
+      const otpRateCheck = checkRateLimit(`otp:${sanitizedEmail}`);
+      if (!otpRateCheck.allowed) {
+        return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((otpRateCheck.resetAt - Date.now()) / 1000)} ثانية`, waitSeconds: Math.ceil((otpRateCheck.resetAt - Date.now()) / 1000) });
+      }
 
-      const [result]: any = await pool.query(
-        `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, 'user')`,
-        [sanitizedName, sanitizedEmail, sanitizedPhone, hash]
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash(password, 12);
+      
+      // Issue OTP with user data embedded
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type='register' AND used=false`,
+        [sanitizedEmail]
       );
 
-      const newToken = generateToken({
-        id: result.insertId,
-        role: 'user',
-        email
-      });
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, user_data, expires_at) VALUES (?, ?, 'register', ?, ?)`,
+        [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
+      );
 
-      return res.json({
-        user: { id: result.insertId, name, email, phone, role: 'user' },
-        token: newToken
-      });
+      return res.json({ success: true, devOtp: otp, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
+    }
+  }
+
+  // POST /api/auth/register/verify - Step 2: Verify OTP and create user
+  if (method === 'POST' && url?.includes('/api/auth/register/verify')) {
+    try {
+      const { email, otp } = body;
+      if (!email || !otp) {
+        return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
+      }
+
+      const sanitizedEmail = sanitizeEmail(email);
+      const result = await consumeOTP(sanitizedEmail, otp, 'register', pool);
+      if (!result.valid) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      const userData = typeof result.userData === 'string' ? JSON.parse(result.userData) : result.userData;
+      if (!userData?.passwordHash) {
+        return res.status(400).json({ error: 'بيانات التحقق غير صالحة' });
+      }
+
+      const [existing]: any = await pool.query('SELECT id FROM users WHERE email=?', [sanitizedEmail]);
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'فشل التحقق. يرجى إعادة التسجيل' });
+      }
+
+      const [insertResult]: any = await pool.query(
+        `INSERT INTO users (name, email, phone, password_hash, role, email_verified) VALUES (?, ?, ?, ?, 'user', false)`,
+        [userData.name, sanitizedEmail, userData.phone, userData.passwordHash]
+      );
+
+      await pool.query(
+        `INSERT INTO email_verification (user_id, is_verified) VALUES (?, false)`,
+        [insertResult.insertId]
+      );
+
+      const token = generateToken({
+        id: insertResult.insertId,
+        role: 'user',
+        email: sanitizedEmail
+      });
+
+      // Send email verification OTP asynchronously
+      setTimeout(async () => {
+        try {
+          const bcrypt = await import('bcryptjs');
+          const emailOtp = generateOTP();
+          const expAt = new Date(Date.now() + 5 * 60 * 1000);
+          await pool.query(
+            `DELETE FROM otp_codes WHERE identifier=? AND type='email_verify' AND used=false`,
+            [sanitizedEmail]
+          );
+          await pool.query(
+            `INSERT INTO otp_codes (identifier, code, type, user_data, expires_at) VALUES (?, ?, 'email_verify', ?, ?)`,
+            [sanitizedEmail, emailOtp, JSON.stringify({ userId: insertResult.insertId }), expAt]
+          );
+        } catch (e) {
+          console.log('[email-verification-otp-error]', e);
+        }
+      }, 2000);
+
+      return res.json({ 
+        user: { id: insertResult.insertId, name: userData.name, email: sanitizedEmail, phone: userData.phone, role: 'user' },
+        token,
+        message: 'تم إنشاء الحساب بنجاح'
+      });
+    } catch (err: any) {
+      console.log('[ERROR] Register verify:', err.message);
+      return res.status(500).json({ error: 'خطأ في التحقق' });
     }
   }
 
