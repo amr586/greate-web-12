@@ -3,33 +3,18 @@ import mysql from 'mysql2/promise';
 export default async function handler(req: any, res: any) {
   const { query, method, url } = req;
   
-  // Build database config from environment
-  let dbConfig: any = {
+  // Force local MySQL config (same as local development)
+  const dbConfig = {
+    host: 'srv2121.hstgr.io',
+    user: 'u156204542_amr',
+    password: 'Amrahmed01281378331',
+    database: 'u156204542_Dbase',
+    port: 3306,
     waitForConnections: true,
     connectionLimit: 2
   };
   
-  // Try to get from DATABASE_URL first
-  if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql://')) {
-    dbConfig.uri = process.env.DATABASE_URL;
-  }
-  // Otherwise use individual config vars
-  else {
-    dbConfig = {
-      ...dbConfig,
-      host: process.env.DB_HOST || 'srv2121.hstgr.io',
-      user: process.env.DB_USER || 'u156204542_amr',
-      password: process.env.DB_PASSWORD || 'Amrahmed01281378331',
-      database: process.env.DB_NAME || 'u156204542_Dbase',
-      port: parseInt(process.env.DB_PORT || '3306')
-    };
-  }
-  
-  console.log('[DEBUG] Using config:', { 
-    hasUri: !!dbConfig.uri, 
-    host: dbConfig.host, 
-    db: dbConfig.database 
-  });
+  console.log('[DEBUG] Using direct config for srv2121.hstgr.io');
   
   // /api/health
   if (url?.includes('/api/health')) {
@@ -92,6 +77,29 @@ export default async function handler(req: any, res: any) {
       
       await pool.end();
       return res.json(rows[0] || { error: 'Not found' });
+    } catch (err: any) { return res.status(500).json({ error: err.message }); }
+  }
+  
+  // /api/auth/login
+  if (method === 'POST' && url?.includes('/api/auth/login')) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+      
+      const pool = mysql.createPool(dbConfig);
+      const [rows]: any = await pool.query('SELECT id, name, email, password_hash, role, sub_role FROM users WHERE email = ? AND is_active = true', [email]);
+      if (!rows || rows.length === 0) { await pool.end(); return res.status(401).json({ error: 'Invalid credentials' }); }
+      
+      const user = rows[0];
+      const bcrypt = await import('bcryptjs');
+      const validPassword = await bcrypt.default.compare(password, user.password_hash);
+      if (!validPassword) { await pool.end(); return res.status(401).json({ error: 'Invalid credentials' }); }
+      
+      const jwt = await import('jsonwebtoken');
+      const token = jwt.default.sign({ id: user.id, role: user.role, sub_role: user.sub_role, email: user.email }, process.env.JWT_SECRET || 'f6b6104a80af41be3d7660d251867a2793a60dd4f664784f1f62dda2c47542a6d47bab11919c736a9757c9f4790e44b2d3e3438bdd3afe9a3b4b69a2f8eb78c3', { expiresIn: '7d' });
+      await pool.end();
+      
+      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, sub_role: user.sub_role } });
     } catch (err: any) { return res.status(500).json({ error: err.message }); }
   }
   
