@@ -42,7 +42,7 @@ export const router = createBrowserRouter([
       { path: 'sub-admin', Component: SubAdminDashboard },
       { path: 'saved', Component: SavedProperties },
       { path: 'privacy', Component: PrivacyPolicy },
-      { path: 'terms', Component: Terms },
+      { path: 'terms', Component: PrivacyPolicy },
       { path: 'edit-property/:id', Component: UserEditProperty },
     ],
   },
