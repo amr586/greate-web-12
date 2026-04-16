@@ -80,16 +80,16 @@ app.get('/api/cron', async (req, res) => {
 // Dynamic route loader
 async function loadRoutes() {
   const routes = [
-    { name: 'auth', path: './routes/auth.js' },
-    { name: 'properties', path: './routes/properties.js' },
-    { name: 'admin', path: './routes/admin.js' },
-    { name: 'ai-chat', path: './routes/ai-chat.js' },
-    { name: 'support', path: './routes/support.js' },
-    { name: 'payments', path: './routes/payments.js' },
-    { name: 'upload', path: './routes/upload.js' },
-    { name: 'notifications', path: './routes/notifications.js' },
-    { name: 'property-chat', path: './routes/property-chat.js' },
-    { name: 'contact', path: './routes/contact.js' }
+    { name: 'auth', path: './routes/auth.ts' },
+    { name: 'properties', path: './routes/properties.ts' },
+    { name: 'admin', path: './routes/admin.ts' },
+    { name: 'ai-chat', path: './routes/ai-chat.ts' },
+    { name: 'support', path: './routes/support.ts' },
+    { name: 'payments', path: './routes/payments.ts' },
+    { name: 'upload', path: './routes/upload.ts' },
+    { name: 'notifications', path: './routes/notifications.ts' },
+    { name: 'property-chat', path: './routes/property-chat.ts' },
+    { name: 'contact', path: './routes/contact.ts' }
   ];
   
   for (const route of routes) {
