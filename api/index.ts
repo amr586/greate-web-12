@@ -1306,8 +1306,10 @@ export default async function handler(req: any, res: any) {
       dbStatus = 'connected';
       
       // Auto-seed accounts if none exist
-      const [[userCount]] = await pool.query('SELECT COUNT(*) FROM users');
-      if (userCount?.COUNT === 0) {
+      const [userResult]: any = await pool.query('SELECT COUNT(*) as cnt FROM users');
+      const userCount = userResult[0]?.cnt || 0;
+      
+      if (userCount === 0) {
         initDone = true;
         const bcrypt = await import('bcryptjs');
         // Create superadmin
@@ -1319,11 +1321,9 @@ export default async function handler(req: any, res: any) {
       }
       
       // Get stats
-      const [[userCnt], [propCount], [approvedCount]] = await Promise.all([
-        pool.query('SELECT COUNT(*) FROM users'),
-        pool.query('SELECT COUNT(*) FROM properties'),
-        pool.query("SELECT COUNT(*) FROM properties WHERE status='approved'")
-      ]);
+      const [usersResult]: any = await pool.query('SELECT COUNT(*) as cnt FROM users');
+      const [propsResult]: any = await pool.query('SELECT COUNT(*) as cnt FROM properties');
+      const [approvedResult]: any = await pool.query("SELECT COUNT(*) as cnt FROM properties WHERE status='approved'");
       
       await pool.end();
       return res.json({ 
@@ -1332,9 +1332,9 @@ export default async function handler(req: any, res: any) {
         db: dbStatus, 
         init: initDone,
         stats: {
-          users: userCnt[0]?.COUNT || 0,
-          properties: propCount[0]?.COUNT || 0,
-          approved: approvedCount[0]?.COUNT || 0
+          users: usersResult[0]?.cnt || 0,
+          properties: propsResult[0]?.cnt || 0,
+          approved: approvedResult[0]?.cnt || 0
         },
         timestamp: new Date().toISOString() 
       });
