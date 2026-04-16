@@ -957,8 +957,22 @@ export default async function handler(req: any, res: any) {
 
   // ========== PROPERTIES ENDPOINTS ==========
 
-  // GET /api/properties
-  if (method === 'GET' && url?.includes('/api/properties')) {
+  // GET /api/properties/user/saved - specific endpoint first
+  if (method === 'GET' && url?.includes('/api/properties/user/saved')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT p.*, (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
+        FROM saved_properties sp JOIN properties p ON p.id = sp.property_id WHERE sp.user_id = ?
+      `, [user.id]);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/properties/featured - specific endpoint before generic
+  if (method === 'GET' && url?.includes('/api/properties/featured')) {
     try {
       const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12 } = urlQuery;
       let conditions = ["p.status = 'approved'"];
@@ -1126,20 +1140,6 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       await pool.query('DELETE FROM saved_properties WHERE user_id=? AND property_id=?', [user.id, id]);
       return res.json({ saved: false });
-    } catch {
-      return res.status(500).json({ error: 'خطأ' });
-    }
-  }
-
-  // GET /api/properties/user/saved
-  if (method === 'GET' && url?.includes('/api/properties/user/saved')) {
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-      const [rows]: any = await pool.query(`
-        SELECT p.*, (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
-        FROM saved_properties sp JOIN properties p ON p.id = sp.property_id WHERE sp.user_id = ?
-      `, [user.id]);
-      return res.json(rows);
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
