@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "npm install && npx vite build && cp -r node_modules backend/ && cp package.json backend/",
+    "build": "rm -rf node_modules .vite && npm install && npx vite build && cp -r node_modules backend/ && cp package.json backend/",
     "start": "NODE_ENV=production node backend/node_modules/tsx/dist/cli.js backend/index.ts",
     "vite": "vite"
   },
