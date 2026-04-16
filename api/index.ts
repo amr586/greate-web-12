@@ -185,7 +185,7 @@ async function runMigrations(pool: any) {
   for (const acc of seedAccounts) {
     try {
       const bcrypt = await import('bcryptjs');
-      const hash = await bcrypt.default.hash(acc.password, 10);
+      const hash = await bcrypt.hash(acc.password, 10);
       await pool.query(
         `INSERT IGNORE INTO users (name, email, phone, password_hash, role, sub_role) VALUES (?, ?, ?, ?, ?, ?)`,
         [acc.name, acc.email, acc.phone, hash, acc.role, acc.sub_role]
@@ -465,7 +465,7 @@ export default async function handler(req: any, res: any) {
       
       let valid = false;
       try {
-        valid = await bcrypt.default.compare(password, userData.password_hash);
+        valid = await bcrypt.compare(password, userData.password_hash);
       } catch (bcErr) {
         console.log('[BCRYPT ERROR]', bcErr.message);
         await pool.end();
@@ -527,7 +527,7 @@ export default async function handler(req: any, res: any) {
       }
 
       const bcrypt = await import('bcryptjs');
-      const hash = await bcrypt.default.hash(password, 12);
+      const hash = await bcrypt.hash(password, 12);
 
       const [result]: any = await pool.query(
         `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, 'user')`,
@@ -601,7 +601,7 @@ export default async function handler(req: any, res: any) {
       if (type === 'register') {
         const userData = result.userData ? JSON.parse(result.userData) : {};
         const bcrypt = await import('bcryptjs');
-        const hash = await bcrypt.default.hash(userData.passwordHash || 'default', 12);
+        const hash = await bcrypt.hash(userData.passwordHash || 'default', 12);
 
         const [existing]: any = await pool.query('SELECT id FROM users WHERE email=?', [email]);
         if (existing.length === 0) {
@@ -664,7 +664,7 @@ export default async function handler(req: any, res: any) {
       if (!result.valid) return res.status(400).json({ error: result.error });
 
       const bcrypt = await import('bcryptjs');
-      const hash = await bcrypt.default.hash(newPassword, 12);
+      const hash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash=? WHERE email=?', [hash, email]);
 
       return res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
@@ -716,10 +716,10 @@ export default async function handler(req: any, res: any) {
 
       const [rows]: any = await pool.query('SELECT password_hash FROM users WHERE id=?', [user.id]);
       const bcrypt = await import('bcryptjs');
-      const valid = await bcrypt.default.compare(currentPassword, rows[0].password_hash);
+      const valid = await bcrypt.compare(currentPassword, rows[0].password_hash);
       if (!valid) return res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
 
-      const newHash = await bcrypt.default.hash(newPassword, 12);
+      const newHash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash=? WHERE id=?', [newHash, user.id]);
 
       return res.json({ success: true, message: 'تم تغيير كلمة المرور' });
@@ -1377,7 +1377,7 @@ export default async function handler(req: any, res: any) {
         initDone = true;
         const bcrypt = await import('bcryptjs');
         // Create superadmin
-        const hash = await bcrypt.default.hash('Admin@GreatSociety1', 10);
+        const hash = await bcrypt.hash('Admin@GreatSociety1', 10);
         await pool.query(
           `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)`,
           ['Super Admin', 'admin@greatsociety.com', '01100111618', hash, 'superadmin']
