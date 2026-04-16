@@ -388,18 +388,26 @@ export default async function handler(req: any, res: any) {
       if (!emailOrPhone || !password) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
+      
+      // Direct simple SQL test
+      const conn = await pool.getConnection();
+      const [testRows] = await conn.query('SELECT * FROM users LIMIT 1');
+      conn.release();
+      
+      if (!testRows || testRows.length === 0) {
+        await pool.end();
+        return res.status(500).json({ error: 'No users found at all' });
+      }
 
       const cleanEmail = emailOrPhone.trim().toLowerCase();
-      const [rows]: any = await pool.query(
+      const [rows] = await pool.query(
         'SELECT * FROM users WHERE LOWER(email)=? OR phone=?',
         [cleanEmail, emailOrPhone]
       );
 
-      if (rows.length === 0) {
-        // Check without trim
-        const [rows2]: any = await pool.query('SELECT * FROM users WHERE email LIKE ?', [`%${emailOrPhone}%`]);
+      if (!rows || rows.length === 0) {
         await pool.end();
-        return res.status(401).json({ error: 'بيانات غير صحيحة', debug: { tried: cleanEmail, found: rows2.length, emails: rows2.map((r:any)=>r.email) } });
+        return res.status(401).json({ error: 'بيانات غير صحيحة', detail: cleanEmail });
       }
       
       if (rows[0].is_active === 0) {
