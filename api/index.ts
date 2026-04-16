@@ -383,9 +383,11 @@ export default async function handler(req: any, res: any) {
 
   // POST /api/auth/login
   if (method === 'POST' && url?.includes('/api/auth/login')) {
+    console.log('[LOGIN] Called with:', JSON.stringify(body));
     try {
       const { emailOrPhone, password } = body;
       if (!emailOrPhone || !password) {
+        console.log('[LOGIN] Missing fields');
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
       
