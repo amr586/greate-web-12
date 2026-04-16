@@ -1345,6 +1345,18 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // GET /api/debug-users - Debug: list users (dev only)
+  if (method === 'GET' && url?.includes('/api/debug-users')) {
+    try {
+      const [rows]: any = await pool.query('SELECT id, name, email, role, is_active FROM users LIMIT 10');
+      await pool.end();
+      return res.json({ users: rows });
+    } catch (e: any) {
+      await pool.end();
+      return res.json({ error: e.message });
+    }
+  }
+
   // POST /api/seed - Seed sample properties (for testing only)
   if (method === 'POST' && url?.includes('/api/seed')) {
     if (!user || user.role !== 'superadmin') {
