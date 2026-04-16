@@ -1,18 +1,22 @@
 import mysql from 'mysql2/promise';
 
 export default async function handler(req: any, res: any) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', 'https://greatsociety-eg.com');
+  // CORS - allow all for testing
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
   
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
   
   const { query, method, url } = req;
   
-  // Direct MySQL config
+  console.log('[DEBUG] Request URL:', url);
+  console.log('[DEBUG] Method:', method);
+  
+  // Direct MySQL config - same as local
   let pool;
   try {
     pool = mysql.createPool({
@@ -23,8 +27,11 @@ export default async function handler(req: any, res: any) {
       port: 3306,
       waitForConnections: true,
       connectionLimit: 2,
-      queueLimit: 0
+      queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0
     });
+    console.log('[DEBUG] Pool created successfully');
   } catch (e: any) {
     console.log('[ERROR] Pool creation failed:', e.message);
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
@@ -34,8 +41,11 @@ export default async function handler(req: any, res: any) {
   if (url?.includes('/api/health')) {
     let dbStatus = 'error';
     try {
-      await pool.query('SELECT 1');
+      const conn = await pool.getConnection();
+      await conn.ping();
+      conn.release();
       dbStatus = 'connected';
+      console.log('[DEBUG] Health check passed');
     } catch (e: any) { 
       console.log('[ERROR] Health query failed:', e.message);
       dbStatus = 'error: ' + e.message; 
