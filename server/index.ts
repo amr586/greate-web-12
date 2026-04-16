@@ -57,10 +57,12 @@ async function main() {
 
     if (isProd) {
       const distPath = path.join(projectRoot, 'dist');
-      console.log('[SERVER] Serving static files from:', distPath);
-      app.use(express.static(distPath));
+      const rootPath = path.join(projectRoot);
+      const staticPath = require('fs').existsSync(path.join(distPath, 'index.html')) ? distPath : rootPath;
+      console.log('[SERVER] Serving static files from:', staticPath);
+      app.use(express.static(staticPath));
       app.get('*', (_req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
+        res.sendFile(path.join(staticPath, 'index.html'));
       });
     }
 
