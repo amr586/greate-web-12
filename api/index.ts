@@ -1,19 +1,363 @@
 import mysql from 'mysql2/promise';
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
+
+async function runMigrations(pool: any) {
+  const migrations = [
+    `CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(200) NOT NULL,
+      email VARCHAR(200) UNIQUE NOT NULL,
+      phone VARCHAR(30),
+      password_hash TEXT NOT NULL,
+      role VARCHAR(20) DEFAULT 'user',
+      sub_role VARCHAR(30),
+      avatar_url TEXT,
+      is_active BOOLEAN DEFAULT true,
+      email_verified BOOLEAN DEFAULT false,
+      email_verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(300),
+      title_ar VARCHAR(300),
+      description TEXT,
+      description_ar TEXT,
+      type VARCHAR(50),
+      purpose VARCHAR(20) DEFAULT 'sale',
+      price NUMERIC,
+      area NUMERIC,
+      rooms INT,
+      bedrooms INT,
+      bathrooms INT,
+      floor INT,
+      address TEXT,
+      district VARCHAR(100),
+      city VARCHAR(100),
+      contact_phone VARCHAR(20) DEFAULT '01100111618',
+      owner_id INT,
+      status VARCHAR(20) DEFAULT 'pending',
+      is_featured BOOLEAN DEFAULT false,
+      views INT DEFAULT 0,
+      has_parking BOOLEAN DEFAULT false,
+      has_elevator BOOLEAN DEFAULT false,
+      has_garden BOOLEAN DEFAULT false,
+      has_pool BOOLEAN DEFAULT false,
+      has_basement BOOLEAN DEFAULT false,
+      is_furnished BOOLEAN DEFAULT false,
+      down_payment VARCHAR(100),
+      delivery_status VARCHAR(100),
+      finishing_type VARCHAR(50),
+      floor_plan_image TEXT,
+      google_maps_url TEXT,
+      approved_by INT,
+      approved_at TIMESTAMP NULL,
+      sold_to INT,
+      sold_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT,
+      url TEXT NOT NULL,
+      is_primary BOOLEAN DEFAULT false,
+      order_index INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS saved_properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      property_id INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_save (user_id, property_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      type VARCHAR(50),
+      title VARCHAR(300),
+      message TEXT,
+      property_data JSON,
+      user_data JSON,
+      link TEXT,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS payment_requests (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT,
+      buyer_id INT,
+      amount NUMERIC,
+      payment_method VARCHAR(50),
+      notes TEXT,
+      screenshot_url TEXT,
+      contact_phone VARCHAR(20),
+      status VARCHAR(20) DEFAULT 'pending',
+      processed_by INT,
+      processed_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS contact_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(200) NOT NULL,
+      email VARCHAR(200) NOT NULL,
+      phone VARCHAR(30),
+      subject VARCHAR(300) NOT NULL,
+      message TEXT NOT NULL,
+      ip_address VARCHAR(50),
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_tickets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      subject TEXT,
+      status VARCHAR(20) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT,
+      sender_id INT,
+      content TEXT,
+      is_admin BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_chat_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT,
+      sender_id INT,
+      content TEXT,
+      is_admin BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS otp_codes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      identifier VARCHAR(200) NOT NULL,
+      code VARCHAR(6) NOT NULL,
+      type VARCHAR(20) NOT NULL,
+      user_data JSON,
+      attempts INT DEFAULT 0,
+      locked_until TIMESTAMP NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT false,
+      last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS trusted_devices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      device_id VARCHAR(64) NOT NULL,
+      device_name VARCHAR(200),
+      last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_device (user_id, device_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS email_verification (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      is_verified BOOLEAN DEFAULT false,
+      verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+  ];
+
+  for (const sql of migrations) {
+    try {
+      await pool.query(sql);
+      console.log('[MIGRATION] Executed successfully');
+    } catch (e: any) {
+      console.log('[MIGRATION] Skipped or error:', e.message);
+    }
+  }
+
+  // Seed default accounts
+  const seedAccounts = [
+    { name: 'Super Admin', email: 'admin@greatsociety.com', phone: '01100111618', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
+    { name: 'مدخل بيانات', email: 'dataentry@greatsociety.com', phone: '01100111619', password: 'DataEntry@123', role: 'admin', sub_role: 'data_entry' },
+    { name: 'مدير عقارات', email: 'propmanager@greatsociety.com', phone: '01100111620', password: 'PropMgr@123', role: 'admin', sub_role: 'property_manager' },
+    { name: 'دعم فني', email: 'support@greatsociety.com', phone: '01100111621', password: 'Support@123', role: 'admin', sub_role: 'support' },
+  ];
+
+  for (const acc of seedAccounts) {
+    try {
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.default.hash(acc.password, 10);
+      await pool.query(
+        `INSERT IGNORE INTO users (name, email, phone, password_hash, role, sub_role) VALUES (?, ?, ?, ?, ?, ?)`,
+        [acc.name, acc.email, acc.phone, hash, acc.role, acc.sub_role]
+      );
+      console.log('[SEED] Account created:', acc.email);
+    } catch (e: any) {
+      console.log('[SEED] Skipped:', e.message);
+    }
+  }
+}
+
+function generateDeviceId(req: any): string {
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  const ua = req.headers['user-agent'] || 'unknown';
+  return Buffer.from(ip + ua).toString('base64').slice(0, 64);
+}
+
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// ========== SECURITY HELPERS ==========
+
+// Rate limiting storage
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 10; // 10 requests per minute per identifier
+
+function checkRateLimit(identifier: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(identifier);
+  
+  if (!record || now > record.resetAt) {
+    rateLimitStore.set(identifier, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - record.count };
+}
+
+// Input sanitization
+function sanitizeString(str: string | undefined, maxLength = 300): string {
+  if (!str) return '';
+  return str.trim().slice(0, maxLength).replace(/[<>'";&]/g, '');
+}
+
+function sanitizeEmail(email: string | undefined): string {
+  if (!email) return '';
+  return email.toLowerCase().trim().slice(0, 200).replace(/[^a-z0-9@._-]/g, '');
+}
+
+function sanitizePhone(phone: string | undefined): string {
+  if (!phone) return '';
+  return phone.replace(/[^0-9+]/g, '').slice(0, 20);
+}
+
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validatePassword(password: string): { valid: boolean; error?: string } {
+  if (password.length < 8) return { valid: false, error: 'كلمة المرور 8 أحرف minimum' };
+  if (!/[A-Z]/.test(password)) return { valid: false, error: 'حرف كبير مطلوب' };
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return { valid: false, error: 'رمز خاص مطلوب' };
+  return { valid: true };
+}
+
+function validateId(idStr: string | undefined): number | null {
+  if (!idStr) return null;
+  const id = parseInt(idStr, 10);
+  return (isNaN(id) || id <= 0 || id > 2147483647) ? null : id;
+}
+
+function validateNumeric(value: any, max: number = 999999999): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const num = parseFloat(value);
+  return (isNaN(num) || num < 0 || num > max) ? null : num;
+}
+
+function validateBoolean(value: any): boolean {
+  return value === true || value === 'true' || value === 1 || value === '1';
+}
+
+function validateEnum(value: string | undefined, allowed: string[]): string | null {
+  if (!value) return null;
+  return allowed.includes(value) ? value : null;
+}
+
+function verifyToken(token: string): any {
+  try {
+    const jwt = require('jsonwebtoken');
+    return jwt.verify(token, JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function generateToken(payload: any): string {
+  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+async function consumeOTP(identifier: string, code: string, type: string, pool: any) {
+  const [rows]: any = await pool.query(
+    `SELECT * FROM otp_codes 
+     WHERE identifier=? AND type=? AND used=false AND expires_at > NOW()
+     ORDER BY created_at DESC LIMIT 1`,
+    [identifier, type]
+  );
+
+  if (rows.length === 0) {
+    return { valid: false, error: 'لم يتم طلب رمز تحقق لهذا الحساب، أعد الإرسال' };
+  }
+
+  const rec = rows[0];
+
+  if (rec.locked_until && new Date(rec.locked_until) > new Date()) {
+    const mins = Math.ceil((new Date(rec.locked_until).getTime() - Date.now()) / 60000);
+    return { valid: false, error: `محجوب بسبب محاولات خاطئة متكررة. حاول بعد ${mins} دقيقة` };
+  }
+
+  if (new Date(rec.expires_at) < new Date()) {
+    return { valid: false, error: 'انتهت صلاحية رمز التحقق. اضغط إعادة الإرسال' };
+  }
+
+  if (rec.code !== code.trim()) {
+    const attempts = rec.attempts + 1;
+    if (attempts >= 3) {
+      const lockedUntil = new Date(Date.now() + 10 * 60 * 1000);
+      await pool.query('UPDATE otp_codes SET attempts=?, locked_until=? WHERE id=?', [attempts, lockedUntil, rec.id]);
+      return { valid: false, error: 'تجاوزت الحد الأقصى للمحاولات. محجوب لمدة 10 دقائق' };
+    }
+    await pool.query('UPDATE otp_codes SET attempts=? WHERE id=?', [attempts, rec.id]);
+    return { valid: false, error: `رمز التحقق غير صحيح. ${3 - attempts} محاولة متبقية` };
+  }
+
+  await pool.query('UPDATE otp_codes SET used=true WHERE id=?', [rec.id]);
+  return { valid: true, userData: rec.user_data, deviceId: rec.device_id };
+}
+
+// Allowed origins from env (comma-separated)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://greatsociety-eg.com,https://greate-web-12.vercel.app').split(',');
+
 export default async function handler(req: any, res: any) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // CORS - specific origins only
+  const origin = req.headers.origin;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
-  
-  const { query, method, url } = req;
-  
-  // Build MySQL config from Vercel environment variables
+
+  const { query: urlQuery, method, url, headers, body } = req;
+  const authHeader = headers.authorization;
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
+  const user = token ? verifyToken(token) : null;
+
   const dbConfig = {
     host: process.env.DB_HOST || 'srv2121.hstgr.io',
     user: process.env.DB_USER || 'u156204542_amr',
@@ -24,127 +368,951 @@ export default async function handler(req: any, res: any) {
     connectionLimit: 2,
     queueLimit: 0
   };
-  
-  console.log('[DEBUG] DB config host:', dbConfig.host);
-  console.log('[DEBUG] DB config user:', dbConfig.user);
-  console.log('[DEBUG] DB config database:', dbConfig.database);
-  
+
   let pool;
   try {
     pool = mysql.createPool(dbConfig);
-    console.log('[DEBUG] Pool created');
   } catch (e: any) {
-    console.log('[ERROR] Pool creation failed:', e.message);
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
   }
-  
-  // /api/health
-  if (url?.includes('/api/health')) {
+
+  // Run migrations on every request (lightweight check)
+  await runMigrations(pool);
+
+  // ========== AUTH ENDPOINTS ==========
+
+  // POST /api/auth/login
+  if (method === 'POST' && url?.includes('/api/auth/login')) {
+    try {
+      // Rate limit check
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const rateCheck = checkRateLimit(`login:${clientIP}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: 'تجاوزت الحد. حاول لاحقاً' });
+      }
+
+      const { emailOrPhone, password } = body;
+      if (!emailOrPhone || !password) {
+        return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+      }
+
+      const [rows]: any = await pool.query(
+        'SELECT * FROM users WHERE (email=? OR phone=?) AND is_active=true',
+        [emailOrPhone, emailOrPhone]
+      );
+
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'بيانات غير صحيحة' });
+      }
+
+      const userData = rows[0];
+      const bcrypt = await import('bcryptjs');
+      const valid = await bcrypt.default.compare(password, userData.password_hash);
+
+      if (!valid) {
+        return res.status(401).json({ error: 'بيانات غير ��حي��ة' });
+      }
+
+      const newToken = generateToken({
+        id: userData.id,
+        role: userData.role,
+        sub_role: userData.sub_role,
+        email: userData.email
+      });
+
+      const { password_hash, ...safeUser } = userData;
+      return res.json({ user: safeUser, token: newToken });
+    } catch (err: any) {
+      console.log('[ERROR] Login:', err.message);
+      return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
+    }
+  }
+
+  // POST /api/auth/register
+  if (method === 'POST' && url?.includes('/api/auth/register')) {
+    try {
+      // Rate limit check
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const rateCheck = checkRateLimit(`register:${clientIP}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: 'تجاوزت الحد. حاول لاحقاً' });
+      }
+
+      const { name, email, phone, password, deviceId } = body;
+      if (!name || !email || !phone || !password) {
+        return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+      }
+
+      // Input validation
+      const sanitizedEmail = sanitizeEmail(email);
+      const sanitizedPhone = sanitizePhone(phone);
+      const sanitizedName = sanitizeString(name, 200);
+      
+      if (!validateEmail(sanitizedEmail)) {
+        return res.status(400).json({ error: 'بريد إلكتروني غير صحيح' });
+      }
+
+      const passCheck = validatePassword(password);
+      if (!passCheck.valid) {
+        return res.status(400).json({ error: passCheck.error });
+      }
+
+      const [existing]: any = await pool.query('SELECT id FROM users WHERE email=? OR phone=?', [sanitizedEmail, sanitizedPhone]);
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'البريد الإلكتروني أو رقم الهاتف مسجل مسبقاً' });
+      }
+
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.default.hash(password, 12);
+
+      const [result]: any = await pool.query(
+        `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, 'user')`,
+        [sanitizedName, sanitizedEmail, sanitizedPhone, hash]
+      );
+
+      const newToken = generateToken({
+        id: result.insertId,
+        role: 'user',
+        email
+      });
+
+      return res.json({
+        user: { id: result.insertId, name, email, phone, role: 'user' },
+        token: newToken
+      });
+    } catch (err: any) {
+      console.log('[ERROR] Register:', err.message);
+      return res.status(500).json({ error: 'خطأ في التسجيل' });
+    }
+  }
+
+  // POST /api/auth/send-otp
+  if (method === 'POST' && url?.includes('/api/auth/send-otp')) {
+    try {
+      // Rate limit check
+      const rateCheck = checkRateLimit(`otp:${body.email}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: 'تجاوزت الحد. حاول بعد 60 ثانية' });
+      }
+
+      const { email, type = 'register' } = body;
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+      const sanitizedEmail = sanitizeEmail(email);
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type=? AND used=false`,
+        [email, type]
+      );
+
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, expires_at) VALUES (?, ?, ?, ?)`,
+        [email, otp, type, expiresAt]
+      );
+
+      return res.json({ success: true, devOtp: otp, message: `تم إنشاء رمز التحقق` });
+    } catch (err: any) {
+      console.log('[ERROR] Send OTP:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/auth/verify-otp
+  if (method === 'POST' && url?.includes('/api/auth/verify-otp')) {
+    try {
+      const { email, otp, type = 'register' } = body;
+      if (!email || !otp) {
+        return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
+      }
+
+      const result = await consumeOTP(email, otp, type, pool);
+      if (!result.valid) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      // If register type, create user
+      if (type === 'register') {
+        const userData = result.userData ? JSON.parse(result.userData) : {};
+        const bcrypt = await import('bcryptjs');
+        const hash = await bcrypt.default.hash(userData.passwordHash || 'default', 12);
+
+        const [existing]: any = await pool.query('SELECT id FROM users WHERE email=?', [email]);
+        if (existing.length === 0) {
+          await pool.query(
+            `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, 'user')`,
+            [userData.name || email, email, userData.phone || null, hash]
+          );
+        }
+      }
+
+      return res.json({ success: true, message: 'تم التحقق بنجاح' });
+    } catch (err: any) {
+      console.log('[ERROR] Verify OTP:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/auth/forgot-password
+  if (method === 'POST' && url?.includes('/api/auth/forgot-password')) {
+    try {
+      const { email } = body;
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+      const [rows]: any = await pool.query('SELECT id, name FROM users WHERE email=? AND is_active=true', [email]);
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'لم يتم العثور على حساب بهذا البريد الإلكتروني' });
+      }
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await pool.query(
+        `DELETE FROM otp_codes WHERE identifier=? AND type='forgot-password' AND used=false`,
+        [email]
+      );
+
+      await pool.query(
+        `INSERT INTO otp_codes (identifier, code, type, expires_at) VALUES (?, ?, 'forgot-password', ?)`,
+        [email, otp, expiresAt]
+      );
+
+      return res.json({ success: true, devOtp: otp });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/auth/reset-password
+  if (method === 'POST' && url?.includes('/api/auth/reset-password')) {
+    try {
+      const { email, otp, newPassword } = body;
+      if (!email || !otp || !newPassword) {
+        return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+      }
+
+      const result = await consumeOTP(email, otp, 'forgot-password', pool);
+      if (!result.valid) return res.status(400).json({ error: result.error });
+
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.default.hash(newPassword, 12);
+      await pool.query('UPDATE users SET password_hash=? WHERE email=?', [hash, email]);
+
+      return res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/auth/me
+  if (method === 'GET' && url?.includes('/api/auth/me')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT id, name, email, phone, role, sub_role, avatar_url, email_verified, email_verified_at, created_at FROM users WHERE id=?',
+        [user.id]
+      );
+      return res.json(rows[0] || { error: 'Not found' });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PUT /api/auth/profile
+  if (method === 'PUT' && url?.includes('/api/auth/profile')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { name, phone, avatar_url } = body;
+      const [result]: any = await pool.query(
+        `UPDATE users SET name=?, phone=?, avatar_url=? WHERE id=?`,
+        [name, phone, avatar_url || null, user.id]
+      );
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PUT /api/auth/change-password
+  if (method === 'PUT' && url?.includes('/api/auth/change-password')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { currentPassword, newPassword } = body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+      }
+
+      const [rows]: any = await pool.query('SELECT password_hash FROM users WHERE id=?', [user.id]);
+      const bcrypt = await import('bcryptjs');
+      const valid = await bcrypt.default.compare(currentPassword, rows[0].password_hash);
+      if (!valid) return res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+
+      const newHash = await bcrypt.default.hash(newPassword, 12);
+      await pool.query('UPDATE users SET password_hash=? WHERE id=?', [newHash, user.id]);
+
+      return res.json({ success: true, message: 'تم تغيير كلمة المرور' });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== PROPERTIES ENDPOINTS ==========
+
+  // GET /api/properties
+  if (method === 'GET' && url?.includes('/api/properties')) {
+    try {
+      const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12 } = urlQuery;
+      let conditions = ["p.status = 'approved'"];
+      const params: any[] = [];
+      let idx = 1;
+
+      if (type) { conditions.push(`p.type = ?`); params.push(type); }
+      if (purpose) { conditions.push(`p.purpose = ?`); params.push(purpose); }
+      if (district) { conditions.push(`p.district LIKE ?`); params.push(`%${district}%`); }
+      if (minPrice) { conditions.push(`p.price >= ?`); params.push(Number(minPrice)); }
+      if (maxPrice) { conditions.push(`p.price <= ?`); params.push(Number(maxPrice)); }
+      if (rooms) { conditions.push(`p.rooms >= ?`); params.push(Number(rooms)); }
+      if (search) {
+        conditions.push(`(p.title LIKE ? OR p.title_ar LIKE ? OR p.district LIKE ?)`);
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+      const offset = (Number(page) - 1) * Number(limit);
+
+      const [rows]: any = await pool.query(`
+        SELECT p.*, u.name as owner_name,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
+          (SELECT json_agg(pi2.url) FROM property_images pi2 WHERE pi2.property_id = p.id LIMIT 5) as images
+        FROM properties p
+        LEFT JOIN users u ON u.id = p.owner_id
+        ${where}
+        ORDER BY p.is_featured DESC, p.created_at DESC
+        LIMIT ? OFFSET ?
+      `, [...params, Number(limit), offset]);
+
+      return res.json({ properties: rows, page: Number(page) });
+    } catch (err: any) {
+      console.log('[ERROR] Properties:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET /api/properties/featured
+  if (method === 'GET' && url?.includes('/api/properties/featured')) {
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT p.*,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
+          (SELECT json_agg(json_build_object('id', pi2.id, 'url', pi2.url, 'is_primary', pi2.is_primary)) FROM property_images pi2 WHERE pi2.property_id = p.id) as images
+        FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
+        ORDER BY p.created_at DESC LIMIT 6
+      `);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/properties/:id
+  if (method === 'GET' && url?.match(/\/api\/properties\/\d+/)) {
+    try {
+      const idStr = url.match(/\/api\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(`
+        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email,
+          (SELECT json_agg(json_build_object('id', pi.id, 'url', pi.url, 'is_primary', pi.is_primary)) FROM property_images pi WHERE pi.property_id = p.id) as images
+        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
+      `, [id]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'العقار غير موجود' });
+      }
+
+      await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
+
+      return res.json(rows[0]);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/properties
+  if (method === 'POST' && url?.includes('/api/properties')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const {
+        title, title_ar, description, type, purpose, price, area, rooms, bedrooms, bathrooms, floor,
+        address, district, contact_phone, down_payment, delivery_status, is_featured, images,
+        is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
+        finishing_type, floor_plan_image, google_maps_url
+      } = body;
+
+      const displayTitle = title_ar || title || '';
+      const isStaff = user.role === 'superadmin' || (user.role === 'admin' && ['data_entry', 'property_manager'].includes(user.sub_role || ''));
+      const initialStatus = isStaff ? 'approved' : 'pending';
+      const finalPhone = contact_phone || user.phone || '01100111618';
+
+      const [result]: any = await pool.query(`
+        INSERT INTO properties (
+          title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms,
+          bathrooms, floor, address, district, contact_phone, down_payment, delivery_status,
+          is_featured, is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
+          finishing_type, floor_plan_image, google_maps_url, owner_id, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        displayTitle, displayTitle, description, description, type, purpose || 'sale', price, area,
+        rooms || bedrooms, bedrooms || rooms, bathrooms, floor, address, district, finalPhone,
+        down_payment || null, delivery_status || null,
+        Boolean(is_featured), Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
+        Boolean(has_pool), Boolean(has_garden), Boolean(has_basement),
+        finishing_type || null, floor_plan_image || null, google_maps_url || null,
+        user.id, initialStatus
+      ]);
+
+      const propertyId = result.insertId;
+
+      if (images && images.length > 0) {
+        for (let i = 0; i < images.length; i++) {
+          await pool.query(
+            'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES (?, ?, ?, ?)',
+            [propertyId, images[i], i === 0, i]
+          );
+        }
+      }
+
+      return res.status(201).json({ id: propertyId, status: initialStatus, message: initialStatus === 'pending' ? 'تم إرسال العقار للمراجعة' : 'تم إضافة العقار' });
+    } catch (err: any) {
+      console.log('[ERROR] Create property:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // POST /api/properties/:id/save
+  if (method === 'POST' && url?.match(/\/api\/properties\/\d+\/save$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const idStr = url.match(/\/api\/properties\/(\d+)\/save/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('INSERT IGNORE INTO saved_properties (user_id, property_id) VALUES (?, ?)', [user.id, id]);
+      return res.json({ saved: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // DELETE /api/properties/:id/save
+  if (method === 'DELETE' && url?.match(/\/api\/properties\/\d+\/save$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const idStr = url.match(/\/api\/properties\/(\d+)\/save/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      await pool.query('DELETE FROM saved_properties WHERE user_id=? AND property_id=?', [user.id, id]);
+      return res.json({ saved: false });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/properties/user/saved
+  if (method === 'GET' && url?.includes('/api/properties/user/saved')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT p.*, (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
+        FROM saved_properties sp JOIN properties p ON p.id = sp.property_id WHERE sp.user_id = ?
+      `, [user.id]);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== ADMIN ENDPOINTS ==========
+
+  // GET /api/admin/stats
+  if (method === 'GET' && url?.includes('/api/admin/stats')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [[props], [users], [pending], [sold], [revenue]] = await Promise.all([
+        pool.query("SELECT COUNT(*) as cnt FROM properties WHERE status='approved'"),
+        pool.query("SELECT COUNT(*) as cnt FROM users WHERE role='user'"),
+        pool.query("SELECT COUNT(*) as cnt FROM properties WHERE status='pending'"),
+        pool.query("SELECT COUNT(*) as cnt FROM properties WHERE status='sold'"),
+        pool.query("SELECT COALESCE(SUM(amount),0) as total FROM payment_requests WHERE status='completed'"),
+      ]);
+      return res.json({
+        totalProperties: props[0]?.cnt || 0,
+        totalUsers: users[0]?.cnt || 0,
+        pendingProperties: pending[0]?.cnt || 0,
+        soldProperties: sold[0]?.cnt || 0,
+        totalRevenue: revenue[0]?.total || 0,
+      });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/admin/properties
+  if (method === 'GET' && url?.includes('/api/admin/properties')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT p.*,
+          u.name as owner_name, u.email as owner_email, u.phone as owner_phone,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary=true LIMIT 1) as primary_image
+        FROM properties p LEFT JOIN users u ON u.id = p.owner_id ORDER BY p.created_at DESC
+      `);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+// GET /api/admin/properties/:id
+  if (method === 'GET' && url?.match(/\/api\/admin\/properties\/\d+$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(`
+        SELECT p.*,
+          u.name as owner_name, u.email as owner_email, u.phone as owner_phone, u.id as owner_user_id
+        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id=?
+      `, [id]);
+      return res.json(rows[0] || { error: 'Not found' });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:id/approve
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/approve$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/approve/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query(
+        `UPDATE properties SET status='approved', approved_by=?, approved_at=NOW() WHERE id=?`,
+        [user.id, id]
+      );
+
+      const [propRows]: any = await pool.query('SELECT owner_id FROM properties WHERE id=?', [id]);
+      if (propRows[0]?.owner_id) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_approved', 'تمت الموافقة على عقارك', 'تمت الموافقة على عقارك')`,
+          [propRows[0].owner_id]
+        );
+      }
+
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:id/reject
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/reject$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/reject/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query("UPDATE properties SET status='rejected' WHERE id=?", [id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:id
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const {
+        title, title_ar, description, price, area, bedrooms, bathrooms, district,
+        city, address, type, purpose, floor, contact_phone, is_featured
+      } = body;
+
+      await pool.query(`
+        UPDATE properties SET
+          title=COALESCE(?, title), title_ar=COALESCE(?, title_ar),
+          description=COALESCE(?, description), price=?, area=?, bedrooms=?, bathrooms=?,
+          district=?, city=?, address=?, type=?, purpose=?, floor=?, contact_phone=?,
+          is_featured=?, updated_at=NOW()
+        WHERE id=?
+      `, [
+        title, title_ar, description, price, area, bedrooms, bathrooms,
+        district, city, address, type, purpose, floor, contact_phone,
+        typeof is_featured === 'boolean' ? is_featured : null,
+        id
+      ]);
+
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // DELETE /api/admin/properties/:id
+  if (method === 'DELETE' && url?.match(/\/api\/admin\/properties\/\d+/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('DELETE FROM property_images WHERE property_id=?', [id]);
+      await pool.query('DELETE FROM properties WHERE id=?', [id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/admin/users
+  if (method === 'GET' && url?.includes('/api/admin/users')) {
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT id, name, email, phone, role, sub_role, is_active, created_at FROM users ORDER BY created_at DESC'
+      );
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/users/:id/role
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/users\/\d+\/role$/)) {
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/users\/(\d+)\/role/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const roleStr = body.role;
+      const allowedRoles = ['user', 'admin', 'superadmin'];
+      const validRole = validateEnum(roleStr, allowedRoles);
+      if (!validRole) return res.status(400).json({ error: 'دور غير صالح' });
+      
+      await pool.query('UPDATE users SET role=?, sub_role=? WHERE id=?', [validRole, body.sub_role || null, id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== NOTIFICATIONS ENDPOINTS ==========
+
+  // GET /api/notifications
+  if (method === 'GET' && url?.includes('/api/notifications')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/unread-count
+  if (method === 'GET' && url?.includes('/api/notifications/unread-count')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [[row]]: any = await pool.query(
+        'SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = false',
+        [user.id]
+      );
+      return res.json({ count: row?.cnt || 0 });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/notifications/mark-all-read
+  if (method === 'PATCH' && url?.includes('/api/notifications/mark-all-read')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      await pool.query('UPDATE notifications SET is_read = true WHERE user_id = ?', [user.id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== CONTACT ENDPOINTS ==========
+
+  // POST /api/contact
+  if (method === 'POST' && url?.includes('/api/contact')) {
+    try {
+      // Rate limit check
+      const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+      const rateCheck = checkRateLimit(`contact:${clientIP}`);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: 'تجاوزت الحد. حاول لاحقاً' });
+      }
+
+      const { name, email, phone, subject, message } = body;
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ error: 'جميع الحقول المطلوبة يجب ملؤها' });
+      }
+
+      // Input sanitization
+      const sanitizedName = sanitizeString(name, 200);
+      const sanitizedEmail = sanitizeEmail(email);
+      const sanitizedPhone = sanitizePhone(phone);
+      const sanitizedSubject = sanitizeString(subject, 300);
+      const sanitizedMessage = sanitizeString(message, 5000);
+
+      if (!validateEmail(sanitizedEmail)) {
+        return res.status(400).json({ error: 'بريد إلكتروني غير صحيح' });
+      }
+
+      await pool.query(
+        `INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)`,
+        [sanitizedName, sanitizedEmail, sanitizedPhone, sanitizedSubject, sanitizedMessage]
+      );
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Contact:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/contact (admin only)
+  if (method === 'GET' && url?.includes('/api/contact')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query('SELECT * FROM contact_messages ORDER BY created_at DESC');
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== PAYMENTS ENDPOINTS ==========
+
+  // POST /api/payments
+  if (method === 'POST' && url?.includes('/api/payments')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { property_id, amount, payment_method, notes, screenshot_url } = body;
+
+      const [propRows]: any = await pool.query("SELECT * FROM properties WHERE id=? AND status='approved'", [property_id]);
+      if (propRows.length === 0) {
+        return res.status(404).json({ error: 'العقار غير متاح' });
+      }
+
+      const prop = propRows[0];
+      const contactPhone = prop.contact_phone || '01100111618';
+
+      const [result]: any = await pool.query(
+        `INSERT INTO payment_requests (property_id, buyer_id, amount, payment_method, notes, screenshot_url, contact_phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        [property_id, user.id, amount, payment_method, notes, screenshot_url || null, contactPhone]
+      );
+
+      // Notify admins
+      const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('admin','superadmin')");
+      for (const admin of admins) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'purchase_request', 'طلب شراء جديد', ?)`,
+          [admin.id, `طلب شراء من ${user.email} - المبلغ: ${amount}`]
+        );
+      }
+
+      return res.status(201).json({
+        payment: result,
+        walletInfo: {
+          instapay: contactPhone,
+          vodafone: contactPhone,
+          message: `يرجى تحويل مبلغ ${amount} جنيه`
+        }
+      });
+    } catch (err: any) {
+      console.log('[ERROR] Payment:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/payments/my-payments
+  if (method === 'GET' && url?.includes('/api/payments/my-payments')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT pr.*, p.title as property_title
+        FROM payment_requests pr
+        LEFT JOIN properties p ON p.id = pr.property_id
+        WHERE pr.buyer_id = ? ORDER BY pr.created_at DESC
+      `, [user.id]);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== SUPPORT ENDPOINTS ==========
+
+  // POST /api/support/tickets
+  if (method === 'POST' && url?.includes('/api/support/tickets')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { subject } = body;
+      const [result]: any = await pool.query(
+        "INSERT INTO support_tickets (user_id, subject, status) VALUES (?, ?, 'open')",
+        [user.id, subject]
+      );
+      return res.status(201).json(result);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/support/tickets
+  if (method === 'GET' && url?.includes('/api/support/tickets')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      let rows;
+      if (['admin', 'superadmin'].includes(user.role) || user.sub_role === 'support') {
+        [rows] = await pool.query(`
+          SELECT st.*, u.name as user_name, u.phone as user_phone, u.email as user_email
+          FROM support_tickets st JOIN users u ON u.id = st.user_id ORDER BY st.created_at DESC
+        `);
+      } else {
+        [rows] = await pool.query('SELECT * FROM support_tickets WHERE user_id=? ORDER BY created_at DESC', [user.id]);
+      }
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== PROPERTY CHAT ENDPOINTS ==========
+
+  // GET /api/property-chat/:propertyId/messages
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
+      const propertyId = validateId(propertyIdStr);
+      if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(`
+        SELECT m.*, u.name as sender_name, u.role as sender_role
+        FROM property_chat_messages m
+        JOIN users u ON u.id = m.sender_id
+        WHERE m.property_id = ?
+        ORDER BY m.created_at ASC
+      `, [propertyId]);
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/property-chat/:propertyId/messages
+  if (method === 'POST' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
+      const propertyId = validateId(propertyIdStr);
+      if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const content = sanitizeString(body.content, 2000);
+      if (!content.trim()) return res.status(400).json({ error: 'الرسالة مطلوبة' });
+
+      const isAdmin = ['superadmin', 'admin'].includes(user.role);
+
+      const [result]: any = await pool.query(
+        `INSERT INTO property_chat_messages (property_id, sender_id, content, is_admin) VALUES (?, ?, ?, ?)`,
+        [propertyId, user.id, content.trim(), isAdmin]
+      );
+
+      return res.status(201).json({ id: result.insertId, content: content.trim(), is_admin: isAdmin });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== HEALTH CHECK ==========
+
+  // GET /api/health
+  if (method === 'GET' && url?.includes('/api/health')) {
     let dbStatus = 'error';
     try {
       const conn = await pool.getConnection();
       await conn.ping();
       conn.release();
       dbStatus = 'connected';
-      console.log('[DEBUG] Health OK');
-    } catch (e: any) { 
-      console.log('[ERROR] Health failed:', e.message);
-      dbStatus = 'error: ' + e.message; 
+    } catch (e: any) {
+      dbStatus = "error: " + e.message;
     }
     await pool.end();
-    return res.json({ ok: true, service: 'إسكنك API', db: dbStatus, timestamp: new Date().toISOString() });
+    return res.json({ ok: true, service: 'Great Society API', db: dbStatus, timestamp: new Date().toISOString() });
   }
-  
-  // /api/properties
-  if (method === 'GET' && url?.includes('/api/properties')) {
+
+  // ========== CRON ==========
+
+  // GET /api/cron
+  if (method === 'GET' && url?.includes('/api/cron')) {
     try {
-      const limit = parseInt(query.limit as string) || 50;
-      const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name 
-        FROM properties p 
-        LEFT JOIN users u ON u.id = p.owner_id 
-        WHERE p.status = 'approved' 
-        ORDER BY p.created_at DESC 
-        LIMIT ?
-      `, [limit]);
-      
-      for (const prop of rows) {
-        const [images]: any = await pool.query('SELECT * FROM property_images WHERE property_id = ?', [prop.id]);
-        prop.images = images;
-      }
-      
-      await pool.end();
-      return res.json(rows);
-    } catch (err: any) { 
-      console.log('[ERROR] Properties:', err.message);
-      await pool.end();
-      return res.status(500).json({ error: err.message }); 
+      // Cleanup old OTPs
+      await pool.query(`DELETE FROM otp_codes WHERE expires_at < NOW() OR (used = true AND created_at < NOW() - INTERVAL '24 hours')`);
+      console.log('[CRON] Cleanup completed');
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[CRON] Error:', err.message);
+      return res.status(500).json({ error: err.message });
     }
   }
-  
-  // /api/properties/:id
-  if (method === 'GET' && url?.match(/\/api\/properties\/\d+/)) {
-    try {
-      const id = url.match(/\/api\/properties\/(\d+)/)?.[1];
-      const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
-        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
-      `, [id]);
-      
-      if (rows.length > 0) {
-        const [images]: any = await pool.query('SELECT * FROM property_images WHERE property_id = ?', [id]);
-        rows[0].images = images;
-      }
-      
-      await pool.end();
-      return res.json(rows[0] || { error: 'Not found' });
-    } catch (err: any) { 
-      await pool.end();
-      return res.status(500).json({ error: err.message }); 
-    }
-  }
-  
-  // /api/auth/login
-  if (method === 'POST' && url?.includes('/api/auth/login')) {
-    try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        await pool.end();
-        return res.status(400).json({ error: 'Email and password required' });
-      }
-      
-      const [rows]: any = await pool.query('SELECT id, name, email, password_hash, role, sub_role FROM users WHERE email = ? AND is_active = true', [email]);
-      
-      if (!rows || rows.length === 0) {
-        await pool.end();
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-      
-      const user = rows[0];
-      const bcrypt = await import('bcryptjs');
-      const validPassword = await bcrypt.default.compare(password, user.password_hash);
-      
-      if (!validPassword) {
-        await pool.end();
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-      
-      const jwt = await import('jsonwebtoken');
-      const token = jwt.default.sign(
-        { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email }, 
-        process.env.JWT_SECRET || 'f6b6104a80af41be3d7660d251867a2793a60dd4f664784f1f62dda2c47542a6d47bab11919c736a9757c9f4790e44b2d3e3438bdd3afe9a3b4b69a2f8eb78c3', 
-        { expiresIn: '7d' }
-      );
-      
-      await pool.end();
-      return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, sub_role: user.sub_role } });
-    } catch (err: any) { 
-      console.log('[ERROR] Login:', err.message);
-      await pool.end();
-      return res.status(500).json({ error: 'Login failed', message: err.message }); 
-    }
-  }
-  
+
+  // Default response
   await pool.end();
   return res.json({ ok: true, service: 'Great Society API' });
 }

@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           <div className="absolute top-0 left-0 w-48 h-48 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2" />
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-black">{user.name.charAt(0)}</div>
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-black">{user.name?.charAt(0) || '؟'}</div>
               <div>
                 <h1 className="text-2xl font-black">لوحة الإدارة</h1>
                 <p className="text-[#99c8db] text-sm">مرحباً، {user.name}</p>
