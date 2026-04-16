@@ -2,7 +2,26 @@ import mysql from 'mysql2/promise';
 
 export default async function handler(req: any, res: any) {
   const { query, method } = req;
-  const dbUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+  
+  // Debug all env vars
+  const envKeys = Object.keys(process.env).filter(k => k.includes('DB') || k.includes('MYSQL') || k.includes('DATABASE'));
+  console.log('[DEBUG] Env keys found:', envKeys);
+  console.log('[DEBUG] All env:', JSON.stringify(process.env).substring(0, 500));
+  
+  // Try to get DATABASE_URL from different possible env var names
+  let dbUrl = process.env.DATABASE_URL || process.env.MYSQL_URL || process.env.JAWSDB_URL || process.env.CLEARDB_DATABASE_URL;
+  
+  // If still not found, try to construct from individual vars
+  if (!dbUrl && process.env.DB_HOST) {
+    const user = process.env.DB_USER || process.env.DB_USERNAME;
+    const pass = process.env.DB_PASSWORD;
+    const host = process.env.DB_HOST;
+    const port = process.env.DB_PORT || '3306';
+    const name = process.env.DB_NAME || process.env.DB_DATABASE;
+    dbUrl = `mysql://${user}:${pass}@${host}:${port}/${name}`;
+  }
+  
+  console.log('[DEBUG] dbUrl resolved:', dbUrl ? dbUrl.substring(0, 30) + '...' : 'NULL');
   
   // /api/health
   if (query.msg === 'health' || req.url?.includes('/api/health')) {
