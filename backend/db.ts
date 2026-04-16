@@ -20,10 +20,20 @@ function getPool() {
   return pool;
 }
 
+function convertPlaceholders(sql: string): string {
+  if (!sql.includes('$')) return sql;
+  let counter = 0;
+  return sql.replace(/\$(\d+)/g, () => {
+    counter++;
+    return '?';
+  });
+}
+
 export const query = async (text: string, params?: any[]) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.execute(text, params);
+    const convertedSql = convertPlaceholders(text);
+    const [rows] = await pool.execute(convertedSql, params);
     return { rows: Array.isArray(rows) ? rows : [rows] };
   } catch (err: any) {
     console.error('[DB ERROR]', err.message);
