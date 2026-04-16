@@ -3,8 +3,10 @@ import mysql from 'mysql2/promise';
 async function runMigrations() {
   const connectionString = process.env.DATABASE_URL;
   
+  console.log('[DB] DATABASE_URL:', connectionString);
+  
   if (!connectionString) {
-    console.error('[DB] No DATABASE_URL');
+    console.error('[DB] No DATABASE_URL - skipping migrations');
     return;
   }
 
@@ -14,9 +16,24 @@ async function runMigrations() {
     connectionLimit: 10
   });
 
+  // Test connection first
+  try {
+    const connection = await pool.getConnection();
+    console.log('[DB] Connected to MySQL successfully!');
+    connection.release();
+  } catch (err) {
+    console.error('[DB] Failed to connect:', err.message);
+    throw err;
+  }
+
   const query = async (sql: string, params?: any[]) => {
-    const [rows] = await pool.execute(sql, params);
-    return { rows };
+    try {
+      const [rows] = await pool.execute(sql, params);
+      return { rows };
+    } catch (err: any) {
+      console.error('[DB] Query error:', err.message);
+      throw err;
+    }
   };
 
   try {
