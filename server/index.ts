@@ -14,7 +14,7 @@ import uploadRouter from './routes/upload.js';
 import notificationsRouter from './routes/notifications.js';
 import propertyChatRouter from './routes/property-chat.js';
 import contactRouter from './routes/contact.js';
-import { runMigrations } from './mysql-migrations.js';
+import runMigrations from './mysql-migrations.js';
 
 async function main() {
   try {
