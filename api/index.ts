@@ -389,17 +389,25 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
       
-      // SIMPLE: Get ID 1 user for testing without query parameter issues
-      const [rows]: any = await pool.query('SELECT * FROM users WHERE id = 1');
+      const cleanEmail = emailOrPhone.trim().toLowerCase();
+      const [rows] = await pool.query(
+        'SELECT * FROM users WHERE (LOWER(email)=? OR phone=?) AND is_active != 0',
+        [cleanEmail, emailOrPhone]
+      );
       
       if (!rows || rows.length === 0) {
-        await pool.end();
-        return res.status(401).json({ error: 'No superadmin user' });
+        return res.status(401).json({ error: 'بيانات غير صحيحة' });
       }
       
       const userData = rows[0];
       
-      // Generate token
+      const bcrypt = await import('bcryptjs');
+      const valid = await bcrypt.compare(password, userData.password_hash);
+      
+      if (!valid) {
+        return res.status(401).json({ error: 'بيانات غير صحيحة' });
+      }
+      
       const newToken = generateToken({
         id: userData.id,
         role: userData.role,
@@ -411,86 +419,12 @@ export default async function handler(req: any, res: any) {
       return res.json({ user: safeUser, token: newToken });
     } catch (err: any) {
       console.log('[ERROR] Login:', err.message);
-      await pool.end();
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
     }
     return;
   }
 
-  // POST /api/auth/login - OLD (bypass)
-  if (method === 'POST' && url?.includes('/api/loginold')) {
-    try {
-      const { emailOrPhone, password } = body;
-      
-      // Direct simple SQL test
-      const conn = await pool.getConnection();
-      const [testRows] = await conn.query('SELECT * FROM users LIMIT 1');
-      conn.release();
-      
-      if (!testRows || testRows.length === 0) {
-        await pool.end();
-        return res.status(500).json({ error: 'No users found at all' });
-      }
-
-      const cleanEmail = emailOrPhone.trim().toLowerCase();
-      const [rows] = await pool.query(
-        'SELECT * FROM users WHERE LOWER(email)=? OR phone=?',
-        [cleanEmail, emailOrPhone]
-      );
-
-      if (!rows || rows.length === 0) {
-        await pool.end();
-        return res.status(401).json({ error: 'بيانات غير صحيحة', detail: cleanEmail });
-      }
-      
-      if (rows[0].is_active === 0) {
-        return res.status(401).json({ error: 'الحساب معطل' });
-      }
-
-      const userData = rows[0];
-      
-      // Skip password check for testing
-      if (password === 'TEST_MODE') {
-        const newToken = generateToken({
-          id: userData.id,
-          role: userData.role,
-          sub_role: userData.sub_role,
-          email: userData.email
-        });
-        await pool.end();
-        return res.json({ user: userData, token: newToken, test: true });
-      }
-      
-      const bcrypt = await import('bcryptjs');
-      
-      let valid = false;
-      try {
-        valid = await bcrypt.compare(password, userData.password_hash);
-      } catch (bcErr) {
-        console.log('[BCRYPT ERROR]', bcErr.message);
-        await pool.end();
-        return res.status(500).json({ error: 'bcrypt error', details: bcErr.message });
-      }
-
-      if (!valid) {
-        return res.status(401).json({ error: 'بيانات غير ��حي��ة' });
-      }
-
-      const newToken = generateToken({
-        id: userData.id,
-        role: userData.role,
-        sub_role: userData.sub_role,
-        email: userData.email
-      });
-
-      const { password_hash, ...safeUser } = userData;
-      return res.json({ user: safeUser, token: newToken });
-    } catch (err: any) {
-      console.log('[ERROR] Login:', err.message, err.stack);
-      await pool.end();
-      return res.status(500).json({ error: 'خطأ في تسجيل الدخول', details: err.message });
-    }
-  }
+  
 
   // POST /api/auth/register
   if (method === 'POST' && url?.includes('/api/auth/register')) {

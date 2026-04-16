@@ -12,7 +12,7 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api/.*",
       "dest": "/api/index.ts"
     },
     {
@@ -20,7 +20,7 @@
       "dest": "/dist/assets/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "/.*",
       "dest": "/dist/index.html"
     }
   ],
@@ -29,5 +29,6 @@
       "path": "/api/cron",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "框架": null
 }
