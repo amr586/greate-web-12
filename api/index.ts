@@ -1298,14 +1298,28 @@ export default async function handler(req: any, res: any) {
   // GET /api/health
   if (method === 'GET' && url?.includes('/api/health')) {
     let dbStatus = 'error';
+    let initDone = false;
     try {
       const conn = await pool.getConnection();
       await conn.ping();
       conn.release();
       dbStatus = 'connected';
       
+      // Auto-seed accounts if none exist
+      const [[userCount]] = await pool.query('SELECT COUNT(*) FROM users');
+      if (userCount?.COUNT === 0) {
+        initDone = true;
+        const bcrypt = await import('bcryptjs');
+        // Create superadmin
+        const hash = await bcrypt.default.hash('Admin@GreatSociety1', 10);
+        await pool.query(
+          `INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)`,
+          ['Super Admin', 'admin@greatsociety.com', '01100111618', hash, 'superadmin']
+        );
+      }
+      
       // Get stats
-      const [[userCount], [propCount], [approvedCount]] = await Promise.all([
+      const [[userCnt], [propCount], [approvedCount]] = await Promise.all([
         pool.query('SELECT COUNT(*) FROM users'),
         pool.query('SELECT COUNT(*) FROM properties'),
         pool.query("SELECT COUNT(*) FROM properties WHERE status='approved'")
@@ -1316,8 +1330,9 @@ export default async function handler(req: any, res: any) {
         ok: true, 
         service: 'Great Society API', 
         db: dbStatus, 
+        init: initDone,
         stats: {
-          users: userCount[0]?.COUNT || 0,
+          users: userCnt[0]?.COUNT || 0,
           properties: propCount[0]?.COUNT || 0,
           approved: approvedCount[0]?.COUNT || 0
         },
