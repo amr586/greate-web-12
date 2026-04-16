@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "npm install --legacy-peer-deps && npx vite build",
+    "build": "npm install --legacy-peer-deps && npm install --legacy-peer-deps --include=dev && npx vite build --force",
     "dev": "concurrently \"vite\" \"tsx server/index.ts\"",
     "dev:client": "vite",
     "dev:server": "tsx server/index.ts",
