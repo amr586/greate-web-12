@@ -14,10 +14,6 @@
       "use": "@vercel/node"
     }
   ],
-  "install": {
-    "packageManager": "npm",
-    "production": false
-  },
   "routes": [
     {
       "src": "/api/cron",
