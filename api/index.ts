@@ -553,6 +553,9 @@ export default async function handler(req: any, res: any) {
         [userData.email, otp, JSON.stringify({ userId: userData.id }), clientDeviceId, expiresAt]
       );
 
+      // Send email
+      sendOTPEmail(userData.email, otp, userData.name, 'login').catch(() => {});
+
       return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
