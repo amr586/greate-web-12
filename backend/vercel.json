@@ -6,6 +6,9 @@
       "use": "@vercel/node"
     }
   ],
+  "install": {
+    "packageManager": "npm"
+  },
   "routes": [
     {
       "src": "/(.*)",
