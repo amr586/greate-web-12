@@ -1,0 +1,130 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import mysql from 'mysql2/promise';
+
+const app = express();
+
+app.use(cors({
+  origin: '*',
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+
+// Health endpoint
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'not configured';
+  try {
+    if (process.env.DATABASE_URL) {
+      const pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        waitForConnections: true,
+        connectionLimit: 2
+      });
+      await pool.query('SELECT 1');
+      await pool.end();
+      dbStatus = 'connected';
+    }
+  } catch (e) {
+    dbStatus = 'error';
+  }
+  res.json({ 
+    ok: true, 
+    service: 'إسكنك API', 
+    db: dbStatus,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root
+app.get('/api', (req, res) => {
+  res.json({ ok: true, service: 'Great Society API', version: '1.0.0' });
+});
+
+// Login endpoint - simplified for Vercel
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    const pool = mysql.createPool({
+      uri: process.env.DATABASE_URL,
+      waitForConnections: true,
+      connectionLimit: 2
+    });
+    
+    const bcrypt = await import('bcryptjs');
+    const jwt = await import('jsonwebtoken');
+    
+    // Find user
+    const [rows]: any = await pool.query(
+      'SELECT id, name, email, password_hash, role, sub_role FROM users WHERE email = ? AND is_active = true',
+      [email]
+    );
+    
+    if (!rows || rows.length === 0) {
+      await pool.end();
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const user = rows[0];
+    const validPassword = await bcrypt.default.compare(password, user.password_hash);
+    
+    if (!validPassword) {
+      await pool.end();
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const token = jwt.default.sign(
+      { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' }
+    );
+    
+    await pool.end();
+    
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        sub_role: user.sub_role
+      }
+    });
+  } catch (err: any) {
+    console.error('Login error:', err.message);
+    res.status(500).json({ error: 'Login failed', message: err.message });
+  }
+});
+
+// Cron endpoint
+app.get('/api/cron', async (req, res) => {
+  if (req.headers['x-vercel-cron'] !== 'true') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  
+  try {
+    const pool = mysql.createPool({
+      uri: process.env.DATABASE_URL,
+      waitForConnections: true,
+      connectionLimit: 2
+    });
+    
+    await pool.execute(
+      'DELETE FROM otp_codes WHERE created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND used = true'
+    );
+    
+    await pool.end();
+    
+    res.json({ ok: true, message: 'Cron executed', timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Cron failed', message: err.message });
+  }
+});
+
+module.exports = app;

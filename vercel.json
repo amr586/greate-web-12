@@ -6,7 +6,11 @@
       "use": "@vercel/static"
     },
     {
-      "src": "backend/server.ts",
+      "src": "api/health.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth.ts",
       "use": "@vercel/node"
     },
     {
@@ -16,16 +20,28 @@
   ],
   "routes": [
     {
+      "src": "/api/health",
+      "dest": "api/health.ts"
+    },
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "api/auth.ts"
+    },
+    {
       "src": "/api/cron",
       "dest": "api/cron.ts"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "backend/server.ts"
+      "src": "/assets/(.*)",
+      "dest": "dist/assets/$1"
     },
     {
       "src": "/(.*)",
       "dest": "dist/$1"
+    },
+    {
+      "src": "/",
+      "dest": "dist/index.html"
     }
   ],
   "crons": [
