@@ -35,7 +35,7 @@ async function main() {
     console.log('[SERVER] projectRoot:', projectRoot);
 
     app.use(cors({
-      origin: true,
+      origin: process.env.NODE_ENV === 'production' ? 'https://greatsociety-eg.com' : '*',
       credentials: true,
     }));
     app.use(express.json({ limit: '10mb' }));
@@ -56,22 +56,12 @@ async function main() {
     app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'إسكنك API', db: process.env.DATABASE_URL ? 'connected' : 'disconnected' }));
 
     app.get('/', (_req, res) => {
-      res.json({ ok: true, service: 'Great Society API', version: '1.0.0', endpoints: '/api/*' });
+      res.json({ ok: true, service: 'Great Society API', version: '1.0.0', endpoints: '/api/*', note: 'Backend only - Frontend at https://greatsociety-eg.com' });
     });
-
-    if (isProd) {
-      const distPath = path.join(projectRoot, 'dist');
-      const rootPath = path.join(projectRoot);
-      const staticPath = require('fs').existsSync(path.join(distPath, 'index.html')) ? distPath : rootPath;
-      console.log('[SERVER] Serving static files from:', staticPath);
-      app.use(express.static(staticPath));
-      app.get('*', (_req, res) => {
-        res.sendFile(path.join(staticPath, 'index.html'));
-      });
-    }
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🏠 إسكنك API running on port ${PORT}`);
+      console.log(`📍 Backend: https://backend.greatsociety-eg.com`);
     });
   } catch (err) {
     console.error('[SERVER] Fatal error:', err);
