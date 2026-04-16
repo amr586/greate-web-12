@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 
 export default async function handler(req: any, res: any) {
-  // CORS - allow all for testing
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -13,25 +13,26 @@ export default async function handler(req: any, res: any) {
   
   const { query, method, url } = req;
   
-  console.log('[DEBUG] Request URL:', url);
-  console.log('[DEBUG] Method:', method);
+  // Build MySQL config from Vercel environment variables
+  const dbConfig = {
+    host: process.env.DB_HOST || 'srv2121.hstgr.io',
+    user: process.env.DB_USER || 'u156204542_amr',
+    password: process.env.DB_PASSWORD || 'Amrahmed01281378331',
+    database: process.env.DB_NAME || 'u156204542_Dbase',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    waitForConnections: true,
+    connectionLimit: 2,
+    queueLimit: 0
+  };
   
-  // Direct MySQL config - same as local
+  console.log('[DEBUG] DB config host:', dbConfig.host);
+  console.log('[DEBUG] DB config user:', dbConfig.user);
+  console.log('[DEBUG] DB config database:', dbConfig.database);
+  
   let pool;
   try {
-    pool = mysql.createPool({
-      host: 'srv2121.hstgr.io',
-      user: 'u156204542_amr',
-      password: 'Amrahmed01281378331',
-      database: 'u156204542_Dbase',
-      port: 3306,
-      waitForConnections: true,
-      connectionLimit: 2,
-      queueLimit: 0,
-      enableKeepAlive: true,
-      keepAliveInitialDelay: 0
-    });
-    console.log('[DEBUG] Pool created successfully');
+    pool = mysql.createPool(dbConfig);
+    console.log('[DEBUG] Pool created');
   } catch (e: any) {
     console.log('[ERROR] Pool creation failed:', e.message);
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
@@ -45,9 +46,9 @@ export default async function handler(req: any, res: any) {
       await conn.ping();
       conn.release();
       dbStatus = 'connected';
-      console.log('[DEBUG] Health check passed');
+      console.log('[DEBUG] Health OK');
     } catch (e: any) { 
-      console.log('[ERROR] Health query failed:', e.message);
+      console.log('[ERROR] Health failed:', e.message);
       dbStatus = 'error: ' + e.message; 
     }
     await pool.end();
@@ -75,7 +76,7 @@ export default async function handler(req: any, res: any) {
       await pool.end();
       return res.json(rows);
     } catch (err: any) { 
-      console.log('[ERROR] Properties query failed:', err.message);
+      console.log('[ERROR] Properties:', err.message);
       await pool.end();
       return res.status(500).json({ error: err.message }); 
     }
@@ -131,14 +132,14 @@ export default async function handler(req: any, res: any) {
       const jwt = await import('jsonwebtoken');
       const token = jwt.default.sign(
         { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email }, 
-        'f6b6104a80af41be3d7660d251867a2793a60dd4f664784f1f62dda2c47542a6d47bab11919c736a9757c9f4790e44b2d3e3438bdd3afe9a3b4b69a2f8eb78c3', 
+        process.env.JWT_SECRET || 'f6b6104a80af41be3d7660d251867a2793a60dd4f664784f1f62dda2c47542a6d47bab11919c736a9757c9f4790e44b2d3e3438bdd3afe9a3b4b69a2f8eb78c3', 
         { expiresIn: '7d' }
       );
       
       await pool.end();
       return res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, sub_role: user.sub_role } });
     } catch (err: any) { 
-      console.log('[ERROR] Login failed:', err.message);
+      console.log('[ERROR] Login:', err.message);
       await pool.end();
       return res.status(500).json({ error: 'Login failed', message: err.message }); 
     }
