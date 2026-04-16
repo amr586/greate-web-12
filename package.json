@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm install && npx vite build && cp -r server backend && cp -r node_modules backend/ && cp package.json backend/",
-    "start": "NODE_ENV=production node backend/node_modules/tsx/dist/cli.js backend/index.ts",
+    "start": "NODE_ENV=production npx tsx backend/index.ts",
     "vite": "vite"
   },
   "dependencies": {
