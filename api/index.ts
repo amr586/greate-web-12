@@ -930,17 +930,39 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/forgot-password
-  if (method === 'POST' && url?.includes('/api/auth/forgot-password')) {
+  // POST /api/auth/forgot-password (check if user exists)
+  if (method === 'POST' && url?.includes('/api/auth/forgot-password-check')) {
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+      const [rows]: any = await pool.query('SELECT id FROM users WHERE email=? AND is_active=true', [email]);
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'لم يتم العثور على حساب بهذا البريد الإلكتروني' });
+      }
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/auth/forgot-password (send OTP)
+  if (method === 'POST' && url?.includes('/api/auth/forgot-password') && !url?.includes('check') && !url?.includes('reset')) {
+    try {
+      const { email } = body;
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+      // Rate limit
+      const otpRateCheck = checkRateLimit(`otp:${email}`);
+      if (!otpRateCheck.allowed) {
+        return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((otpRateCheck.resetAt - Date.now()) / 1000)} ثانية` });
+      }
 
       const [rows]: any = await pool.query('SELECT id, name FROM users WHERE email=? AND is_active=true', [email]);
       if (rows.length === 0) {
         return res.status(404).json({ error: 'لم يتم العثور على حساب بهذا البريد الإلكتروني' });
       }
 
+      const user = rows[0];
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -950,9 +972,12 @@ export default async function handler(req: any, res: any) {
       );
 
       await pool.query(
-        `INSERT INTO otp_codes (identifier, code, type, expires_at) VALUES (?, ?, 'forgot-password', ?)`,
-        [email, otp, expiresAt]
+        `INSERT INTO otp_codes (identifier, code, type, user_data, expires_at) VALUES (?, ?, 'forgot-password', ?, ?)`,
+        [email, otp, JSON.stringify({ userId: user.id }), expiresAt]
       );
+
+      // Send email
+      sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
 
       return res.json({ success: true, devOtp: otp });
     } catch (err: any) {
@@ -967,8 +992,11 @@ export default async function handler(req: any, res: any) {
       if (!email || !otp || !newPassword) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
-      if (newPassword.length < 8) {
-        return res.status(400).json({ error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+
+      // Password validation
+      const passCheck = validatePassword(newPassword);
+      if (!passCheck.valid) {
+        return res.status(400).json({ error: passCheck.error });
       }
 
       const result = await consumeOTP(email, otp, 'forgot-password', pool);
@@ -977,6 +1005,9 @@ export default async function handler(req: any, res: any) {
       const bcrypt = await import('bcryptjs');
       const hash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash=? WHERE email=?', [hash, email]);
+
+      // Delete trusted devices
+      await pool.query(`DELETE FROM trusted_devices WHERE user_id=(SELECT id FROM users WHERE email=?)`, [email]);
 
       return res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
     } catch (err: any) {
