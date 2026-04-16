@@ -1303,11 +1303,59 @@ export default async function handler(req: any, res: any) {
       await conn.ping();
       conn.release();
       dbStatus = 'connected';
+      
+      // Get stats
+      const [[userCount], [propCount], [approvedCount]] = await Promise.all([
+        pool.query('SELECT COUNT(*) FROM users'),
+        pool.query('SELECT COUNT(*) FROM properties'),
+        pool.query("SELECT COUNT(*) FROM properties WHERE status='approved'")
+      ]);
+      
+      await pool.end();
+      return res.json({ 
+        ok: true, 
+        service: 'Great Society API', 
+        db: dbStatus, 
+        stats: {
+          users: userCount[0]?.COUNT || 0,
+          properties: propCount[0]?.COUNT || 0,
+          approved: approvedCount[0]?.COUNT || 0
+        },
+        timestamp: new Date().toISOString() 
+      });
     } catch (e: any) {
       dbStatus = "error: " + e.message;
+      await pool.end();
+      return res.json({ ok: true, service: 'Great Society API', db: dbStatus });
     }
-    await pool.end();
-    return res.json({ ok: true, service: 'Great Society API', db: dbStatus, timestamp: new Date().toISOString() });
+  }
+
+  // POST /api/seed - Seed sample properties (for testing only)
+  if (method === 'POST' && url?.includes('/api/seed')) {
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const sampleProperties = [
+      { title: 'شقةLuxury في مصر الجديدة', title_ar: 'شقة 3 غرف بمصر الجديدة', type: 'apartment', purpose: 'sale', price: 2500000, area: 150, rooms: 3, bedrooms: 3, bathrooms: 2, floor: 3, district: 'مصر الجديدة', city: 'القاهرة', is_featured: true },
+      { title: 'فيلا With Garden in maadi', title_ar: 'فياكلا حديقة بالشيخ زايد', type: 'villa', purpose: 'sale', price: 5500000, area: 350, rooms: 5, bedrooms: 4, bathrooms: 3, floor: 2, district: 'الشيخ زايد', city: 'الجيزة', is_featured: true },
+      { title: 'Studio in New Cairo', title_ar: 'استوديوووو بالمقطعة', type: 'apartment', purpose: 'rent', price: 15000, area: 80, rooms: 1, bedrooms: 1, bathrooms: 1, floor: 5, district: 'المقطعة', city: 'القاهرة', is_featured: false },
+      { title: 'Shop in Heliopolis', title_ar: 'محل تجاري بالماظة', type: 'commercial', purpose: 'sale', price: 3500000, area: 120, rooms: 1, bedrooms: 0, bathrooms: 1, floor: 0, district: 'الماظة', city: 'القاهرة', is_featured: false },
+      { title: 'Land in New Capital', title_ar: 'ارض بال首都 الجديدة', type: 'land', purpose: 'sale', price: 8000000, area: 600, rooms: 0, bedrooms: 0, bathrooms: 0, floor: 0, district: 'ال首都 الجديد', city: 'القاهرة الجديدة', is_featured: true },
+    ];
+    
+    try {
+      for (const prop of sampleProperties) {
+        const [result]: any = await pool.query(
+          `INSERT INTO properties (title, title_ar, type, purpose, price, area, rooms, bedrooms, bathrooms, floor, district, city, owner_id, status, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)`,
+          [prop.title, prop.title_ar, prop.type, prop.purpose, prop.price, prop.area, prop.rooms, prop.bedrooms, prop.bathrooms, prop.floor, prop.district, prop.city, user.id, prop.is_featured]
+        );
+      }
+      
+      return res.json({ success: true, count: sampleProperties.length });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   // ========== CRON ==========
