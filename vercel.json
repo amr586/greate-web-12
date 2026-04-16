@@ -10,6 +10,10 @@
       "use": "@vercel/node"
     }
   ],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JWT_SECRET": "@jwt_secret"
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -20,43 +24,7 @@
       "dest": "/dist/assets/$1"
     },
     {
-      "src": "/favicon.png",
-      "dest": "/dist/favicon.png"
-    },
-    {
-      "src": "/logo_gs.png",
-      "dest": "/dist/logo_gs.png"
-    },
-    {
-      "src": "/prop1_exterior.png",
-      "dest": "/dist/prop1_exterior.png"
-    },
-    {
-      "src": "/prop1_floorplan.png",
-      "dest": "/dist/prop1_floorplan.png"
-    },
-    {
-      "src": "/prop1_interior.png",
-      "dest": "/dist/prop1_interior.png"
-    },
-    {
-      "src": "/prop2_exterior.png",
-      "dest": "/dist/prop2_exterior.png"
-    },
-    {
-      "src": "/prop2_floorplan.png",
-      "dest": "/dist/prop2_floorplan.png"
-    },
-    {
-      "src": "/prop2_interior.png",
-      "dest": "/dist/prop2_interior.png"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/dist/index.html"
-    },
-    {
-      "src": "/",
       "dest": "/dist/index.html"
     }
   ],
