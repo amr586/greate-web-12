@@ -453,8 +453,9 @@ export default async function handler(req: any, res: any) {
       const { password_hash, ...safeUser } = userData;
       return res.json({ user: safeUser, token: newToken });
     } catch (err: any) {
-      console.log('[ERROR] Login:', err.message);
-      return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
+      console.log('[ERROR] Login:', err.message, err.stack);
+      await pool.end();
+      return res.status(500).json({ error: 'خطأ في تسجيل الدخول', details: err.message });
     }
   }
 
