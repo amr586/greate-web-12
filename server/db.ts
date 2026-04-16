@@ -1,20 +1,39 @@
-import pg from 'pg';
+import mysql from 'mysql2/promise';
 
-const { Pool } = pg;
+let pool: mysql.Pool | null = null;
 
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' 
-    ? { rejectUnauthorized: false }
-    : false
-});
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL;
+    
+    if (connectionString?.startsWith('mysql://')) {
+      pool = mysql.createPool({
+        uri: connectionString,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+      });
+    } else {
+      throw new Error('Invalid DATABASE_URL. Use mysql:// format');
+    }
+  }
+  return pool;
+}
 
 export const query = async (text: string, params?: any[]) => {
   try {
-    const res = await pool.query(text, params);
-    return res;
+    const pool = getPool();
+    const [rows] = await pool.execute(text, params);
+    return { rows: Array.isArray(rows) ? rows : [rows] };
   } catch (err: any) {
     console.error('[DB ERROR]', err.message);
     throw err;
+  }
+};
+
+export const poolClose = async () => {
+  if (pool) {
+    await pool.end();
+    pool = null;
   }
 };
