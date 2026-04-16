@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { query } from '../server/db.js';
+import { query } from '../backend/db.js';
 
 const GREAT_SOCIETY_PROPERTIES = [
   {

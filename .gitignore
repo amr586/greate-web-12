@@ -375,3 +375,4 @@ dist/
 # Uploaded files (user content)
 uploads/*
 !uploads/.gitkeep
+.env
