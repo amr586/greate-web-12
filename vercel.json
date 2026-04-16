@@ -2,46 +2,62 @@
   "version": 2,
   "builds": [
     {
-      "src": "dist/**/*",
+      "src": "dist/**",
       "use": "@vercel/static"
     },
     {
-      "src": "api/health.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/auth.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/cron.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/health",
-      "dest": "api/health.ts"
-    },
-    {
-      "src": "/api/auth/(.*)",
-      "dest": "api/auth.ts"
-    },
-    {
-      "src": "/api/cron",
-      "dest": "api/cron.ts"
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts"
     },
     {
       "src": "/assets/(.*)",
-      "dest": "dist/assets/$1"
+      "dest": "/dist/assets/$1"
+    },
+    {
+      "src": "/favicon.png",
+      "dest": "/dist/favicon.png"
+    },
+    {
+      "src": "/logo_gs.png",
+      "dest": "/dist/logo_gs.png"
+    },
+    {
+      "src": "/prop1_exterior.png",
+      "dest": "/dist/prop1_exterior.png"
+    },
+    {
+      "src": "/prop1_floorplan.png",
+      "dest": "/dist/prop1_floorplan.png"
+    },
+    {
+      "src": "/prop1_interior.png",
+      "dest": "/dist/prop1_interior.png"
+    },
+    {
+      "src": "/prop2_exterior.png",
+      "dest": "/dist/prop2_exterior.png"
+    },
+    {
+      "src": "/prop2_floorplan.png",
+      "dest": "/dist/prop2_floorplan.png"
+    },
+    {
+      "src": "/prop2_interior.png",
+      "dest": "/dist/prop2_interior.png"
     },
     {
       "src": "/(.*)",
-      "dest": "dist/$1"
+      "dest": "/dist/index.html"
     },
     {
       "src": "/",
-      "dest": "dist/index.html"
+      "dest": "/dist/index.html"
     }
   ],
   "crons": [
