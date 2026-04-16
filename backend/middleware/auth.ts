@@ -12,11 +12,20 @@ export const JWT_OPTIONS = {
   expiresIn: '7d',
 } as const;
 
+export const SENSITIVE_OPTS = {
+  expiresIn: '1h',
+} as const;
+
 export const RATE_LIMIT_WINDOW = 5 * 60 * 1000;
 export const RATE_LIMIT_MAX_ATTEMPTS = 5;
 
-const loginAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
-const otpAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
+export const loginAttempts = new Map<string, { attempts: number; lockedUntil: number; ip: string }>();
+export const otpAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
+
+function getClientIP(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'] as string;
+  return forwarded ? forwarded.split(',')[0].trim() : req.ip || req.socket.remoteAddress || 'unknown';
+}
 
 export interface AuthRequest extends Request {
   user?: {
@@ -30,13 +39,24 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'غير مصرح' });
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
+
+  if (!token) {
+    console.log('[AUTH] No token provided');
+    return res.status(401).json({ error: 'غير مصرح' });
+  }
+
+  console.log('[AUTH DEBUG] Token preview:', token.slice(0, 30) + '...');
+  console.log('[AUTH DEBUG] JWT_SECRET preview:', JWT_SECRET?.slice(0, 20) + '...');
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET, JWT_OPTIONS) as AuthRequest['user'];
     req.user = decoded;
+    console.log('[AUTH] User authenticated:', decoded.email);
     next();
-  } catch {
+  } catch (err) {
+    console.error('[AUTH ERROR] Token verify failed:', err?.message || err);
     return res.status(401).json({ error: 'رمز منتهي الصلاحية' });
   }
 };
@@ -70,12 +90,13 @@ export function checkRateLimit(
     return { allowed: false, remaining: 0, lockedUntil: record.lockedUntil };
   }
 
-  if (now > record.lockedUntil) {
+  if (record.lockedUntil && now >= record.lockedUntil) {
     store.delete(key);
     return { allowed: true, remaining: maxAttempts };
   }
 
-  return { allowed: true, remaining: maxAttempts - record.attempts };
+  const remaining = maxAttempts - record.attempts;
+  return { allowed: remaining > 0, remaining };
 }
 
 export function recordFailedAttempt(

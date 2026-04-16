@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
-import { query } from '../server/db.js';
+import { query } from '../backend/db.js';
 
 const DEMO_ACCOUNTS = [
   {

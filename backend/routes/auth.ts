@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
-import { authenticate, AuthRequest, checkRateLimit, recordFailedAttempt, clearRateLimit, generateDeviceId, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_ATTEMPTS } from '../middleware/auth.js';
+import { authenticate, AuthRequest, checkRateLimit, recordFailedAttempt, clearRateLimit, generateDeviceId, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_ATTEMPTS, loginAttempts } from '../middleware/auth.js';
 import { sendOTPEmail } from '../email.js';
 
 const router = Router();
@@ -100,10 +100,12 @@ async function issueOTP(identifier: string, type: string, userData?: object, dev
   const otp = generateOTP();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
   
+  // Delete existing OTPs for this identifier/type first
+  await query('DELETE FROM otp_codes WHERE identifier = $1 AND type = $2 AND used = false', [identifier, type]);
+  
   await query(
     `INSERT INTO otp_codes (identifier, code, type, user_data, device_id, expires_at, last_sent_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())
-     ON CONFLICT (identifier, type) WHERE used = false DO UPDATE SET code = $2, expires_at = $6, last_sent_at = NOW(), user_data = $4, device_id = $5`,
+     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
     [identifier, otp, type, userData ? JSON.stringify(userData) : null, deviceId || null, expiresAt]
   );
   
@@ -162,12 +164,21 @@ async function isTrustedDevice(userId: number, deviceId: string): Promise<boolea
 }
 
 async function addTrustedDevice(userId: number, deviceId: string, deviceName?: string) {
+  // First try to update existing
   await query(
-    `INSERT INTO trusted_devices (user_id, device_id, device_name, last_used)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (user_id, device_id) DO UPDATE SET last_used = NOW()`,
-    [userId, deviceId, deviceName || null]
+    `UPDATE trusted_devices SET last_used = NOW() WHERE user_id = $1 AND device_id = $2`,
+    [userId, deviceId]
   );
+  
+  // If no row was updated, insert new
+  const result = await query('SELECT id FROM trusted_devices WHERE user_id = $1 AND device_id = $2', [userId, deviceId]);
+  if (result.rows.length === 0) {
+    await query(
+      `INSERT INTO trusted_devices (user_id, device_id, device_name, last_used)
+       VALUES ($1, $2, $3, NOW())`,
+      [userId, deviceId, deviceName || null]
+    );
+  }
 }
 
 async function getUserTrustedDevices(userId: number): Promise<{ device_id: string; device_name: string; last_used: Date }[]> {
@@ -210,6 +221,46 @@ router.post('/resend-login-otp', async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error('[resend-login-otp]', err);
+    res.status(500).json({ error: 'خطأ داخلي في الخادم' });
+  }
+});
+
+router.post('/resend-register-otp', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+    const userExists = await query('SELECT id FROM users WHERE email=$1', [email]);
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ error: 'البريد الإلكتروني مسجل مسبقاً. سجّل الدخول أو استعن بنسيان كلمة المرور' });
+    }
+
+    const pendingOTP = await query(
+      `SELECT id FROM otp_codes 
+       WHERE identifier=$1 AND type='register' AND used=false AND (expires_at > NOW() OR expires_at IS NULL)
+       ORDER BY created_at DESC LIMIT 1`,
+      [email]
+    );
+    if (pendingOTP.rows.length > 0) {
+      const rateCheck = await checkOTPRateLimit(email, 'register');
+      if (!rateCheck.allowed) {
+        return res.status(429).json({
+          error: `يرجى الانتظار ${rateCheck.waitSeconds} ثانية قبل طلب رمز جديد`,
+          waitSeconds: rateCheck.waitSeconds,
+        });
+      }
+    }
+
+    const otp = await issueOTP(email, 'register', {});
+    const sent = await sendOTPEmail(email, otp, 'مستخدم جديد', 'register');
+
+    res.json({
+      success: true,
+      message: sent ? `تم إرسال رمز التحقق إلى ${email}` : `تم إنشاء رمز التحقق`,
+      devOtp: sent ? undefined : otp,
+    });
+  } catch (err) {
+    console.error('[resend-register-otp]', err);
     res.status(500).json({ error: 'خطأ داخلي في الخادم' });
   }
 });
@@ -268,6 +319,12 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
     const result = await consumeOTP(email, otp, 'register');
     if (!result.valid) {
       return res.status(400).json({ error: result.error });
+    }
+
+    const existing = await query('SELECT id FROM users WHERE email=$1', [email]);
+    if (existing.rows.length > 0) {
+      await query('DELETE FROM users WHERE email=$1', [email]);
+      return res.status(400).json({ error: 'فشل التحقق. يرجى إعادة التسجيل' });
     }
 
     const { name, phone, passwordHash } = result.userData as {
@@ -345,31 +402,59 @@ router.post('/send-email-verification', authenticate, async (req: AuthRequest, r
   }
 });
 
-router.post('/verify-email', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/verify-email', async (req: Request, res: Response) => {
   try {
-    const { otp } = req.body;
-    if (!otp) return res.status(400).json({ error: 'رمز التحقق مطلوب' });
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
 
-    const user = req.user!;
-    const userRes = await query('SELECT email FROM users WHERE id=$1', [user.id]);
-    const email = userRes.rows[0]?.email;
-    if (!email) return res.status(404).json({ error: 'البريد غير موجود' });
+    const userRes = await query('SELECT id FROM users WHERE email=$1', [email]);
+    if (userRes.rows.length === 0) return res.status(404).json({ error: 'المستخدم غير موجود' });
 
     const result = await consumeOTP(email, otp, 'email_verify');
     if (!result.valid) {
       return res.status(400).json({ error: result.error });
     }
 
+    const userId = userRes.rows[0].id;
     await query(
       `UPDATE users SET email_verified = true, email_verified_at = NOW() WHERE id=$1`,
-      [user.id]
+      [userId]
     );
-    await query(`UPDATE email_verification SET is_verified = true, verified_at = NOW() WHERE user_id=$1`, [user.id]);
+    await query(`UPDATE email_verification SET is_verified = true, verified_at = NOW() WHERE user_id=$1`, [userId]);
 
-    res.json({ success: true, message: 'تم التحقق من البريد الإلكتروني بنجاح' });
+    const userData = await query('SELECT * FROM users WHERE id=$1', [userId]);
+    const user = userData.rows[0];
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({ success: true, token, user, message: 'تم التحقق من البريد الإلكتروني بنجاح' });
   } catch (err) {
     console.error('[verify-email]', err);
-    res.status(500).json({ error: 'خطأ داخلي في الخادم' });
+
+    try {
+      const { email } = req.body;
+      if (email) {
+        await query('DELETE FROM users WHERE email=$1', [email]);
+      }
+    } catch (delErr) {
+      console.error('[verify-email-cleanup]', delErr);
+    }
+
+    res.status(500).json({ error: 'فشل التحقق. يرجى إعادة التسجيل' });
+  }
+});
+
+router.delete('/debug/otp/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    await query("DELETE FROM otp_codes WHERE identifier=$1", [email]);
+    res.json({ success: true, message: 'تم تنظيف رموز OTP' });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في التنظيف' });
   }
 });
 
@@ -380,12 +465,19 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
     }
 
-    const ipKey = `login:${emailOrPhone}`;
-    const rateLimit = checkRateLimit(ipKey, new Map(), RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
-    if (!rateLimit.allowed) {
+    const clientIP = req.headers['x-forwarded-for'] as string || req.ip || 'unknown';
+    const cleanIP = clientIP.split(',')[0].trim();
+    
+    const emailKey = `login:${emailOrPhone}`;
+    const ipKey = `ip:${cleanIP}`;
+    
+    const emailRateLimit = checkRateLimit(emailKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+    const ipRateLimit = checkRateLimit(ipKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+    
+    if (!emailRateLimit.allowed || !ipRateLimit.allowed) {
       return res.status(429).json({
         error: `تجاوزت الحد الأقصى للمحاولات. حاول لاحقاً`,
-        lockedUntil: rateLimit.lockedUntil,
+        lockedUntil: Math.max(emailRateLimit.lockedUntil || 0, ipRateLimit.lockedUntil || 0),
       });
     }
 
@@ -394,17 +486,24 @@ router.post('/login', async (req: Request, res: Response) => {
       [emailOrPhone]
     );
     if (result.rows.length === 0) {
-      recordFailedAttempt(ipKey, new Map(), RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      recordFailedAttempt(emailKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      recordFailedAttempt(ipKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      console.warn(`[LOGIN FAILED] Email not found: ${emailOrPhone} from IP: ${cleanIP}`);
       return res.status(401).json({ error: 'بيانات غير صحيحة' });
     }
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      recordFailedAttempt(ipKey, new Map(), RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      recordFailedAttempt(emailKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      recordFailedAttempt(ipKey, loginAttempts, RATE_LIMIT_MAX_ATTEMPTS, RATE_LIMIT_WINDOW);
+      console.warn(`[LOGIN FAILED] Wrong password: ${emailOrPhone} from IP: ${cleanIP}`);
       return res.status(401).json({ error: 'بيانات غير صحيحة' });
     }
 
+    clearRateLimit(emailKey);
     clearRateLimit(ipKey);
+    console.log(`[LOGIN SUCCESS] User: ${user.email} from IP: ${cleanIP}`);
+    
     const deviceId = clientDeviceId || generateDeviceId(req);
     const isTrusted = await isTrustedDevice(user.id, deviceId);
 
@@ -447,11 +546,15 @@ router.post('/login', async (req: Request, res: Response) => {
 router.post('/verify-login-otp', async (req: Request, res: Response) => {
   try {
     const { email, otp, rememberDevice, deviceName } = req.body;
+    console.log('[verify-login-otp] Request:', { email, otpProvided: !!otp, rememberDevice });
+
     if (!email || !otp) {
       return res.status(400).json({ error: 'البريد الإلكتروني ورمز التحقق مطلوبان' });
     }
 
     const result = await consumeOTP(email, otp, 'login');
+    console.log('[verify-login-otp] OTP result:', { valid: result.valid, error: result.error });
+
     if (!result.valid) {
       return res.status(400).json({ error: result.error });
     }
@@ -463,6 +566,8 @@ router.post('/verify-login-otp', async (req: Request, res: Response) => {
     const user = userRes.rows[0];
     const deviceId = result.deviceId || generateDeviceId(req);
 
+    console.log('[verify-login-otp] Creating token for user:', user.email);
+
     if (rememberDevice) {
       await addTrustedDevice(user.id, deviceId, deviceName);
     }
@@ -472,6 +577,7 @@ router.post('/verify-login-otp', async (req: Request, res: Response) => {
       JWT_SECRET,
       { expiresIn: DEVICE_TOKEN_EXPIRY_DAYS + 'd' }
     );
+    console.log('[verify-login-otp] Token created, length:', token.length);
     const { password_hash, ...safeUser } = user;
     res.json({ user: safeUser, token, isTrustedDevice: !!rememberDevice });
   } catch (err) {

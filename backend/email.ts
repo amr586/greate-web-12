@@ -7,8 +7,14 @@ function createTransporter() {
   if (!user || !pass) return null;
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: { user, pass },
+    tls: {
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2'
+    }
   });
 }
 
@@ -120,6 +126,7 @@ export async function sendOTPEmail(
     return true;
   } catch (err: any) {
     console.error('[EMAIL] ❌ Failed:', err?.message || err);
+    console.error('[EMAIL] Full error:', JSON.stringify(err, null, 2));
     return false;
   }
 }
