@@ -1,16 +1,17 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import mysql from 'mysql2/promise';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   const { query } = req;
   
   // /api/health
   if (query.msg === 'health' || req.url?.includes('/api/health')) {
     let dbStatus = 'not configured';
     try {
-      if (process.env.DATABASE_URL) {
+      const dbUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+      console.log('[DEBUG] DATABASE_URL:', dbUrl ? 'set (' + (dbUrl?.substring(0, 20) + '...') + ')' : 'NOT SET');
+      if (dbUrl) {
         const pool = mysql.createPool({
-          uri: process.env.DATABASE_URL as string,
+          uri: dbUrl,
           waitForConnections: true,
           connectionLimit: 2
         });
