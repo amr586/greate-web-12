@@ -209,10 +209,15 @@ function generateOTP(): string {
 
 // ========== EMAIL (SMTP) ==========
 
-const SMTP_USER = process.env.SMTP_USER || 'great.society.team@gmail.com';
-const SMTP_PASS = process.env.SMTP_PASS || 'iiir uixk rguu psii';
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.log('[EMAIL] SMTP not configured, skipping email');
+    return false;
+  }
+  
   const nodemailer = await import('nodemailer');
   
   const transporter = nodemailer.createTransport({
@@ -253,7 +258,7 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
             <table width="100%" style="background:#fef3cd;border:1px solid #fde68a;border-radius:12px;margin-bottom:24px;">
               <tr><td style="padding:14px 16px;text-align:center;">
                 <p style="margin:0;color:#92400e;font-size:13px;">⏱️ هذا الرمز صالح لمدة <strong>5 دقائق فقط</strong></p>
-                <p style="margin:6px 0 0;color:#92400e;font-size:12px;">🔒 لديك 3 محاولات قبل الحجب المؤ��ت</p>
+                <p style="margin:6px 0 0;color:#92400e;font-size:12px;">🔒 لديك 3 محاولات قبل الحجب المؤقت</p>
               </td></tr>
             </table>
             <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.7;">إذا لم تطلب هذا الرمز، تجاهل هذا البريد فوراً.<br/>لا تشارك هذا الرمز مع أي شخص.</p>
