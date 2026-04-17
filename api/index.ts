@@ -209,8 +209,17 @@ function generateOTP(): string {
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
+const SKIP_EMAIL = process.env.SKIP_EMAIL === 'true';
+
+console.log('[DEBUG] SMTP configured:', !!SMTP_USER, 'PASS set:', !!SMTP_PASS);
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
+  // Skip email if SKIP_EMAIL=true (for testing without SMTP)
+  if (SKIP_EMAIL) {
+    console.log(`[EMAIL] Skipped - SKIP_EMAIL=true, OTP: ${otp}`);
+    return false;
+  }
+  
   if (!SMTP_USER || !SMTP_PASS) {
     console.log('[EMAIL] SMTP not configured, skipping email');
     return false;
@@ -223,8 +232,18 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
     port: 587,
     secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2' }
+    tls: { minVersion: 'TLSv1.2' },
+    connectionTimeout: 10000,
+    socketTimeout: 10000
   });
+  
+  // Verify connection on startup
+  try {
+    await transporter.verify();
+    console.log('[EMAIL] SMTP connection verified');
+  } catch (e) {
+    console.log('[EMAIL] SMTP verification failed:', e);
+  }
 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
   const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
@@ -576,11 +595,15 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(userData.email, otp, userData.name, 'login').catch(() => {});
 
-      return res.json({ 
+      // If email skipped, include OTP in response for testing
+      const response: any = { 
         requiresOTP: true, 
         email: userData.email, 
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
-      });
+      };
+      if (SKIP_EMAIL) response.devOtp = otp;
+
+      return res.json(response);
     } catch (err: any) {
       console.log('[ERROR] Login:', err.message);
       return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
@@ -738,9 +761,16 @@ export default async function handler(req: any, res: any) {
       );
 
       // Send email with OTP (fire and forget but log errors)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch((err) => {
-        console.log('[EMAIL] Register OTP failed:', err?.message);
-      });
+      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register')
+        .then((sent) => console.log('[EMAIL] Register OTP result:', sent))
+        .catch((err) => {
+          console.log('[EMAIL] Register OTP failed:', err?.message);
+        });
+
+      // If email skipped, include OTP in response for testing
+      if (SKIP_EMAIL) {
+        return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail} (OTP: ${otp})`, devOtp: otp });
+      }
 
       return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
@@ -854,6 +884,11 @@ export default async function handler(req: any, res: any) {
       );
 
       sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register').catch(() => {});
+
+      // If email skipped, include OTP in response for testing
+      if (SKIP_EMAIL) {
+        return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق (OTP: ${otp})`, devOtp: otp });
+      }
 
       return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
@@ -1010,6 +1045,10 @@ export default async function handler(req: any, res: any) {
 
       // Send email
       sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
+
+      if (SKIP_EMAIL) {
+        return res.json({ success: true, devOtp: otp });
+      }
 
       return res.json({ success: true });
     } catch (err: any) {
