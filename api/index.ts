@@ -496,8 +496,8 @@ export default async function handler(req: any, res: any) {
 
   // ========== AUTH ENDPOINTS ==========
 
-  // POST /api/auth/login (exact match)
-  if (method === 'POST' && url === '/api/auth/login') {
+  // POST /api/auth/login
+  if (method === 'POST' && url?.includes('/auth/login') && !url?.includes('/verify') && !url?.includes('/resend')) {
     try {
       console.log('[LOGIN] Attempting login');
       const { emailOrPhone, password, deviceId } = body;
@@ -699,7 +699,8 @@ export default async function handler(req: any, res: any) {
   
 
   // POST /api/auth/register (exact match - no /verify, /resend, etc.)
-  if (method === 'POST' && url === '/api/auth/register') {
+  if (method === 'POST' && url?.includes('/auth/register') && !url?.includes('/verify') && !url?.includes('/resend')) {
+    console.log('[REGISTER] Matched URL:', url);
     try {
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
