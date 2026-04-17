@@ -44,12 +44,10 @@ export default function Properties() {
       try {
         const data = await api.getProperties({ limit: 50 });
         if (cancelled) return;
-        console.log('[Properties] API response:', data);
         const list = Array.isArray(data) ? data : (data?.properties || []);
         setDbProperties(list);
       } catch (err: any) {
         if (cancelled) return;
-        console.error('[Properties] Load error:', err);
         if (err?.name !== 'AbortError' && err?.code !== 'ERR_CANCELED') {
           setDbProperties([]);
         }
@@ -76,7 +74,7 @@ export default function Properties() {
   const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
   const filteredAreas = SEARCH_AREAS.filter(area => area.includes(districtSearch.trim()));
 
-const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
+  const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
 
   const filteredDb = safeDbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
@@ -88,8 +86,6 @@ const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
     const matchFeatured = featuredFilter === 'الكل' || (featuredFilter === 'مميز' ? Boolean(p.is_featured) : !p.is_featured);
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
   });
-
-  console.log('[Properties] dbProperties:', safeDbProperties.length, 'filteredDb:', filteredDb.length);
 
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);

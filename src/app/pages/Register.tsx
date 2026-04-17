@@ -48,9 +48,7 @@ export default function Register() {
         password: form.password,
       });
       
-      console.log('[Register] Response:', data);
-      
-      if (data.success) {
+      if (data.emailVerificationPending) {
         if (data.devOtp) setDevOtp(data.devOtp);
         setStep('verify');
       } else if (data.token) {
