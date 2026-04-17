@@ -734,10 +734,12 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
       );
 
-      // Send email with OTP (don't await, fire and forget)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch(() => {});
+      // Send email with OTP (fire and forget but log errors)
+      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch((err) => {
+        console.log('[EMAIL] Register OTP failed:', err?.message);
+      });
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
+      return res.json({ success: true, devOtp: otp, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
