@@ -146,10 +146,12 @@ register: (data: { name: string; email: string; phone: string; password: string 
 
   getRecommendations: (params: any) => request('/ai/recommend', { method: 'POST', body: JSON.stringify(params) }),
 
-  getPropertyChatMessages: (propertyId: number) => request(`/property-chat/${propertyId}/messages`),
-  sendPropertyChatMessage: (propertyId: number, content: string) =>
-    request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  getPropertyChatMessages: (propertyId: number, userId?: number) =>
+    request(`/property-chat/${propertyId}/messages${userId ? `?userId=${userId}` : ''}`),
+  sendPropertyChatMessage: (propertyId: number, content: string, recipientId?: number) =>
+    request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content, recipient_id: recipientId }) }),
   getMyPropertyChats: () => request('/property-chat/my-chats'),
+  getPropertyChatUsers: (propertyId: number) => request(`/property-chat/${propertyId}/users`),
 };
 
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {

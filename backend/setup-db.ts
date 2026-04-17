@@ -195,11 +195,11 @@ async function setup() {
   await query(`ALTER TABLE otp_codes ADD CONSTRAINT otp_codes_type_check CHECK (type IN ('register', 'login', 'forgot-password', 'email_verify'))`);
 
   const requestedAccounts = [
-    { name: 'Great Society Admin', email: 'admin@greatsociety.com', phone: '01090000001', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
-    { name: 'مدير عقارات Great Society', email: 'propmanager@greatsociety.com', phone: '01090000002', password: 'PropMgr@123', role: 'admin', sub_role: 'property_manager' },
-    { name: 'إدخال بيانات Great Society', email: 'dataentry@greatsociety.com', phone: '01090000003', password: 'DataEntry@123', role: 'admin', sub_role: 'data_entry' },
-    { name: 'دعم Great Society', email: 'support@greatsociety.com', phone: '01090000004', password: 'Support@123', role: 'admin', sub_role: 'support' },
-    { name: 'مستخدم Great Society', email: 'user@greatsociety.com', phone: '01090000005', password: 'User@123', role: 'user', sub_role: null },
+    { name: 'Great Society Team', email: 'admin@greatsociety.com', phone: '01090000001', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
+    { name: 'Great Society Team', email: 'propmanager@greatsociety.com', phone: '01090000002', password: 'PropMgr@123', role: 'admin', sub_role: 'property_manager' },
+    { name: 'Great Society Team', email: 'dataentry@greatsociety.com', phone: '01090000003', password: 'DataEntry@123', role: 'admin', sub_role: 'data_entry' },
+    { name: 'Great Society Team', email: 'support@greatsociety.com', phone: '01090000004', password: 'Support@123', role: 'admin', sub_role: 'support' },
+    { name: 'مستخدم تجريبي Test User', email: 'user@greatsociety.com', phone: '01090000005', password: 'User@123', role: 'user', sub_role: null },
   ];
 
   for (const account of requestedAccounts) {
@@ -224,7 +224,6 @@ async function setup() {
   const seedOwnerId = adminAccount.rows[0]?.id;
 
   if (seedOwnerId) {
-    const uploadedImage = '/attached_assets/photo_2026-04-17_13-17-28_1776426346235.jpg';
     const oldDistricts = ['سيدي جابر','سموحة','المنتزه','العجمي','ستانلي','المندرة','كليوباترا','الدخيلة','برج العرب','جليم','رشدي','لوران','الإسكندرية'];
     await query(
       `DELETE FROM properties
@@ -255,6 +254,12 @@ async function setup() {
         down_payment: 'مقدم يبدأ من 25%',
         delivery_status: 'استلام قريب',
         finishing_type: 'سوبر لوكس',
+        images: [
+          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&h=600&fit=crop',
+        ],
       },
       {
         title: 'فيلا فاخرة في العاصمة الإدارية',
@@ -271,6 +276,12 @@ async function setup() {
         down_payment: 'مقدم يبدأ من 20%',
         delivery_status: 'استلام فوري',
         finishing_type: 'تشطيب',
+        images: [
+          'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900&h=600&fit=crop',
+        ],
       },
     ];
 
@@ -291,10 +302,13 @@ async function setup() {
           prop.down_payment, prop.delivery_status, prop.finishing_type,
         ]
       );
-      await query(
-        'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,true,0)',
-        [propRes.rows[0].id, uploadedImage]
-      );
+      const propId = propRes.rows[0].id;
+      for (let i = 0; i < prop.images.length; i++) {
+        await query(
+          'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,$3,$4)',
+          [propId, prop.images[i], i === 0, i]
+        );
+      }
     }
   }
 

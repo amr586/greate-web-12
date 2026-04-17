@@ -156,4 +156,25 @@ router.get('/my-chats', authenticate, async (req: AuthRequest, res: Response) =>
   }
 });
 
+router.get('/:propertyId/users', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!isAdminUser(req.user)) return res.status(403).json({ error: 'غير مصرح' });
+    const { propertyId } = req.params;
+    const result = await query(
+      `SELECT DISTINCT u.id, u.name, u.email,
+        (SELECT COUNT(*) FROM property_chat_messages WHERE property_id=$1 AND sender_id=u.id AND is_admin=false) as msg_count,
+        (SELECT created_at FROM property_chat_messages WHERE property_id=$1 AND sender_id=u.id ORDER BY created_at DESC LIMIT 1) as last_msg_at
+       FROM property_chat_messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.property_id = $1 AND m.is_admin = false
+       ORDER BY last_msg_at DESC`,
+      [propertyId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'خطأ' });
+  }
+});
+
 export default router;

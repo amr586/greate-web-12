@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Building2, CheckCircle, XCircle, Clock, LogOut, Eye, BarChart3, MessageSquare,
   FileText, PlusCircle, Edit3, Trash2, Users, TrendingUp, AlertCircle, Send,
-  PieChart, Activity, DollarSign, RefreshCw, Search, Filter, ChevronRight, X, Home, User
+  PieChart, Activity, DollarSign, RefreshCw, Search, Filter, ChevronRight, X, Home, User, Star
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -362,12 +362,20 @@ export default function SubAdminDashboard() {
                       <div className="flex gap-4 items-center">
                         <img src={prop.primary_image || DEFAULT_IMAGE} alt="" className="w-20 h-16 rounded-xl object-cover flex-shrink-0" onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm line-clamp-1">{prop.title_ar || prop.title}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-bold text-gray-900 text-sm line-clamp-1">{prop.title_ar || prop.title}</p>
+                            {prop.is_featured && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">⭐ مميز</span>}
+                          </div>
                           <p className="text-gray-500 text-xs mt-0.5">{prop.district} · {Number(prop.area)}م² · {Number(prop.price).toLocaleString()} جنيه</p>
                           {prop.owner_name && (
                             <p className="text-gray-400 text-xs mt-0.5">
                               المالك: {prop.owner_name}
                               {prop.owner_phone && <span className="mr-1 text-[#005a7d] font-medium" dir="ltr"> · {prop.owner_phone}</span>}
+                            </p>
+                          )}
+                          {prop.updated_at && (
+                            <p className="text-gray-400 text-[10px] mt-0.5 flex items-center gap-1">
+                              <Clock size={9} />آخر تعديل: {new Date(prop.updated_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           )}
                           <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -479,9 +487,17 @@ export default function SubAdminDashboard() {
                       <div className="flex gap-4 items-center">
                         <img src={prop.primary_image || DEFAULT_IMAGE} alt="" className="w-20 h-16 rounded-xl object-cover flex-shrink-0" onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm line-clamp-1">{prop.title_ar || prop.title}</p>
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-bold text-gray-900 text-sm line-clamp-1">{prop.title_ar || prop.title}</p>
+                            {prop.is_featured && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">⭐ مميز</span>}
+                          </div>
                           <p className="text-gray-500 text-xs">{prop.district} · {Number(prop.area)}م² · {Number(prop.price).toLocaleString()} جنيه</p>
                           <p className="text-gray-400 text-xs mt-0.5">المالك: {prop.owner_name} · {prop.owner_phone}</p>
+                          {prop.updated_at && (
+                            <p className="text-gray-400 text-[10px] mt-0.5 flex items-center gap-1">
+                              <Clock size={9} />آخر تعديل: {new Date(prop.updated_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          )}
                           <div className="flex flex-wrap gap-2 mt-2">
                             <button onClick={() => setChatProperty({ id: prop.id, title: prop.title_ar || prop.title, ownerName: prop.owner_name })}
                               className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
