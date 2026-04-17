@@ -767,8 +767,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/register/verify (exact match)
-  if (method === 'POST' && url === '/api/auth/register/verify') {
+  // POST /api/auth/register/verify
+  if (method === 'POST' && url?.includes('/auth/register/verify') && !url?.includes('/resend')) {
     let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
@@ -844,8 +844,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/register/verify/resend (exact match)
-  if (method === 'POST' && url === '/api/auth/register/verify/resend') {
+  // POST /api/auth/register/verify/resend
+  if (method === 'POST' && url?.includes('/auth/register/verify/resend')) {
     console.log('[RESEND] Raw body:', JSON.stringify(body));
     try {
       const { email } = body;
@@ -1867,6 +1867,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // Default response
+  console.log('[DEBUG] No route matched for:', method, url);
   await pool.end();
   return res.json({ ok: true, service: 'Great Society API' });
 }
