@@ -47,19 +47,27 @@ export default function Properties() {
   const [loadingProps, setLoadingProps] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadProperties() {
       setLoadingProps(true);
       try {
         const data = await api.getProperties({ limit: 50 });
-        const list = data?.properties || data || [];
+        if (cancelled) return;
+        console.log('[Properties] API response:', data);
+        const list = Array.isArray(data) ? data : (data?.properties || []);
         setDbProperties(list);
-      } catch {
-        setDbProperties([]);
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error('[Properties] Load error:', err);
+        if (err?.name !== 'AbortError' && err?.code !== 'ERR_CANCELED') {
+          setDbProperties([]);
+        }
       } finally {
-        setLoadingProps(false);
+        if (!cancelled) setLoadingProps(false);
       }
     }
     loadProperties();
+    return () => { cancelled = true; };
   }, []);
 
   const purposeMap: Record<string,string> = { 'بيع': 'sale', 'إيجار': 'rent', 'ريسيل': 'resale' };
@@ -76,7 +84,9 @@ export default function Properties() {
 
   const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
 
-  const filteredDb = dbProperties.filter(p => {
+  const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
+
+  const filteredDb = safeDbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
     const matchDistrict = !activeDistrict || activeDistrict === 'الكل' || (p.district || '').includes(activeDistrict);
     const matchType = type === 'الكل' || (p.type || '').includes(type);
