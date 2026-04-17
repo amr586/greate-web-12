@@ -142,7 +142,7 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
           </div>
         ) : (
           messages.map(m => {
-            const isMe = m.sender_id === user.id;
+            const isMe = m.sender_id === user?.id;
             const isAdmin = m.is_admin;
             return (
               <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -165,26 +165,28 @@ function ChatBox({ propertyId, propertyTitle }: { propertyId: number; propertyTi
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="p-3 border-t border-gray-100 flex gap-2">
+      <form onSubmit={handleSend} className="p-3 border-t border-gray-100 flex flex-col gap-2">
         {sent && (
-          <div className="absolute -mt-9 right-3 left-3 bg-green-50 border border-green-100 text-green-700 text-xs font-bold px-3 py-2 rounded-xl">
-            تم ارسال طلبك بنجاح
+          <div className="bg-green-50 border border-green-100 text-green-700 text-xs font-medium px-3 py-2 rounded-xl text-center">
+            ✅ تم إرسال رسالتك بنجاح. ستصلك رد خلال 24 ساعة
           </div>
         )}
-        <input
-          type="text"
-          value={msg}
-          onChange={e => setMsg(e.target.value)}
-          placeholder="اكتب استفسارك هنا..."
-          className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED] transition-all"
-        />
-        <button
-          type="submit"
-          disabled={sending || !msg.trim()}
-          className="w-9 h-9 bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-50 text-white rounded-xl flex items-center justify-center transition-all"
-        >
-          {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-        </button>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={msg}
+            onChange={e => setMsg(e.target.value)}
+            placeholder="اكتب استفسارك هنا..."
+            className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#7C3AED] transition-all"
+          />
+          <button
+            type="submit"
+            disabled={sending || !msg.trim()}
+            className="w-9 h-9 bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-50 text-white rounded-xl flex items-center justify-center transition-all"
+          >
+            {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -209,7 +211,8 @@ export function PropertyDetailEnhanced() {
         setProperty(data);
         if (user) {
           api.getSaved().then((saved: any[]) => {
-            setIsSaved(saved.some((s: any) => s.id === data.id));
+            const savedIds = saved.map((s: any) => Number(s.id));
+            setIsSaved(savedIds.includes(Number(data.id)));
           }).catch(() => {});
         }
       })

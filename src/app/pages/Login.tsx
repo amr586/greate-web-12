@@ -179,6 +179,7 @@ export default function Login() {
                         onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                         required
                         placeholder="كلمة المرور"
+                        autoComplete="current-password"
                         className="w-full border-2 border-gray-100 rounded-xl pr-10 pl-10 py-3 text-sm outline-none focus:border-[#bca056] focus:shadow-[0_0_0_4px_rgba(188,160,86,0.1)] transition-all"
                       />
                       <button
