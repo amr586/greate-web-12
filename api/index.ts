@@ -954,14 +954,14 @@ export default async function handler(req: any, res: any) {
       }
 
       const [insertResult]: any = await pool.query(
-        `INSERT INTO users (name, email, phone, password_hash, role, email_verified) VALUES (?, ?, ?, ?, 'user', false)`,
+        `INSERT INTO users (name, email, phone, password_hash, role, email_verified) VALUES (?, ?, ?, ?, 'user', true)`,
         [userData.name, sanitizedEmail, userData.phone, userData.passwordHash]
       );
 
       userIdForCleanup = insertResult.insertId;
 
       await pool.query(
-        `INSERT INTO email_verification (user_id, is_verified) VALUES (?, false)`,
+        `INSERT INTO email_verification (user_id, is_verified, verified_at) VALUES (?, true, NOW())`,
         [insertResult.insertId]
       );
 
