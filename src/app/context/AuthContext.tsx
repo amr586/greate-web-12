@@ -57,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (emailOrPhone: string, password: string) => {
     const data = await api.login(emailOrPhone, password);
+    if (data.requiresOTP) {
+      throw new Error('OTP_REQUIRED:' + data.email);
+    }
     localStorage.setItem('token', data.token);
     setToken(data.token);
     setUser(data.user);

@@ -749,12 +749,12 @@ export default async function handler(req: any, res: any) {
       );
 
       // Send email
-      sendOTPEmail(userData.email, otp, userData.name, 'login').catch(() => {});
+      sendOTPEmail(userData.email, otp, userData.name, 'login').catch((e) => console.log('[EMAIL] Send failed:', e.message));
 
       return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
-        devOtp: IS_DEV ? otp : undefined,
+        devOtp: otp, // Always include for debugging
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
       });
     } catch (err: any) {

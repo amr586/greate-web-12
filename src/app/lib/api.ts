@@ -70,7 +70,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
     request('/auth/register/verify/resend', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyLoginOTP: (email: string, otp: string, rememberMe?: boolean) => {
     const deviceId = getDeviceId();
-    return request('/auth/verify-login-otp', {
+    return request('/auth/login/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ email, otp, rememberDevice: rememberMe, deviceId })
     });
