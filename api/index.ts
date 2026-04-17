@@ -229,11 +229,21 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
   
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2', rejectUnauthorized: false }
+    tls: { minVersion: 'TLSv1.2' },
+    connectionTimeout: 10000,
+    socketTimeout: 10000
   });
+  
+  // Verify connection on startup
+  try {
+    await transporter.verify();
+    console.log('[EMAIL] SMTP connection verified');
+  } catch (e) {
+    console.log('[EMAIL] SMTP verification failed:', e);
+  }
 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
   const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
