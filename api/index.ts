@@ -433,6 +433,7 @@ export default async function handler(req: any, res: any) {
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       res.setHeader('Access-Control-Max-Age', '86400');
       res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Vary', 'Origin');
       return res.status(204).end();
     }
     
