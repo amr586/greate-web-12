@@ -3,10 +3,13 @@ import mysql from 'mysql2/promise';
 async function runMigrations() {
   const connectionString = process.env.DATABASE_URL;
   
-  console.log('[DB] DATABASE_URL:', connectionString);
-  
   if (!connectionString) {
     console.error('[DB] No DATABASE_URL - skipping migrations');
+    return;
+  }
+
+  if (!connectionString.startsWith('mysql://')) {
+    console.log('[DB] Non-MySQL DATABASE_URL detected - skipping MySQL migrations');
     return;
   }
 

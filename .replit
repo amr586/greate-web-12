@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
+modules = ["nodejs-20", "web", "bash"]
 [agent]
 expertMode = true
 integrations = ["javascript_openai_ai_integrations:2.0.0"]
@@ -31,7 +31,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev:client"
+args = "npx vite --host 0.0.0.0 --port 5000"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -43,7 +43,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx tsx server/index.ts"
+args = "npx tsx backend/index.ts"
 waitForPort = 3001
 
 [[ports]]
@@ -52,15 +52,7 @@ externalPort = 3001
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 5001
 externalPort = 80
-
-[[ports]]
-localPort = 5002
-externalPort = 3003
 
 [[ports]]
 localPort = 5003
@@ -110,8 +102,6 @@ run = ["bash", "-c", "NODE_ENV=production npx tsx server/index.ts"]
 [userenv]
 
 [userenv.production]
-JWT_SECRET = "bb0f2dafd91237a0a36ca7fe58931b0b242812cbba85ba80035ed387ac791617f181696986adb03dbeb487a35d7c7d8f6d630c12a8da2d53981b882104cc5aa2"
 NODE_ENV = "production"
 
 [userenv.development]
-JWT_SECRET = "bb0f2dafd91237a0a36ca7fe58931b0b242812cbba85ba80035ed387ac791617f181696986adb03dbeb487a35d7c7d8f6d630c12a8da2d53981b882104cc5aa2"

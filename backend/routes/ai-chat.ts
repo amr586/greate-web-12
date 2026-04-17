@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import OpenAI from 'openai';
 import { query } from '../db.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { getJwtSecret } from '../jwt.js';
 
 const router = Router();
 
@@ -162,7 +163,7 @@ router.post('/chat', async (req: AuthRequest, res: Response) => {
       try {
         const jwt = await import('jsonwebtoken');
         const token = req.headers.authorization.split(' ')[1];
-        const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'iskantek_secret_2024') as any;
+        const decoded = jwt.default.verify(token, getJwtSecret()) as any;
         
         let convId = conversationId;
         if (!convId) {

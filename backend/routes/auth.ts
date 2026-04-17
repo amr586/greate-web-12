@@ -4,13 +4,11 @@ import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { authenticate, AuthRequest, checkRateLimit, recordFailedAttempt, clearRateLimit, generateDeviceId, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_ATTEMPTS, loginAttempts } from '../middleware/auth.js';
 import { sendOTPEmail } from '../email.js';
+import { getJwtSecret } from '../jwt.js';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is required');
-}
+const JWT_SECRET = getJwtSecret();
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const OTP_RATE_LIMIT_S = 60;
