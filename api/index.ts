@@ -391,11 +391,15 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
     [identifier, type]
   );
 
+  console.log('[consumeOTP] Found rows:', rows.length, 'identifier:', identifier, 'type:', type);
+
   if (rows.length === 0) {
     return { valid: false, error: 'لم يتم طلب رمز تحقق لهذا الحساب، أعد الإرسال' };
   }
 
   const rec = rows[0];
+  console.log('[consumeOTP] Record found, code in DB:', rec.code, 'code provided:', code, 'expires_at:', rec.expires_at, 'now:', new Date().toISOString());
+  console.log('[consumeOTP] Code match:', rec.code === code.trim());
 
   if (rec.locked_until && new Date(rec.locked_until) > new Date()) {
     const mins = Math.ceil((new Date(rec.locked_until).getTime() - Date.now()) / 60000);
@@ -750,7 +754,8 @@ export default async function handler(req: any, res: any) {
       }
 
       const sanitizedEmail = sanitizeEmail(email);
-      const result = await consumeOTP(sanitizedEmail, otp, 'register', pool);
+      const result = await consumeOTP(sanitizedEmail, otp.trim(), 'register', pool);
+      
       if (!result.valid) {
         return res.status(400).json({ error: result.error });
       }
