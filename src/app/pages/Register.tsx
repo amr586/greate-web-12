@@ -48,8 +48,10 @@ export default function Register() {
         password: form.password,
       });
       
-      if (data.success && data.devOtp) {
-        setDevOtp(data.devOtp);
+      console.log('[Register] Response:', data);
+      
+      if (data.success) {
+        if (data.devOtp) setDevOtp(data.devOtp);
         setStep('verify');
       } else if (data.token) {
         localStorage.setItem('token', data.token);
