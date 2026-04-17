@@ -6,14 +6,14 @@
       "use": "@vercel/static"
     },
     {
-      "src": "backend/server.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/server.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/assets/(.*)",
@@ -22,12 +22,6 @@
     {
       "src": "/.*",
       "dest": "/dist/index.html"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "0 5 * * *"
     }
   ]
 }
