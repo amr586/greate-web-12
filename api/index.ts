@@ -211,6 +211,8 @@ const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SKIP_EMAIL = process.env.SKIP_EMAIL === 'true';
 
+console.log('[DEBUG] SMTP configured:', !!SMTP_USER, 'PASS set:', !!SMTP_PASS);
+
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
   // Skip email if SKIP_EMAIL=true (for testing without SMTP)
   if (SKIP_EMAIL) {
