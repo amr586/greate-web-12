@@ -208,8 +208,6 @@ function generateOTP(): string {
 
 // ========== EMAIL (SMTP) ==========
 
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 
@@ -222,11 +220,11 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
   const nodemailer = await import('nodemailer');
   
   const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: SMTP_PORT !== 465 ? { minVersion: 'TLSv1.2' } : undefined
+    tls: { minVersion: 'TLSv1.2' }
   });
 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
