@@ -36,6 +36,8 @@ async function ensureOTPTable() {
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_identifier_type ON otp_codes(identifier, type)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_device ON otp_codes(device_id) WHERE device_id IS NOT NULL`);
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_expires ON otp_codes(expires_at) WHERE expires_at IS NOT NULL`);
+  await query(`ALTER TABLE otp_codes DROP CONSTRAINT IF EXISTS otp_codes_type_check`);
+  await query(`ALTER TABLE otp_codes ADD CONSTRAINT otp_codes_type_check CHECK (type IN ('register', 'login', 'forgot-password', 'email_verify'))`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS trusted_devices (

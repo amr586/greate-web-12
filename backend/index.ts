@@ -52,6 +52,7 @@ async function main() {
     app.use('/api/contact', contactRouter);
 
     app.use('/uploads', express.static(path.join(projectRoot, 'uploads')));
+    app.use('/attached_assets', express.static(path.join(projectRoot, 'attached_assets')));
 
     app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'إسكنك API', db: process.env.DATABASE_URL ? 'connected' : 'disconnected' }));
 

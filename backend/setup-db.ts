@@ -29,7 +29,7 @@ async function setup() {
       description TEXT,
       description_ar TEXT,
       type VARCHAR(50) NOT NULL,
-      purpose VARCHAR(20) NOT NULL CHECK (purpose IN ('sale','rent')),
+      purpose VARCHAR(20) NOT NULL CHECK (purpose IN ('sale','rent','resale')),
       price NUMERIC(15,2) NOT NULL,
       area NUMERIC(10,2),
       rooms INTEGER,
@@ -160,7 +160,7 @@ async function setup() {
       id SERIAL PRIMARY KEY,
       identifier VARCHAR(200) NOT NULL,
       code VARCHAR(6) NOT NULL,
-      type VARCHAR(20) NOT NULL CHECK (type IN ('register', 'login')),
+      type VARCHAR(20) NOT NULL CHECK (type IN ('register', 'login', 'forgot-password', 'email_verify')),
       user_data JSONB,
       attempts INTEGER DEFAULT 0,
       locked_until TIMESTAMPTZ,
@@ -177,6 +177,126 @@ async function setup() {
   `);
 
   console.log('✅ Tables created');
+
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS city VARCHAR(100)`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS down_payment VARCHAR(100)`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS delivery_status VARCHAR(100)`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS has_basement BOOLEAN DEFAULT false`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS finishing_type VARCHAR(100)`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_image TEXT`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS google_maps_url TEXT`);
+  await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT`);
+  await query(`ALTER TABLE property_chat_messages ADD COLUMN IF NOT EXISTS recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+  await query(`ALTER TABLE properties DROP CONSTRAINT IF EXISTS properties_purpose_check`);
+  await query(`ALTER TABLE properties ADD CONSTRAINT properties_purpose_check CHECK (purpose IN ('sale','rent','resale'))`);
+  await query(`ALTER TABLE otp_codes DROP CONSTRAINT IF EXISTS otp_codes_type_check`);
+  await query(`ALTER TABLE otp_codes ADD CONSTRAINT otp_codes_type_check CHECK (type IN ('register', 'login', 'forgot-password', 'email_verify'))`);
+
+  const requestedAccounts = [
+    { name: 'Great Society Admin', email: 'admin@greatsociety.com', phone: '01090000001', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
+    { name: 'مدير عقارات Great Society', email: 'propmanager@greatsociety.com', phone: '01090000002', password: 'PropMgr@123', role: 'admin', sub_role: 'property_manager' },
+    { name: 'إدخال بيانات Great Society', email: 'dataentry@greatsociety.com', phone: '01090000003', password: 'DataEntry@123', role: 'admin', sub_role: 'data_entry' },
+    { name: 'دعم Great Society', email: 'support@greatsociety.com', phone: '01090000004', password: 'Support@123', role: 'admin', sub_role: 'support' },
+    { name: 'مستخدم Great Society', email: 'user@greatsociety.com', phone: '01090000005', password: 'User@123', role: 'user', sub_role: null },
+  ];
+
+  for (const account of requestedAccounts) {
+    const hash = await bcrypt.hash(account.password, 10);
+    await query(
+      `INSERT INTO users (name, email, phone, password_hash, role, sub_role, is_active, email_verified, email_verified_at)
+       VALUES ($1,$2,$3,$4,$5,$6,true,true,NOW())
+       ON CONFLICT (email) DO UPDATE SET
+         name=EXCLUDED.name,
+         phone=EXCLUDED.phone,
+         password_hash=EXCLUDED.password_hash,
+         role=EXCLUDED.role,
+         sub_role=EXCLUDED.sub_role,
+         is_active=true,
+         email_verified=true,
+         email_verified_at=NOW()`,
+      [account.name, account.email, account.phone, hash, account.role, account.sub_role]
+    );
+  }
+
+  const adminAccount = await query("SELECT id FROM users WHERE email='admin@greatsociety.com' LIMIT 1");
+  const seedOwnerId = adminAccount.rows[0]?.id;
+
+  if (seedOwnerId) {
+    const uploadedImage = '/attached_assets/photo_2026-04-17_13-17-28_1776426346235.jpg';
+    const oldDistricts = ['سيدي جابر','سموحة','المنتزه','العجمي','ستانلي','المندرة','كليوباترا','الدخيلة','برج العرب','جليم','رشدي','لوران','الإسكندرية'];
+    await query(
+      `DELETE FROM properties
+       WHERE district = ANY($1)
+          OR title ILIKE '%Alexandria%'
+          OR title_ar ILIKE '%الإسكندرية%'`,
+      [oldDistricts]
+    );
+    await query(
+      `DELETE FROM properties
+       WHERE title_ar IN ('شقة مميزة في التجمع الخامس', 'فيلا فاخرة في العاصمة الإدارية')`,
+      []
+    );
+
+    const cairoProperties = [
+      {
+        title: 'شقة مميزة في التجمع الخامس',
+        description: 'وحدة سكنية راقية بموقع مميز في القاهرة الجديدة، قريبة من الخدمات والمحاور الرئيسية. مناسبة للسكن أو الاستثمار مع تشطيب مميز ومساحات عملية.',
+        type: 'شقة',
+        purpose: 'sale',
+        price: 4200000,
+        area: 165,
+        bedrooms: 3,
+        bathrooms: 2,
+        floor: 4,
+        district: 'التجمع الخامس',
+        address: 'قريبة من شارع التسعين',
+        down_payment: 'مقدم يبدأ من 25%',
+        delivery_status: 'استلام قريب',
+        finishing_type: 'سوبر لوكس',
+      },
+      {
+        title: 'فيلا فاخرة في العاصمة الإدارية',
+        description: 'فيلا عائلية فاخرة بتصميم حديث وحديقة خاصة، داخل منطقة هادئة ومتكاملة الخدمات في العاصمة الإدارية الجديدة.',
+        type: 'فيلا',
+        purpose: 'sale',
+        price: 12500000,
+        area: 360,
+        bedrooms: 5,
+        bathrooms: 4,
+        floor: 2,
+        district: 'العاصمة الإدارية',
+        address: 'كمبوند سكني متكامل الخدمات',
+        down_payment: 'مقدم يبدأ من 20%',
+        delivery_status: 'استلام فوري',
+        finishing_type: 'تشطيب',
+      },
+    ];
+
+    for (const prop of cairoProperties) {
+      const propRes = await query(
+        `INSERT INTO properties (
+          owner_id, title, title_ar, description, description_ar, type, purpose, price, area,
+          rooms, bedrooms, bathrooms, floor, district, city, address, contact_phone, status,
+          is_featured, approved_by, approved_at, down_payment, delivery_status, finishing_type,
+          has_parking, has_elevator, has_garden, updated_at
+        )
+        VALUES ($1,$2,$2,$3,$3,$4,$5,$6,$7,$8,$8,$9,$10,$11,'القاهرة',$12,'01100111618','approved',
+          true,$1,NOW(),$13,$14,$15,true,true,true,NOW())
+        RETURNING id`,
+        [
+          seedOwnerId, prop.title, prop.description, prop.type, prop.purpose, prop.price, prop.area,
+          prop.bedrooms, prop.bathrooms, prop.floor, prop.district, prop.address,
+          prop.down_payment, prop.delivery_status, prop.finishing_type,
+        ]
+      );
+      await query(
+        'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,true,0)',
+        [propRes.rows[0].id, uploadedImage]
+      );
+    }
+  }
 
   const existingSuperAdmin = await query("SELECT id FROM users WHERE role='superadmin' LIMIT 1");
   if (existingSuperAdmin.rows.length === 0) {
@@ -240,13 +360,12 @@ async function setup() {
 
   console.log('🎉 Database setup complete!');
   console.log('');
-  console.log('👤 Test accounts (password: Admin@2024):');
-  console.log('   🔵 Super Admin: superadmin@iskantek.com');
-  console.log('   🟢 Data Entry:  dataentry@iskantek.com');
-  console.log('   🟡 Prop Mgr:    propmanager@iskantek.com');
-  console.log('   🟠 Analytics:   analytics@iskantek.com');
-  console.log('   🔴 Support:     support@iskantek.com');
-  console.log('   ⚪ User:        user@example.com (User@2024)');
+  console.log('👤 Great Society accounts:');
+  console.log('   🔵 Super Admin: admin@greatsociety.com / Admin@GreatSociety1');
+  console.log('   🟡 Prop Mgr:    propmanager@greatsociety.com / PropMgr@123');
+  console.log('   🟢 Data Entry:  dataentry@greatsociety.com / DataEntry@123');
+  console.log('   🔴 Support:     support@greatsociety.com / Support@123');
+  console.log('   ⚪ User:        user@greatsociety.com / User@123');
   process.exit(0);
 }
 

@@ -11,3 +11,4 @@
 - Initialized the Replit PostgreSQL database using the project's existing setup script.
 - Fixed property detail pages so property chat updates scroll only inside the chat box instead of moving the whole page downward automatically.
 - Added a bottom-of-page recommended property section on property detail pages, selecting a different available property with preference for featured/similar listings.
+- Implemented private per-user property chat filtering, branded admin replies as Great Society Team, Cairo-only district choices, staff property-edit permission fixes, and database seed updates for the requested Great Society staff accounts and featured Cairo properties.

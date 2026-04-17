@@ -27,6 +27,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/attached_assets': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
     },
     watch: {
       ignored: ['**/.local/**', '**/node_modules/**', '**/.git/**', '**/.replit', '**/replit.nix'],

@@ -210,7 +210,7 @@ export function Sell() {
                       value={form.location}
                       onChange={handleChange}
                       required
-                      placeholder="مثال: سيدي جابر، الإسكندرية"
+                      placeholder="مثال: التجمع الخامس، القاهرة"
                       className="w-full bg-purple-50 rounded-xl px-4 py-2.5 text-sm outline-none border border-purple-100 focus:border-[#7C3AED]"
                     />
                   </div>

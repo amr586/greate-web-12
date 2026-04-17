@@ -31,6 +31,7 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -66,10 +67,12 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
     if (!input.trim() || sending) return;
     setSending(true);
     setError('');
+    setSuccess('');
     try {
       const msg = await api.sendPropertyChatMessage(propertyId, input.trim());
       if (msg) setMessages(prev => [...prev, msg]);
       setInput('');
+      setSuccess('تم ارسال طلبك بنجاح');
     } catch (err: any) {
       setError(err.message || 'خطأ في الإرسال');
     } finally {
@@ -151,11 +154,11 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
                   <div className={`max-w-[80%] ${isMe ? 'items-start' : 'items-end'} flex flex-col gap-1`}>
                     <div className="flex items-center gap-1.5 px-1">
                       <span className={`text-xs font-semibold ${isAdminMsg ? 'text-[#005a7d]' : 'text-gray-600'}`}>
-                        {isMe ? 'أنت' : msg.sender_name}
+                        {isMe ? 'أنت' : isAdminMsg ? 'Great Society Team' : msg.sender_name}
                       </span>
                       {isAdminMsg && (
                         <span className="text-xs bg-[#005a7d]/10 text-[#005a7d] px-1.5 py-0.5 rounded-md font-medium">
-                          {msg.sender_role === 'superadmin' ? 'سوبر أدمن' : msg.sender_sub_role === 'data_entry' ? 'داتا انتري' : msg.sender_sub_role === 'property_manager' ? 'مدير عقارات' : 'إدارة'}
+                          Great Society Team
                         </span>
                       )}
                     </div>
@@ -181,6 +184,11 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
       {error && (
         <div className="px-4 py-2 bg-red-50 border-t border-red-100">
           <p className="text-red-500 text-xs">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="px-4 py-2 bg-green-50 border-t border-green-100">
+          <p className="text-green-700 text-xs font-bold">{success}</p>
         </div>
       )}
 

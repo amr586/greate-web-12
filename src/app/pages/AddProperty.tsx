@@ -4,19 +4,11 @@ import { motion } from 'motion/react';
 import { Building2, MapPin, DollarSign, Home, CheckCircle, Info, Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض', 'دوبلكس', 'بنتهاوس'];
-const DISTRICTS = ['سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب', 'مناطق أخرى'];
-const ALL_AREAS = [
-  'سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب',
-  'جليم', 'بولكلي', 'رشدي', 'المعمورة', 'أبو قير', 'العصافرة', 'السيوف', 'سيدي بشر', 'لوران',
-  'التجمع الخامس', 'التجمع السادس', 'العاصمة الإدارية', 'مصر الجديدة', 'جولدن سكوير', 'النرجس الجديدة',
-  'بيت الوطن', 'شمال الرحاب', 'مدينة نصر', 'هليوبوليس', 'طريق السويس', 'الرحاب',
-  'الشيخ زايد', 'أكتوبر السادس', 'الجيزة', 'الدقي', 'المهندسين', 'الزمالك', 'المعادي',
-  'التجمع الأول', 'التجمع الثالث', 'القاهرة الجديدة', 'الشروق', 'المقطم', 'حلوان',
-  'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'المنصورة', 'طنطا', 'الإسكندرية',
-  'القاهرة', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'الغردقة', 'شرم الشيخ',
-];
+const DISTRICTS = CAIRO_DISTRICTS;
+const ALL_AREAS = CAIRO_DISTRICTS.filter(d => d !== 'مناطق أخرى');
 
 interface UploadedImage {
   url: string;
@@ -67,8 +59,8 @@ export default function AddProperty() {
   const [form, setForm] = useState({
     title: '', title_ar: '', description: '', description_ar: '',
     type: 'شقة', purpose: 'sale', price: '', area: '',
-    rooms: '', bathrooms: '', floor: '', district: 'سيدي جابر',
-    city: 'الإسكندرية', address: '',
+    rooms: '', bathrooms: '', floor: '', district: 'التجمع الخامس',
+    city: 'القاهرة', address: '',
   });
 
   const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
@@ -177,7 +169,7 @@ export default function AddProperty() {
           <button onClick={() => navigate('/properties')} className="flex-1 border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">تصفح العقارات</button>
           <button onClick={() => {
             setSuccess(false); setStep(1); setUploadedImages([]); setCustomDistrict(''); setAreaSearch(''); setShowAreaSuggestions(false);
-            setForm({ title: '', title_ar: '', description: '', description_ar: '', type: 'شقة', purpose: 'sale', price: '', area: '', rooms: '', bathrooms: '', floor: '', district: 'سيدي جابر', city: 'الإسكندرية', address: '' });
+            setForm({ title: '', title_ar: '', description: '', description_ar: '', type: 'شقة', purpose: 'sale', price: '', area: '', rooms: '', bathrooms: '', floor: '', district: 'التجمع الخامس', city: 'القاهرة', address: '' });
           }}
             className="flex-1 bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold"
           >إضافة عقار آخر</button>
@@ -219,12 +211,12 @@ export default function AddProperty() {
               <h2 className="text-xl font-black text-gray-900 mb-6">المعلومات الأساسية</h2>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">اسم العقار (بالعربية)</label>
-                <input value={form.title_ar} onChange={e => update('title_ar', e.target.value)} required placeholder="مثال: شقة فاخرة في سيدي جابر"
+                <input value={form.title_ar} onChange={e => update('title_ar', e.target.value)} required placeholder="مثال: شقة فاخرة في التجمع الخامس"
                   className="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d] transition-all" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">اسم العقار (بالإنجليزية)</label>
-                <input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Luxury apartment in Sidi Gaber"
+                <input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Luxury apartment in New Cairo"
                   className="w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#005a7d] transition-all" dir="ltr" />
               </div>
               <div className="grid grid-cols-2 gap-4">

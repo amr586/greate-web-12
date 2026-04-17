@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Building2, MapPin, DollarSign, CheckCircle, X, Loader2, Image, Map } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { compressAndUploadMultiple, compressImage } from '../lib/imageUtils';
+import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
@@ -242,7 +243,7 @@ export default function AdminAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]"
                   list="districts-list" required />
                 <datalist id="districts-list">
-                  {['التجمع الخامس','مصر الجديدة','العاصمة الإدارية','طريق السويس','التجمع السادس','جولدن سكوير','النرجس الجديدة','بيت الوطن','شمال الرحاب','مدينة نصر','هليوبوليس','سيدي جابر','سموحة','المنتزه','العجمي','ستانلي','المندرة','كليوباترا','الدخيلة','برج العرب','الشيخ زايد','أكتوبر السادس','الجيزة','المهندسين','الزمالك','المعادي','الرحاب','القاهرة الجديدة','الشروق','مناطق أخرى'].map(d => (
+                  {CAIRO_DISTRICTS.map(d => (
                     <option key={d} value={d} />
                   ))}
                 </datalist>

@@ -4,6 +4,8 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
+query('ALTER TABLE property_chat_messages ADD COLUMN IF NOT EXISTS recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE').catch(console.error);
+
 function isAdminUser(user: AuthRequest['user']): boolean {
   if (!user) return false;
   if (user.role === 'superadmin') return true;
@@ -16,13 +18,21 @@ router.get('/:propertyId/messages', authenticate, async (req: AuthRequest, res: 
     const { propertyId } = req.params;
     const prop = await query('SELECT owner_id FROM properties WHERE id=$1', [propertyId]);
     if (prop.rows.length === 0) return res.status(404).json({ error: 'العقار غير موجود' });
+    const isAdmin = isAdminUser(req.user);
+    const conversationUserId = isAdmin ? Number(req.query.userId || prop.rows[0].owner_id) : req.user!.id;
+    if (!conversationUserId) return res.json([]);
     const result = await query(
       `SELECT m.*, u.name as sender_name, u.role as sender_role, u.sub_role as sender_sub_role
        FROM property_chat_messages m
        JOIN users u ON u.id = m.sender_id
        WHERE m.property_id = $1
+         AND (
+           m.sender_id = $2
+           OR m.recipient_id = $2
+           OR (m.is_admin = true AND m.recipient_id IS NULL AND $3 = true)
+         )
        ORDER BY m.created_at ASC`,
-      [propertyId]
+      [propertyId, conversationUserId, Number(prop.rows[0].owner_id) === conversationUserId]
     );
     res.json(result.rows);
   } catch (err) {
@@ -39,11 +49,12 @@ router.post('/:propertyId/messages', authenticate, async (req: AuthRequest, res:
     const prop = await query('SELECT owner_id, title_ar, title FROM properties WHERE id=$1', [propertyId]);
     if (prop.rows.length === 0) return res.status(404).json({ error: 'العقار غير موجود' });
     const isAdmin = isAdminUser(req.user);
+    const recipientId = isAdmin ? Number(req.body.recipient_id || prop.rows[0].owner_id) || null : null;
     const result = await query(
-      `INSERT INTO property_chat_messages (property_id, sender_id, content, is_admin)
-       VALUES ($1,$2,$3,$4)
-       RETURNING id, property_id, sender_id, content, is_admin, created_at`,
-      [propertyId, req.user!.id, content.trim(), isAdmin]
+      `INSERT INTO property_chat_messages (property_id, sender_id, recipient_id, content, is_admin)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id, property_id, sender_id, recipient_id, content, is_admin, created_at`,
+      [propertyId, req.user!.id, recipientId, content.trim(), isAdmin]
     );
     const msg = result.rows[0];
     const userResult = await query('SELECT name, role, sub_role FROM users WHERE id=$1', [req.user!.id]);
@@ -77,11 +88,13 @@ router.post('/:propertyId/messages', authenticate, async (req: AuthRequest, res:
     // Notify users when admin/staff replies in property chat
     if (isAdmin) {
       try {
-        const usersRes = await query(
-          `SELECT DISTINCT sender_id FROM property_chat_messages
-           WHERE property_id=$1 AND is_admin=false AND sender_id!=$2`,
-          [propertyId, req.user!.id]
-        );
+        const usersRes = recipientId
+          ? { rows: [{ sender_id: recipientId }] }
+          : await query(
+            `SELECT DISTINCT sender_id FROM property_chat_messages
+             WHERE property_id=$1 AND is_admin=false AND sender_id!=$2`,
+            [propertyId, req.user!.id]
+          );
         for (const u of usersRes.rows) {
           await query(
             `INSERT INTO notifications (user_id, type, title, message, link)
@@ -124,10 +137,14 @@ router.get('/my-chats', authenticate, async (req: AuthRequest, res: Response) =>
     } else {
       result = await query(
         `SELECT DISTINCT p.id, p.title, p.title_ar, p.status,
-                (SELECT COUNT(*) FROM property_chat_messages WHERE property_id=p.id AND sender_id=$1) as msg_count,
-                (SELECT created_at FROM property_chat_messages WHERE property_id=p.id ORDER BY created_at DESC LIMIT 1) as last_msg_at
+                (SELECT COUNT(*) FROM property_chat_messages
+                 WHERE property_id=p.id AND (sender_id=$1 OR recipient_id=$1 OR (is_admin=true AND recipient_id IS NULL AND p.owner_id=$1))) as msg_count,
+                (SELECT created_at FROM property_chat_messages
+                 WHERE property_id=p.id AND (sender_id=$1 OR recipient_id=$1 OR (is_admin=true AND recipient_id IS NULL AND p.owner_id=$1))
+                 ORDER BY created_at DESC LIMIT 1) as last_msg_at
          FROM properties p
-         WHERE EXISTS (SELECT 1 FROM property_chat_messages WHERE property_id=p.id AND sender_id=$1)
+         WHERE EXISTS (SELECT 1 FROM property_chat_messages
+                       WHERE property_id=p.id AND (sender_id=$1 OR recipient_id=$1 OR (is_admin=true AND recipient_id IS NULL AND p.owner_id=$1)))
          ORDER BY last_msg_at DESC NULLS LAST`,
         [user.id]
       );

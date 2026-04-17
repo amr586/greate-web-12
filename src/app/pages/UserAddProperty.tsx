@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Building2, CheckCircle, X, Loader2, Clock, Map } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { compressAndUploadMultiple, compressImage } from '../lib/imageUtils';
+import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
@@ -44,7 +45,6 @@ export default function UserAddProperty() {
     has_basement: false,
     finishing_type: '',
     google_maps_url: '',
-    is_featured: false,
   });
 
   useEffect(() => {
@@ -211,14 +211,6 @@ export default function UserAddProperty() {
                   <option value="resale">ريسيل</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">نوع الإعلان</label>
-                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]">
-                  <option value="normal">عادي</option>
-                  <option value="featured">مميز</option>
-                </select>
-              </div>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">الوصف</label>
@@ -251,7 +243,7 @@ export default function UserAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#005a7d]"
                   list="user-districts-list" required />
                 <datalist id="user-districts-list">
-                  {['التجمع الخامس','مصر الجديدة','العاصمة الإدارية','طريق السويس','التجمع السادس','جولدن سكوير','النرجس الجديدة','بيت الوطن','شمال الرحاب','مدينة نصر','هليوبوليس','سيدي جابر','سموحة','المنتزه','العجمي','ستانلي','المندرة','كليوباترا','الدخيلة','برج العرب','الشيخ زايد','أكتوبر السادس','الجيزة','المهندسين','الزمالك','المعادي','الرحاب','القاهرة الجديدة','الشروق','مناطق أخرى'].map(d => (
+                  {CAIRO_DISTRICTS.map(d => (
                     <option key={d} value={d} />
                   ))}
                 </datalist>

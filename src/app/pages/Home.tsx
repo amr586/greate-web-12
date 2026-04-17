@@ -45,10 +45,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    Promise.all([api.getProperty(1), api.getProperty(2)])
-      .then(([p1, p2]) => {
-        const results = [p1, p2].filter(Boolean);
-        setFeaturedProps(results);
+    api.getFeatured()
+      .then((results) => {
+        setFeaturedProps((Array.isArray(results) ? results : []).slice(0, 2));
       })
       .catch(() => {});
   }, []);
@@ -293,7 +292,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { icon: <Building2 size={28} />, title: 'بيع العقارات', desc: 'نساعدك في بيع عقارك بأفضل سعر وفي أقصر وقت ممكن.', grad: 'from-[#005a7d] to-[#007a9a]', link: '/sell' },
-              { icon: <Search size={28} />, title: 'شراء العقارات', desc: 'نوفر لك أكبر قاعدة بيانات عقارية في الإسكندرية.', grad: 'from-[#bca056] to-[#d7b777]', link: '/properties?purpose=sale' },
+              { icon: <Search size={28} />, title: 'شراء العقارات', desc: 'نوفر لك أكبر قاعدة بيانات عقارية في القاهرة والمناطق الجديدة.', grad: 'from-[#bca056] to-[#d7b777]', link: '/properties?purpose=sale' },
               { icon: <Phone size={28} />, title: 'الاستشارة المجانية', desc: 'فريقنا المتخصص جاهز للإجابة على جميع استفساراتك.', grad: 'from-[#005a7d] to-[#004a68]', link: '/contact' },
               { icon: <Shield size={28} />, title: 'الحماية القانونية', desc: 'نضمن سلامة جميع المعاملات وتوثيق العقود قانونياً.', grad: 'from-[#bca056] to-[#d7b777]', link: '/contact' },
               { icon: <Award size={28} />, title: 'تقييم العقارات', desc: 'نقدم تقييماً دقيقاً وموضوعياً لقيمة عقارك.', grad: 'from-[#005a7d] to-[#007a9a]', link: '/contact' },

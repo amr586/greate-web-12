@@ -3,22 +3,13 @@ import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, X, Building2, Phone, MapPin, Star, ChevronLeft, BedDouble, Bath, Maximize2, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { DISTRICTS_FILTER, CAIRO_DISTRICTS } from '../lib/districts';
 
 const COMPANY_PHONE = '01100111618';
 
 export const FEATURED: any[] = [];
 
-const DISTRICTS_FILTER = ['الكل', 'طريق السويس', 'التجمع الخامس', 'جولدن سكوير', 'العاصمة الإدارية', 'التجمع السادس', 'مناطق أخرى'];
-const SEARCH_AREAS = [
-  'سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب',
-  'جليم', 'بولكلي', 'رشدي', 'المعمورة', 'أبو قير', 'العصافرة', 'السيوف', 'سيدي بشر', 'لوران',
-  'التجمع الخامس', 'التجمع السادس', 'العاصمة الإدارية', 'مصر الجديدة', 'جولدن سكوير', 'النرجس الجديدة',
-  'بيت الوطن', 'شمال الرحاب', 'مدينة نصر', 'هليوبوليس', 'طريق السويس', 'الرحاب',
-  'الشيخ زايد', 'أكتوبر السادس', 'الجيزة', 'الدقي', 'المهندسين', 'الزمالك', 'المعادي',
-  'التجمع الأول', 'التجمع الثالث', 'القاهرة الجديدة', 'الشروق', 'المقطم', 'حلوان',
-  'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'المنصورة', 'طنطا', 'الإسكندرية',
-  'القاهرة', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'الغردقة', 'شرم الشيخ',
-];
+const SEARCH_AREAS = CAIRO_DISTRICTS.filter(d => d !== 'مناطق أخرى');
 const TYPES_FILTER = ['الكل', 'شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const PURPOSE_FILTER = ['الكل', 'بيع', 'إيجار', 'ريسيل'];
 
@@ -83,6 +74,7 @@ export default function Properties() {
   });
 
   const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
+  const filteredAreas = SEARCH_AREAS.filter(area => area.includes(districtSearch.trim()));
 
 const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
 
