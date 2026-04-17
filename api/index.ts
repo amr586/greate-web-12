@@ -607,6 +607,9 @@ export default async function handler(req: any, res: any) {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   
   // CORS - specific origins only
   const origin = req.headers.origin;
@@ -1029,7 +1032,9 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, expiresAt]
       );
 
-      sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register').catch(() => {});
+      sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register')
+        .then(() => console.log('[RESEND] Email sent successfully'))
+        .catch((err) => console.log('[RESEND] Email error:', err.message));
 
       return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
@@ -2059,6 +2064,85 @@ export default async function handler(req: any, res: any) {
     } catch (e: any) {
       await pool.end();
       return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ========== UPLOAD (File to Hostinger) ==========
+
+  // POST /api/upload
+  if (method === 'POST' && url?.includes('/api/upload')) {
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const formData = await import('form-data');
+      const fs = await import('fs');
+      
+      const contentType = headers['content-type'] || '';
+      if (!contentType.includes('multipart/form-data')) {
+        return res.status(400).json({ error: 'Invalid content type' });
+      }
+
+      const boundary = contentType.split('boundary=')[1];
+      if (!boundary) {
+        return res.status(400).json({ error: 'No boundary' });
+      }
+
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      
+      const parts = buffer.toString('utf-8').split(`--${boundary}`);
+      let fileBuffer: Buffer | null = null;
+      let fileName = 'upload';
+      let fieldName = 'file';
+      
+      for (const part of parts) {
+        if (part.includes('filename=')) {
+          const nameMatch = part.match(/name="([^"]+)"/);
+          const fileNameMatch = part.match(/filename="([^"]+)"/);
+          if (nameMatch) fieldName = nameMatch[1];
+          if (fileNameMatch) fileName = fileNameMatch[1];
+          
+          const headerEnd = part.indexOf('\r\n\r\n');
+          if (headerEnd > 0) {
+            const base64Part = part.slice(headerEnd + 4, -2);
+            fileBuffer = Buffer.from(base64Part, 'binary');
+          }
+          break;
+        }
+      }
+
+      if (!fileBuffer) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+      const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+      if (!allowedExts.includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type' });
+      }
+
+      const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`.replace(/[^a-z0-9._-]/gi, '');
+      
+      const uploadDir = process.env.UPLOAD_DIR || '/home/u156204542/public_html/uploads';
+      const uploadPath = `${uploadDir}/${safeFileName}`;
+
+      try {
+        fs.writeFileSync(uploadPath, fileBuffer);
+      } catch (writeErr: any) {
+        console.log('[UPLOAD] Write error, trying alternative path:', writeErr.message);
+        const altPath = `/home/u156204542/domains/greatsociety-eg.com/public_html/uploads/${safeFileName}`;
+        fs.writeFileSync(altPath, fileBuffer);
+      }
+
+      const fileUrl = `https://greatsociety-eg.com/uploads/${safeFileName}`;
+      return res.json({ success: true, url: fileUrl, filename: safeFileName });
+    } catch (err: any) {
+      console.log('[UPLOAD] Error:', err.message);
+      return res.status(500).json({ error: 'Upload failed: ' + err.message });
     }
   }
 

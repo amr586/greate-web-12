@@ -87,7 +87,7 @@ export default function SuperAdminDashboard() {
       const formData = new FormData();
       formData.append('image', file);
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/upload', {
+      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -194,7 +194,7 @@ export default function SuperAdminDashboard() {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('image', file);
-      const res = await fetch('/api/upload', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData });
+      const res = await fetch('https://greate-web-12.vercel.app/api/upload', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل الرفع');
       setEditForm((p: any) => ({ ...p, floor_plan_image: data.url }));
