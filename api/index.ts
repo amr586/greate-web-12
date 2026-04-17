@@ -448,6 +448,10 @@ export default async function handler(req: any, res: any) {
 
     const { query: urlQuery, method, url, headers, body } = req;
     console.log('[DEBUG] Request URL:', url, 'Method:', method);
+    
+    // Strip query string for route matching
+    const cleanUrl = url?.split('?')[0] || url;
+    
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
@@ -476,7 +480,7 @@ export default async function handler(req: any, res: any) {
   // ========== AUTH ENDPOINTS ==========
 
   // POST /api/auth/login (exact match)
-  if (method === 'POST' && url === '/api/auth/login') {
+  if (method === 'POST' && cleanUrl === '/api/auth/login') {
     try {
       const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
@@ -581,7 +585,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/login/verify-otp (exact match)
-  if (method === 'POST' && url === '/api/auth/login/verify-otp') {
+  if (method === 'POST' && cleanUrl === '/api/auth/login/verify-otp') {
     try {
       const { email, otp, rememberDevice, deviceName } = body;
       if (!email || !otp) {
@@ -633,7 +637,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/resend-login-otp (exact match)
-  if (method === 'POST' && url === '/api/auth/resend-login-otp') {
+  if (method === 'POST' && cleanUrl === '/api/auth/resend-login-otp') {
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
@@ -676,7 +680,7 @@ export default async function handler(req: any, res: any) {
   
 
   // POST /api/auth/register (exact match - no /verify, /resend, etc.)
-  if (method === 'POST' && url === '/api/auth/register') {
+  if (method === 'POST' && cleanUrl === '/api/auth/register') {
     try {
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
@@ -741,7 +745,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/register/verify (exact match)
-  if (method === 'POST' && url === '/api/auth/register/verify') {
+  if (method === 'POST' && cleanUrl === '/api/auth/register/verify') {
     let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
@@ -817,7 +821,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/register/verify/resend (exact match)
-  if (method === 'POST' && url === '/api/auth/register/verify/resend') {
+  if (method === 'POST' && cleanUrl === '/api/auth/register/verify/resend') {
     console.log('[RESEND] Raw body:', JSON.stringify(body));
     try {
       const { email } = body;
@@ -854,7 +858,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/verify-email (exact match)
-  if (method === 'POST' && url === '/api/auth/verify-email') {
+  if (method === 'POST' && cleanUrl === '/api/auth/verify-email') {
     try {
       const { email, otp } = body;
       if (!email || !otp) {
