@@ -4,6 +4,14 @@ import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
+function isStaffUser(user: AuthRequest['user']): boolean {
+  return Boolean(user && (
+    user.role === 'superadmin' ||
+    user.role === 'admin' ||
+    ['property_manager', 'data_entry'].includes(user.sub_role || '')
+  ));
+}
+
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12, user_id } = req.query;
@@ -88,8 +96,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     } = req.body;
     const displayTitle = title_ar || title || '';
     const user = req.user!;
-    const isStaff = user.role === 'superadmin' ||
-      (user.role === 'admin' && ['data_entry', 'property_manager'].includes(user.sub_role || ''));
+    const isStaff = isStaffUser(user);
     const initialStatus = isStaff ? 'approved' : 'pending';
     const COMPANY_PHONE = '01100111618';
     const finalPhone = isStaff ? (contact_phone || COMPANY_PHONE) : (contact_phone || user.phone || COMPANY_PHONE);
@@ -105,7 +112,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       [
         displayTitle, displayTitle, description, type, validPurpose, price, area, rooms || bedrooms, bedrooms || rooms,
         bathrooms, floor, address, district, finalPhone, down_payment || null, delivery_status || null,
-        Boolean(is_featured), Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
+        isStaff ? Boolean(is_featured) : false, Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
         Boolean(has_pool), Boolean(has_garden), Boolean(has_basement),
         finishing_type || null, floor_plan_image || null, google_maps_url || null,
         user.id, initialStatus
@@ -170,8 +177,9 @@ router.patch('/:id/user-edit', authenticate, async (req: AuthRequest, res: Respo
     const propRes = await query('SELECT owner_id, status FROM properties WHERE id=$1', [req.params.id]);
     if (!propRes.rows[0]) return res.status(404).json({ error: 'العقار غير موجود' });
     const prop = propRes.rows[0];
-    if (prop.owner_id !== req.user!.id) return res.status(403).json({ error: 'ليس لديك صلاحية' });
-    if (prop.status !== 'pending') return res.status(400).json({ error: 'لا يمكن تعديل العقار بعد الموافقة عليه' });
+    const isStaff = isStaffUser(req.user);
+    if (!isStaff && prop.owner_id !== req.user!.id) return res.status(403).json({ error: 'ليس لديك صلاحية' });
+    if (!isStaff && prop.status !== 'pending') return res.status(400).json({ error: 'لا يمكن تعديل العقار بعد الموافقة عليه' });
     const {
       title_ar, title, description, type, purpose, price, area, bedrooms, bathrooms, floor,
       district, address, contact_phone, down_payment, delivery_status, google_maps_url,

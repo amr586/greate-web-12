@@ -24,10 +24,12 @@ async function request(path: string, options: RequestInit = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const url = path.includes('?') ? `${path}&t=${Date.now()}` : `${path}?t=${Date.now()}`;
     
-    const res = await fetch(BASE_URL + path, { ...options, headers, signal: controller.signal });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    
+    const res = await fetch(BASE_URL + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
     const data = await res.json();
@@ -52,12 +54,14 @@ export const api = {
       body: JSON.stringify({ emailOrPhone, password, deviceId }) 
     });
   },
-  register: (data: { name: string; email: string; phone: string; password: string }) =>
+register: (data: { name: string; email: string; phone: string; password: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-sendOTP: (data: { name: string; email: string; phone: string; password: string; otpMethod?: string }) =>
+  verifyRegister: (email: string, otp: string) =>
+    request('/auth/register/verify', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  sendOTP: (data: { name: string; email: string; phone: string; password: string; otpMethod?: string }) =>
     request('/auth/send-otp', { method: 'POST', body: JSON.stringify(data) }),
   resendRegisterOTP: (email: string) =>
-    request('/auth/resend-register-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+    request('/auth/register/verify/resend', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyLoginOTP: (email: string, otp: string, rememberMe?: boolean) => {
     const deviceId = getDeviceId();
     return request('/auth/verify-login-otp', {
@@ -142,10 +146,12 @@ sendOTP: (data: { name: string; email: string; phone: string; password: string; 
 
   getRecommendations: (params: any) => request('/ai/recommend', { method: 'POST', body: JSON.stringify(params) }),
 
-  getPropertyChatMessages: (propertyId: number) => request(`/property-chat/${propertyId}/messages`),
-  sendPropertyChatMessage: (propertyId: number, content: string) =>
-    request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  getPropertyChatMessages: (propertyId: number, userId?: number) =>
+    request(`/property-chat/${propertyId}/messages${userId ? `?userId=${userId}` : ''}`),
+  sendPropertyChatMessage: (propertyId: number, content: string, recipientId?: number) =>
+    request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content, recipient_id: recipientId }) }),
   getMyPropertyChats: () => request('/property-chat/my-chats'),
+  getPropertyChatUsers: (propertyId: number) => request(`/property-chat/${propertyId}/users`),
 };
 
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {

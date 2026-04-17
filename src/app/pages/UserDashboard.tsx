@@ -161,7 +161,7 @@ export default function UserDashboard() {
                 <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-white/20 flex items-center justify-center text-3xl font-black">
-                  {user.name.charAt(0)}
+                  {user.name?.charAt(0) || '؟'}
                 </div>
               )}
             </div>

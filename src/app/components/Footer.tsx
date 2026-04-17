@@ -103,8 +103,8 @@ export default function Footer() {
         <div className="border-t border-white/20 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-white/70 text-sm">© {new Date().getFullYear()} Great Society — جميع الحقوق محفوظة</p>
           <div className="flex items-center gap-4">
-            <a href="https://drive.google.com/file/d/1ZMjlODUmm0o7C6zf00iPyelXDH4gFTy0/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors text-xs">سياسة الخصوصية</a>
-            <a href="https://drive.google.com/file/d/1sgHp8G35p6LDGmFQx_La2IZ54gjCTVyu/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors text-xs">الشروط والأحكام</a>
+            <Link to="/privacy" className="text-white/60 hover:text-white transition-colors text-xs">سياسة الخصوصية</Link>
+            <Link to="/terms" className="text-white/60 hover:text-white transition-colors text-xs">الشروط والأحكام</Link>
           </div>
         </div>
       </div>

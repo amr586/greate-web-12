@@ -35,7 +35,9 @@ async function main() {
     console.log('[SERVER] projectRoot:', projectRoot);
 
     app.use(cors({
-      origin: process.env.NODE_ENV === 'production' ? 'https://greatsociety-eg.com' : '*',
+      origin: process.env.NODE_ENV === 'production' 
+        ? (process.env.ALLOWED_ORIGINS?.split(',') || ['https://greatsociety-eg.com'])
+        : ['http://localhost:5173', 'http://localhost:3000'],
       credentials: true,
     }));
     app.use(express.json({ limit: '10mb' }));
@@ -52,6 +54,7 @@ async function main() {
     app.use('/api/contact', contactRouter);
 
     app.use('/uploads', express.static(path.join(projectRoot, 'uploads')));
+    app.use('/attached_assets', express.static(path.join(projectRoot, 'attached_assets')));
 
     app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'إسكنك API', db: process.env.DATABASE_URL ? 'connected' : 'disconnected' }));
 

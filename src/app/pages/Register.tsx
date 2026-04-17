@@ -15,7 +15,6 @@ export default function Register() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<Step>('register');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState<string | undefined>();
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -48,15 +47,16 @@ export default function Register() {
         password: form.password,
       });
       
-      if (data.emailVerificationPending) {
-        setDevOtp(data.devOtp);
+      if (data.success) {
         setStep('verify');
-      } else {
+      } else if (data.token) {
         localStorage.setItem('token', data.token);
         setStep('success');
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch (err: any) {
       setError(err.message || 'خطأ في إنشاء الحساب');
@@ -72,14 +72,14 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const data = await api.verifyEmail(form.email, otp);
+      const data = await api.verifyRegister(form.email, otp);
       if (data.token) {
         localStorage.setItem('token', data.token);
+        setStep('success');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       }
-      setStep('success');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1500);
     } catch (err: any) {
       setError(err.message || 'رمز التحقق غير صحيح');
     } finally {
@@ -90,8 +90,7 @@ export default function Register() {
   const handleResend = async () => {
     setError('');
     try {
-      const data = await api.resendRegisterOTP(form.email);
-      setDevOtp(data.devOtp);
+      await api.resendRegisterOTP(form.email);
     } catch (err: any) {
       setError(err.message);
     }
@@ -157,9 +156,6 @@ export default function Register() {
                     <p className="text-blue-600 text-sm">
                       تم إرسال رمز التحقق إلى <strong>{form.email}</strong>
                     </p>
-                    {devOtp && (
-                      <p className="text-xs text-blue-500 mt-2">Dev OTP: {devOtp}</p>
-                    )}
                   </div>
 
                   <div>

@@ -1,12 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { getJwtSecret } from '../jwt.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is required. Set it before starting the server.');
-}
+const JWT_SECRET = getJwtSecret();
 
 export const JWT_OPTIONS = {
   expiresIn: '7d',
@@ -46,9 +43,6 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
     console.log('[AUTH] No token provided');
     return res.status(401).json({ error: 'غير مصرح' });
   }
-
-  console.log('[AUTH DEBUG] Token preview:', token.slice(0, 30) + '...');
-  console.log('[AUTH DEBUG] JWT_SECRET preview:', JWT_SECRET?.slice(0, 20) + '...');
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET, JWT_OPTIONS) as AuthRequest['user'];

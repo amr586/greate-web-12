@@ -4,19 +4,20 @@ import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { authenticate, AuthRequest, checkRateLimit, recordFailedAttempt, clearRateLimit, generateDeviceId, RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_ATTEMPTS, loginAttempts } from '../middleware/auth.js';
 import { sendOTPEmail } from '../email.js';
+import { getJwtSecret } from '../jwt.js';
 
 const router = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is required');
-}
+const JWT_SECRET = getJwtSecret();
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const OTP_RATE_LIMIT_S = 60;
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_LOCKOUT_MS = 10 * 60 * 1000;
 const DEVICE_TOKEN_EXPIRY_DAYS = 30;
+
+// Only expose debug endpoint in development
+const isDev = process.env.NODE_ENV !== 'production';
 
 async function ensureOTPTable() {
   await query(`
@@ -38,6 +39,8 @@ async function ensureOTPTable() {
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_identifier_type ON otp_codes(identifier, type)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_device ON otp_codes(device_id) WHERE device_id IS NOT NULL`);
   await query(`CREATE INDEX IF NOT EXISTS idx_otp_codes_expires ON otp_codes(expires_at) WHERE expires_at IS NOT NULL`);
+  await query(`ALTER TABLE otp_codes DROP CONSTRAINT IF EXISTS otp_codes_type_check`);
+  await query(`ALTER TABLE otp_codes ADD CONSTRAINT otp_codes_type_check CHECK (type IN ('register', 'login', 'forgot-password', 'email_verify'))`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS trusted_devices (
@@ -449,6 +452,9 @@ router.post('/verify-email', async (req: Request, res: Response) => {
 });
 
 router.delete('/debug/otp/:email', async (req: Request, res: Response) => {
+  if (!isDev) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   try {
     const { email } = req.params;
     await query("DELETE FROM otp_codes WHERE identifier=$1", [email]);
@@ -575,7 +581,7 @@ router.post('/verify-login-otp', async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email, deviceId },
       JWT_SECRET,
-      { expiresIn: DEVICE_TOKEN_EXPIRY_DAYS + 'd' }
+      { expiresIn: `${DEVICE_TOKEN_EXPIRY_DAYS}d` as string }
     );
     console.log('[verify-login-otp] Token created, length:', token.length);
     const { password_hash, ...safeUser } = user;

@@ -3,22 +3,13 @@ import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, SlidersHorizontal, X, Building2, Phone, MapPin, Star, ChevronLeft, BedDouble, Bath, Maximize2, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { DISTRICTS_FILTER, CAIRO_DISTRICTS } from '../lib/districts';
 
 const COMPANY_PHONE = '01100111618';
 
 export const FEATURED: any[] = [];
 
-const DISTRICTS_FILTER = ['الكل', 'طريق السويس', 'التجمع الخامس', 'جولدن سكوير', 'العاصمة الإدارية', 'التجمع السادس', 'مناطق أخرى'];
-const SEARCH_AREAS = [
-  'سيدي جابر', 'سموحة', 'المنتزه', 'العجمي', 'ستانلي', 'المندرة', 'كليوباترا', 'محطة الرمل', 'الأنفوشي', 'الميناء', 'الدخيلة', 'برج العرب',
-  'جليم', 'بولكلي', 'رشدي', 'المعمورة', 'أبو قير', 'العصافرة', 'السيوف', 'سيدي بشر', 'لوران',
-  'التجمع الخامس', 'التجمع السادس', 'العاصمة الإدارية', 'مصر الجديدة', 'جولدن سكوير', 'النرجس الجديدة',
-  'بيت الوطن', 'شمال الرحاب', 'مدينة نصر', 'هليوبوليس', 'طريق السويس', 'الرحاب',
-  'الشيخ زايد', 'أكتوبر السادس', 'الجيزة', 'الدقي', 'المهندسين', 'الزمالك', 'المعادي',
-  'التجمع الأول', 'التجمع الثالث', 'القاهرة الجديدة', 'الشروق', 'المقطم', 'حلوان',
-  'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'المنصورة', 'طنطا', 'الإسكندرية',
-  'القاهرة', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'الغردقة', 'شرم الشيخ',
-];
+const SEARCH_AREAS = CAIRO_DISTRICTS.filter(d => d !== 'مناطق أخرى');
 const TYPES_FILTER = ['الكل', 'شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const PURPOSE_FILTER = ['الكل', 'بيع', 'إيجار', 'ريسيل'];
 
@@ -47,19 +38,25 @@ export default function Properties() {
   const [loadingProps, setLoadingProps] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadProperties() {
       setLoadingProps(true);
       try {
         const data = await api.getProperties({ limit: 50 });
-        const list = data?.properties || data || [];
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : (data?.properties || []);
         setDbProperties(list);
-      } catch {
-        setDbProperties([]);
+      } catch (err: any) {
+        if (cancelled) return;
+        if (err?.name !== 'AbortError' && err?.code !== 'ERR_CANCELED') {
+          setDbProperties([]);
+        }
       } finally {
-        setLoadingProps(false);
+        if (!cancelled) setLoadingProps(false);
       }
     }
     loadProperties();
+    return () => { cancelled = true; };
   }, []);
 
   const purposeMap: Record<string,string> = { 'بيع': 'sale', 'إيجار': 'rent', 'ريسيل': 'resale' };
@@ -75,8 +72,11 @@ export default function Properties() {
   });
 
   const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
+  const filteredAreas = SEARCH_AREAS.filter(area => area.includes(districtSearch.trim()));
 
-  const filteredDb = dbProperties.filter(p => {
+  const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
+
+  const filteredDb = safeDbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
     const matchDistrict = !activeDistrict || activeDistrict === 'الكل' || (p.district || '').includes(activeDistrict);
     const matchType = type === 'الكل' || (p.type || '').includes(type);
@@ -86,10 +86,6 @@ export default function Properties() {
     const matchFeatured = featuredFilter === 'الكل' || (featuredFilter === 'مميز' ? Boolean(p.is_featured) : !p.is_featured);
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
   });
-
-  const filteredAreas = districtSearch.trim()
-    ? SEARCH_AREAS.filter(a => a.includes(districtSearch.trim()))
-    : [];
 
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);

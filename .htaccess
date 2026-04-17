@@ -1,20 +1,22 @@
-# Great Society - Hostinger Configuration
-# Route all requests through the Node.js server
+# Great Society - Hostinger SPA Configuration
+# Serve index.html for all non-file, non-API requests
 
-# Enable RewriteEngine
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
 </IfModule>
 
-# API requests -> Node.js server on port 3001
-RewriteCond %{REQUEST_URI} ^/api [NC]
-RewriteRule ^(.*)$ http://localhost:3001/$1 [P,QSA,L]
+# If request is for a real file, serve it
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
 
-# Frontend requests -> serve static files
-RewriteCond %{REQUEST_URI} !^/api
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ http://localhost:3001/$1 [P,QSA,L]
+# If request is for a real directory, serve it  
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Alternative: If ProxyPass not available, try this
-# RewriteRule ^(.*)$ http://localhost:3001/$1 [R=301,L]
+# API requests - this shouldn't match since frontend is separate
+RewriteCond %{REQUEST_URI} ^/api
+RewriteRule ^ - [L]
+
+# Serve index.html for all other routes (SPA fallback)
+RewriteRule ^ /index.html [L]

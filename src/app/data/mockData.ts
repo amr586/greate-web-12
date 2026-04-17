@@ -764,7 +764,7 @@ export const REQUESTS: Request[] = [
     userEmail: 'user@example.com',
     userPhone: '+20 1001234567',
     propertyId: 'p1',
-    propertyTitle: 'شقة فاخرة - سيدي جابر',
+    propertyTitle: 'شقة فاخرة - التجمع الخامس',
     message: 'أرغب في شراء هذه الشقة، أرجو التواصل معي',
     status: 'under-review',
     createdAt: '2024-03-01',
@@ -778,7 +778,7 @@ export const REQUESTS: Request[] = [
     userEmail: 'sara@example.com',
     userPhone: '+20 1112345678',
     propertyId: 'p3',
-    propertyTitle: 'شقة إطلالة بحر - ستانلي',
+    propertyTitle: 'شقة بإطلالة مميزة - العاصمة الإدارية',
     message: 'هل الشقة متاحة للإيجار الصيفي؟ وما هي الشروط؟',
     status: 'pending',
     createdAt: '2024-03-05',
@@ -898,7 +898,7 @@ export const getRequestTypeLabel = (type: 'buy' | 'sell' | 'inquiry'): string =>
 export const TASKS: Task[] = [
   {
     id: 't1',
-    title: 'مراجعة عقار في سيدي جابر',
+    title: 'مراجعة عقار في التجمع الخامس',
     description: 'القيام بمراجعة شاملة للعقار AD-2024-001 والتأكد من جميع الأوراق',
     assignedTo: 'u5',
     assignedBy: 'u1',
@@ -912,7 +912,7 @@ export const TASKS: Task[] = [
   {
     id: 't2',
     title: 'تصوير فوتوغرافي للفيلا',
-    description: 'ترتيب جلسة تصوير احترافية للفيلا في سموحة',
+    description: 'ترتيب جلسة تصوير احترافية للفيلا في العاصمة الإدارية',
     assignedTo: 'u6',
     assignedBy: 'u1',
     propertyId: 'p2',

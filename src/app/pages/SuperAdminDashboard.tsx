@@ -350,12 +350,20 @@ export default function SuperAdminDashboard() {
                       <img src={p.primary_image || DEFAULT_IMAGE} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
                         onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }} />
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 text-sm line-clamp-1">{p.title_ar || p.title}</div>
+                        <div className="flex items-start gap-2">
+                          <div className="font-medium text-gray-900 text-sm line-clamp-1">{p.title_ar || p.title}</div>
+                          {p.is_featured && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold flex-shrink-0">⭐ مميز</span>}
+                        </div>
                         <div className="text-gray-400 text-xs mt-0.5">{p.district} · {Number(p.price).toLocaleString()} جنيه</div>
                         {p.owner_name && (
                           <div className="text-xs text-gray-400 mt-0.5">
                             {p.owner_name}
                             {p.owner_phone && <span className="text-[#005a7d] mr-1" dir="ltr"> · {p.owner_phone}</span>}
+                          </div>
+                        )}
+                        {p.updated_at && (
+                          <div className="text-gray-400 text-[10px] mt-0.5">
+                            آخر تعديل: {new Date(p.updated_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         )}
                       </div>

@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Building2, MapPin, DollarSign, CheckCircle, X, Loader2, Image, Map } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { compressAndUploadMultiple, compressImage } from '../lib/imageUtils';
+import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
@@ -205,11 +206,11 @@ export default function AdminAddProperty() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">نوع العقار</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">⭐ حالة العقار</label>
                 <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]">
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:border-[#bca056] font-bold ${form.is_featured ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-700'}`}>
                   <option value="normal">عادي</option>
-                  <option value="featured">مميز</option>
+                  <option value="featured">⭐ مميز</option>
                 </select>
               </div>
             </div>
@@ -242,7 +243,7 @@ export default function AdminAddProperty() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]"
                   list="districts-list" required />
                 <datalist id="districts-list">
-                  {['التجمع الخامس','مصر الجديدة','العاصمة الإدارية','طريق السويس','التجمع السادس','جولدن سكوير','النرجس الجديدة','بيت الوطن','شمال الرحاب','مدينة نصر','هليوبوليس','سيدي جابر','سموحة','المنتزه','العجمي','ستانلي','المندرة','كليوباترا','الدخيلة','برج العرب','الشيخ زايد','أكتوبر السادس','الجيزة','المهندسين','الزمالك','المعادي','الرحاب','القاهرة الجديدة','الشروق','مناطق أخرى'].map(d => (
+                  {CAIRO_DISTRICTS.map(d => (
                     <option key={d} value={d} />
                   ))}
                 </datalist>
@@ -307,13 +308,6 @@ export default function AdminAddProperty() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">رقم الطابق</label>
                 <input type="number" value={form.floor} onChange={e => update('floor', e.target.value)}
                   placeholder="0" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#bca056]" />
-              </div>
-              <div className="md:col-span-2 flex items-center gap-3 mt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={form.is_featured} onChange={e => update('is_featured', e.target.checked)}
-                    className="w-4 h-4 accent-[#bca056] rounded" />
-                  <span className="text-sm font-medium text-[#bca056]">عقار مميز</span>
-                </label>
               </div>
             </div>
 

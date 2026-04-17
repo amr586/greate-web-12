@@ -109,7 +109,7 @@ export default function PropertyDetail() {
               <h1 className="text-2xl font-black text-gray-900 mb-2">{property.title_ar || property.title}</h1>
               <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
                 <MapPin size={14} className="text-[#005a7d]" />
-                <span>{property.address || property.district}، {property.city || 'الإسكندرية'}</span>
+                <span>{property.address || property.district}، {property.city || 'القاهرة'}</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-[#e6f2f5] rounded-xl mb-6">
@@ -159,7 +159,7 @@ export default function PropertyDetail() {
           <div className="space-y-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
               <div className="text-3xl font-black text-[#005a7d] mb-1">{price}</div>
-              <div className="text-sm text-gray-500 mb-6">{property.district}، {property.city || 'الإسكندرية'}</div>
+              <div className="text-sm text-gray-500 mb-6">{property.district}، {property.city || 'القاهرة'}</div>
 
               {property.status === 'approved' && property.purpose === 'sale' && (
                 <button onClick={() => { if (!user) navigate('/login'); else navigate(`/payment/${property.id}`); }}

@@ -77,9 +77,9 @@ export default function Navbar() {
                   className="flex items-center gap-2 bg-[#e6f2f5] hover:bg-[#ccdfed] rounded-xl px-3 py-2 transition-all"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-[#005a7d] to-[#004a68] rounded-lg flex items-center justify-center text-white text-xs font-bold">
-                    {user.name.charAt(0)}
+                    {user.name?.charAt(0) || '؟'}
                   </div>
-                  <span className="text-sm font-medium text-gray-800">{user.name.split(' ')[0]}</span>
+                  <span className="text-sm font-medium text-gray-800">{user.name?.split(' ')[0] || 'مستخدم'}</span>
                   {isAdmin && <span className="text-[10px] bg-[#005a7d] text-white px-1.5 py-0.5 rounded-md">{isSuperAdmin ? 'سوبر أدمن' : 'أدمن'}</span>}
                   <ChevronDown size={14} className={`text-[#005a7d] transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -146,7 +146,7 @@ export default function Navbar() {
                 {user ? (
                   <>
                     <div className="flex items-center gap-2 px-4 py-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-[#005a7d] to-[#004a68] rounded-lg flex items-center justify-center text-white text-xs font-bold">{user.name.charAt(0)}</div>
+                      <div className="w-8 h-8 bg-gradient-to-br from-[#005a7d] to-[#004a68] rounded-lg flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || '؟'}</div>
                       <span className="text-sm font-medium">{user.name}</span>
                     </div>
                     {isSuperAdmin && <Link to="/superadmin" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-[#005a7d] hover:bg-[#e6f2f5]"><ShieldCheck size={16} />سوبر أدمن</Link>}

@@ -20,7 +20,7 @@
       "dest": "/dist/assets/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "/.*",
       "dest": "/dist/index.html"
     }
   ],

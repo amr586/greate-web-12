@@ -114,7 +114,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
           </h3>
           <div className="flex items-center gap-1 text-gray-400 text-xs mb-3">
             <MapPin size={12} className="text-[#bca056]" />
-            <span>{property.district}، {property.city || 'الإسكندرية'}</span>
+            <span>{property.district}، {property.city || 'القاهرة'}</span>
           </div>
           <div className="flex items-center gap-3 text-gray-500 text-xs border-t border-gray-100 pt-3">
             {(property.rooms || 0) > 0 && (

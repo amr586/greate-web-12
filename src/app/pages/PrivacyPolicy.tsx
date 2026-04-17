@@ -227,7 +227,7 @@ export default function PrivacyPolicy() {
                     <div className="space-y-2 text-gray-700">
                       <p>البريد الإلكتروني: <a href="mailto:info@greatsocietyeg.com" className="text-[#bca056] font-semibold hover:underline">info@greatsocietyeg.com</a></p>
                       <p>الهاتف: <a href="tel:+201100957594" className="text-[#bca056] font-semibold hover:underline">+20 11 00957594</a></p>
-                      <p>العنوان: الإسكندرية، مصر</p>
+                      <p>العنوان: القاهرة، مصر</p>
                     </div>
                   </div>
                 </section>
@@ -238,7 +238,7 @@ export default function PrivacyPolicy() {
             <section className="border-t pt-8">
               <div className="text-center text-gray-600">
                 <p className="font-semibold text-lg">© 2026 Great Society. جميع الحقوق محفوظة.</p>
-                <p className="mt-2">Alexandira, Egypt - الإسكندرية، مصر</p>
+                <p className="mt-2">Cairo, Egypt - القاهرة، مصر</p>
               </div>
             </section>
           </div>
