@@ -470,15 +470,19 @@ export default async function handler(req: any, res: any) {
   const user = token ? verifyToken(token) : null;
 
   const dbConfig = {
-    host: process.env.DB_HOST || 'srv2121.hstgr.io',
-    user: process.env.DB_USER || 'u156204542_amr',
-    password: process.env.DB_PASSWORD || 'Amrahmed01281378331',
-    database: process.env.DB_NAME || 'u156204542_Dbase',
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
     connectionLimit: 2,
     queueLimit: 0
   };
+
+  if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
+    return res.status(500).json({ ok: false, error: 'Database configuration missing' });
+  }
 
   let pool;
   try {
@@ -514,14 +518,11 @@ export default async function handler(req: any, res: any) {
       }
 
       const cleanEmail = emailOrPhone.trim().toLowerCase();
-      console.log('[LOGIN] Looking for user with:', cleanEmail);
       
       const [rows] = await pool.query(
-        'SELECT * FROM users WHERE (LOWER(email)=? OR phone=?) AND is_active != 0',
+        'SELECT * FROM users WHERE (email = ? OR phone = ?) AND is_active = true',
         [cleanEmail, emailOrPhone]
       );
-      
-      console.log('[LOGIN] Found rows:', rows?.length);
       
       if (!rows || rows.length === 0) {
         // Record failed attempt
@@ -1164,21 +1165,31 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       
       const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
-        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
+        SELECT p.*, 
+          u.name as owner_name, 
+          u.phone as owner_phone, 
+          u.email as owner_email,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
+        FROM properties p 
+        LEFT JOIN users u ON u.id = p.owner_id 
+        WHERE p.id = ?
       `, [id]);
 
       if (rows.length === 0) {
         return res.status(404).json({ error: 'العقار غير موجود' });
       }
       
-      const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [id]);
+      const [imgs]: any = await pool.query(
+        'SELECT id, url, is_primary FROM property_images WHERE property_id = ? ORDER BY is_primary DESC, id',
+        [id]
+      );
       rows[0].images = imgs;
 
       await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
 
       return res.json(rows[0]);
-    } catch {
+    } catch (err: any) {
+      console.log('[ERROR] Property detail:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
