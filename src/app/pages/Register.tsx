@@ -48,6 +48,11 @@ export default function Register() {
         password: form.password,
       });
       
+      console.log('[DEBUG] Full response:', JSON.stringify(data, null, 2));
+      console.log('[DEBUG] emailVerificationPending:', data.emailVerificationPending);
+      console.log('[DEBUG] token:', data.token);
+      console.log('[DEBUG] user:', data.user);
+      
       if (data.emailVerificationPending) {
         if (data.devOtp) setDevOtp(data.devOtp);
         setStep('verify');
