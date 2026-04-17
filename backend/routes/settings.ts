@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   working_hours: 'السبت - الخميس: 9ص - 9م',
   footer_description: 'شركة Great Society للاستثمار العقاري - شركة مصرية متخصصة في تقديم خدمات عقارية شاملة في مجالات متعددة',
   ai_instructions: '',
+  ai_faq: '[]',
 };
 
 async function ensureTable() {

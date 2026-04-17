@@ -49,6 +49,15 @@ function buildSystemPrompt(s: Record<string, string>): string {
   const location = s.location || 'Villa 99, 1st District, 90 Street, New Cairo 1, Cairo';
   const extraInstructions = s.ai_instructions ? `\n\n═══════════════════════════════════\n📝 تعليمات إضافية:\n═══════════════════════════════════\n${s.ai_instructions}` : '';
 
+  let faqSection = '';
+  try {
+    const faqList: Array<{ q: string; a: string }> = JSON.parse(s.ai_faq || '[]');
+    if (faqList.length > 0) {
+      const faqLines = faqList.map((f, i) => `${i + 1}. س: ${f.q}\n   ج: ${f.a}`).join('\n\n');
+      faqSection = `\n\n═══════════════════════════════════\n❓ أسئلة وأجوبة مخصصة (أجب بها حرفياً عند السؤال):\n═══════════════════════════════════\n${faqLines}`;
+    }
+  } catch {}
+
   return `أنت مساعد عقاري ذكي ومتخصص لشركة Great Society للاستثمار العقاري - شركة مصرية رائدة في تقديم خدمات عقارية شاملة.
 مهمتك مساعدة المستخدمين في إيجاد العقار المناسب من محفظة Great Society وتقديم معلومات عن الشركة والعقارات المتاحة.
 تحدث بالعربية البسيطة دائماً وكن ودوداً ومفيداً ومباشراً.
@@ -149,7 +158,7 @@ function buildSystemPrompt(s: Record<string, string>): string {
 - جميع العقارات مدعومة بخدمة عملاء احترافية من Great Society
 - يمكن للمستخدمين التسجيل والحصول على تفاصيل أكثر عبر الموقع
 - للمزيد من المعلومات والمعاينات، اتصل برقم الهاتف: ${phone} أو أرسل بريد إلى ${email}
-- يمكن التواصل عبر جميع وسائل التواصل الاجتماعي المدرجة أعلاه${extraInstructions}`;
+- يمكن التواصل عبر جميع وسائل التواصل الاجتماعي المدرجة أعلاه${faqSection}${extraInstructions}`;
 }
 
 router.post('/chat', async (req: AuthRequest, res: Response) => {

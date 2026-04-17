@@ -79,10 +79,17 @@ const SUGGESTIONS = [
   'تواصل معنا',
 ];
 
+interface FaqItem { q: string; a: string; }
+
+function parseFaq(raw: string): FaqItem[] {
+  try { return JSON.parse(raw || '[]'); } catch { return []; }
+}
+
 export default function AIChat() {
   const { settings } = useSiteSettings();
   const contact = settings.phone || '01100111618';
   const whatsapp = settings.whatsapp || '201100111618';
+  const faqList = parseFaq(settings.ai_faq);
 
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -108,6 +115,16 @@ export default function AIChat() {
     }
   }, [open]);
 
+  const getFaqReply = (msg: string): string | null => {
+    const normalized = msg.trim();
+    const match = faqList.find(f =>
+      f.q.trim() === normalized ||
+      normalized.includes(f.q.trim()) ||
+      f.q.trim().includes(normalized)
+    );
+    return match ? match.a : null;
+  };
+
   const send = async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading) return;
@@ -116,7 +133,14 @@ export default function AIChat() {
     setMessages(newMessages);
     setLoading(true);
 
-    await new Promise(res => setTimeout(res, 600 + Math.random() * 400));
+    await new Promise(res => setTimeout(res, 400 + Math.random() * 300));
+
+    const faqReply = getFaqReply(msg);
+    if (faqReply) {
+      setMessages(prev => [...prev, { role: 'assistant', content: faqReply }]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const controller = new AbortController();
@@ -276,6 +300,11 @@ export default function AIChat() {
               <div className="px-4 py-2 border-t border-gray-100 bg-white flex-shrink-0">
                 <p className="text-xs text-gray-400 mb-2">اقتراحات سريعة:</p>
                 <div className="flex flex-wrap gap-1.5">
+                  {faqList.slice(0, 3).map((f, i) => (
+                    <button key={`faq-${i}`} onClick={() => send(f.q)}
+                      className="text-xs px-3 py-1.5 bg-[#bca056]/15 text-[#8a6f38] rounded-full hover:bg-[#bca056]/25 transition-colors font-medium border border-[#bca056]/30"
+                    >{f.q}</button>
+                  ))}
                   {SUGGESTIONS.map(s => (
                     <button key={s} onClick={() => send(s)}
                       className="text-xs px-3 py-1.5 bg-[#e6f2f5] text-[#005a7d] rounded-full hover:bg-[#ccdfed] transition-colors font-medium"

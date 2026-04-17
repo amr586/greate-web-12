@@ -46,6 +46,13 @@ export default function SuperAdminDashboard() {
   const [siteForm, setSiteForm] = useState<Record<string, string>>({});
   const [siteLoading, setSiteLoading] = useState(false);
   const [siteMsg, setSiteMsg] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  const [faqNewQ, setFaqNewQ] = useState('');
+  const [faqNewA, setFaqNewA] = useState('');
+  const [faqEditIdx, setFaqEditIdx] = useState<number | null>(null);
+  const [faqEditQ, setFaqEditQ] = useState('');
+  const [faqEditA, setFaqEditA] = useState('');
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -70,6 +77,69 @@ export default function SuperAdminDashboard() {
     } finally {
       setSiteLoading(false);
     }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) setSiteForm(p => ({ ...p, logo_url: data.url }));
+    } catch {
+    } finally {
+      setLogoUploading(false);
+      if (logoFileRef.current) logoFileRef.current.value = '';
+    }
+  };
+
+  const getFaqList = (): Array<{ q: string; a: string }> => {
+    try { return JSON.parse(siteForm.ai_faq || '[]'); } catch { return []; }
+  };
+
+  const setFaqList = (list: Array<{ q: string; a: string }>) => {
+    setSiteForm(p => ({ ...p, ai_faq: JSON.stringify(list) }));
+  };
+
+  const handleFaqAdd = () => {
+    if (!faqNewQ.trim() || !faqNewA.trim()) return;
+    const list = getFaqList();
+    list.push({ q: faqNewQ.trim(), a: faqNewA.trim() });
+    setFaqList(list);
+    setFaqNewQ('');
+    setFaqNewA('');
+  };
+
+  const handleFaqDelete = (idx: number) => {
+    const list = getFaqList();
+    list.splice(idx, 1);
+    setFaqList(list);
+    if (faqEditIdx === idx) setFaqEditIdx(null);
+  };
+
+  const handleFaqEditStart = (idx: number) => {
+    const list = getFaqList();
+    setFaqEditIdx(idx);
+    setFaqEditQ(list[idx].q);
+    setFaqEditA(list[idx].a);
+  };
+
+  const handleFaqEditSave = () => {
+    if (faqEditIdx === null || !faqEditQ.trim() || !faqEditA.trim()) return;
+    const list = getFaqList();
+    list[faqEditIdx] = { q: faqEditQ.trim(), a: faqEditA.trim() };
+    setFaqList(list);
+    setFaqEditIdx(null);
+    setFaqEditQ('');
+    setFaqEditA('');
   };
 
   const loadData = async () => {
@@ -620,16 +690,26 @@ export default function SuperAdminDashboard() {
                         <Image size={15} className="text-[#bca056]" />الهوية والشعار
                       </h4>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رابط اللوجو (Header & Footer)</label>
-                        <div className="flex gap-2">
-                          <input value={siteForm.logo_url || ''} onChange={e => setSiteForm(p => ({ ...p, logo_url: e.target.value }))}
-                            placeholder="/logo_gs.png أو رابط صورة"
-                            className="flex-1 border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
-                          />
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">شعار الموقع (Header & Footer)</label>
+                        <div className="flex gap-2 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => logoFileRef.current?.click()}
+                            disabled={logoUploading}
+                            className="flex items-center gap-2 bg-[#bca056] hover:bg-[#a68a47] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all disabled:opacity-60 flex-shrink-0"
+                          >
+                            {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <Image size={14} />}
+                            {logoUploading ? 'جاري الرفع...' : 'رفع من الجهاز'}
+                          </button>
+                          <input ref={logoFileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                           {siteForm.logo_url && (
                             <img src={siteForm.logo_url} alt="preview" className="w-12 h-12 object-contain border border-gray-200 rounded-xl flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           )}
                         </div>
+                        <input value={siteForm.logo_url || ''} onChange={e => setSiteForm(p => ({ ...p, logo_url: e.target.value }))}
+                          placeholder="أو أدخل رابط الصورة مباشرة"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-600 mb-1.5">اسم الشركة</label>
@@ -708,23 +788,114 @@ export default function SuperAdminDashboard() {
                   </div>
 
                   {/* AI Chat Settings */}
-                  <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <h3 className="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-5">
+                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
                       <MessageCircle size={16} className="text-[#bca056]" /> إعدادات المساعد الذكي (AI Chat)
                     </h3>
+
+                    {/* Additional Instructions */}
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                        تعليمات إضافية للمساعد الذكي
-                        <span className="font-normal text-gray-400 mr-1">(اختياري - تُضاف لشخصية المساعد)</span>
+                        تعليمات إضافية للمساعد
+                        <span className="font-normal text-gray-400 mr-1">(اختياري)</span>
                       </label>
                       <textarea
                         value={siteForm.ai_instructions || ''}
                         onChange={e => setSiteForm(p => ({ ...p, ai_instructions: e.target.value }))}
-                        rows={4}
-                        placeholder="مثال: ركّز على عروض التجمع الخامس، أو لا تذكر العروض المنتهية، أو..."
+                        rows={3}
+                        placeholder="مثال: ركّز على عروض التجمع الخامس، لا تذكر العروض المنتهية..."
                         className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all resize-none"
                       />
-                      <p className="text-xs text-gray-400 mt-1">ملاحظة: الرقم المستخدم في المساعد الذكي هو نفس رقم الهاتف المدخل أعلاه</p>
+                      <p className="text-xs text-gray-400 mt-1">الرقم في المساعد الذكي = رقم الهاتف المدخل أعلاه</p>
+                    </div>
+
+                    {/* Q&A Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-xs font-semibold text-gray-600">أسئلة وأجوبة مخصصة في الشات</label>
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{getFaqList().length} سؤال</span>
+                      </div>
+
+                      {/* Existing Q&As */}
+                      {getFaqList().length > 0 && (
+                        <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                          {getFaqList().map((item, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                              {faqEditIdx === idx ? (
+                                <div className="p-3 space-y-2">
+                                  <input
+                                    value={faqEditQ}
+                                    onChange={e => setFaqEditQ(e.target.value)}
+                                    placeholder="السؤال"
+                                    className="w-full border-2 border-[#bca056]/40 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#bca056]"
+                                  />
+                                  <textarea
+                                    value={faqEditA}
+                                    onChange={e => setFaqEditA(e.target.value)}
+                                    placeholder="الإجابة"
+                                    rows={3}
+                                    className="w-full border-2 border-[#bca056]/40 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#bca056] resize-none"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button onClick={handleFaqEditSave}
+                                      className="flex-1 bg-[#bca056] text-white text-xs font-bold py-1.5 rounded-lg hover:bg-[#a68a47] transition-colors">
+                                      حفظ التعديل
+                                    </button>
+                                    <button onClick={() => setFaqEditIdx(null)}
+                                      className="flex-1 bg-gray-200 text-gray-600 text-xs font-bold py-1.5 rounded-lg hover:bg-gray-300 transition-colors">
+                                      إلغاء
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="p-3">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <p className="text-xs font-bold text-[#005a7d] flex-1">س: {item.q}</p>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <button onClick={() => handleFaqEditStart(idx)}
+                                        className="w-6 h-6 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-200 transition-colors">
+                                        <Edit3 size={11} />
+                                      </button>
+                                      <button onClick={() => handleFaqDelete(idx)}
+                                        className="w-6 h-6 bg-red-100 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-200 transition-colors">
+                                        <Trash2 size={11} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 leading-relaxed">ج: {item.a}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add New Q&A */}
+                      <div className="border-2 border-dashed border-[#bca056]/30 rounded-xl p-4 bg-[#bca056]/5 space-y-2">
+                        <p className="text-xs font-bold text-gray-600 flex items-center gap-1.5 mb-2">
+                          <PlusCircle size={13} className="text-[#bca056]" /> إضافة سؤال وجواب جديد
+                        </p>
+                        <input
+                          value={faqNewQ}
+                          onChange={e => setFaqNewQ(e.target.value)}
+                          placeholder="السؤال (مثال: ما هو أرخص عقار؟)"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-xs outline-none focus:border-[#bca056] transition-all bg-white"
+                        />
+                        <textarea
+                          value={faqNewA}
+                          onChange={e => setFaqNewA(e.target.value)}
+                          placeholder="الإجابة التي سيردها المساعد"
+                          rows={3}
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-xs outline-none focus:border-[#bca056] transition-all resize-none bg-white"
+                        />
+                        <button
+                          onClick={handleFaqAdd}
+                          disabled={!faqNewQ.trim() || !faqNewA.trim()}
+                          className="w-full flex items-center justify-center gap-2 bg-[#005a7d] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#004a68] transition-colors disabled:opacity-40"
+                        >
+                          <Plus size={13} /> إضافة
+                        </button>
+                      </div>
                     </div>
                   </div>
 

@@ -12,6 +12,7 @@ export interface SiteSettings {
   working_hours: string;
   footer_description: string;
   ai_instructions: string;
+  ai_faq: string;
 }
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -26,6 +27,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   working_hours: 'السبت - الخميس: 9ص - 9م',
   footer_description: 'شركة Great Society للاستثمار العقاري - شركة مصرية متخصصة في تقديم خدمات عقارية شاملة في مجالات متعددة',
   ai_instructions: '',
+  ai_faq: '[]',
 };
 
 interface SiteSettingsContextType {
