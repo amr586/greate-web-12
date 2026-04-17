@@ -25,25 +25,17 @@ async function request(path: string, options: RequestInit = {}) {
   
   try {
     const url = path.includes('?') ? `${path}&t=${Date.now()}` : `${path}?t=${Date.now()}`;
-    const fullUrl = BASE_URL + url;
-    
-    console.log('[API] Request:', options.method || 'GET', fullUrl);
     
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     
-    const res = await fetch(fullUrl, { ...options, headers, signal: controller.signal });
+    const res = await fetch(BASE_URL + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
-    console.log('[API] Response status:', res.status, res.statusText);
-    
     const data = await res.json();
-    console.log('[API] Response data:', JSON.stringify(data, null, 2).substring(0, 500));
-    
     if (!res.ok) throw new Error(data.error || 'خطأ غير متوقع');
     return data;
   } catch (err: any) {
-    console.log('[API] Error:', err.message);
     if (err.name === 'AbortError') {
       throw new Error('انتهت مهلة الاتصال - تحقق من الاتصال بالخادم');
     }
