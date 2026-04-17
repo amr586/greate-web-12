@@ -14,6 +14,19 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router'],
+          ui: ['@mui/material', '@mui/icons-material', 'lucide-react', 'motion'],
+          charts: ['recharts'],
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 5000,
