@@ -17,17 +17,49 @@ function getOpenAI() {
   });
 }
 
-const SYSTEM_PROMPT = `أنت مساعد عقاري ذكي ومتخصص لشركة Great Society للاستثمار العقاري - شركة مصرية رائدة في تقديم خدمات عقارية شاملة.
+async function getSiteSettings(): Promise<Record<string, string>> {
+  try {
+    const result = await query('SELECT key, value FROM site_settings');
+    const settings: Record<string, string> = {
+      phone: '01100111618',
+      whatsapp: '201100111618',
+      email: 'greatsociety6@gmail.com',
+      location: 'Villa 99, 1st District, 90 Street, New Cairo 1, Cairo',
+      ai_instructions: '',
+    };
+    for (const row of result.rows) {
+      settings[row.key] = row.value;
+    }
+    return settings;
+  } catch {
+    return {
+      phone: '01100111618',
+      whatsapp: '201100111618',
+      email: 'greatsociety6@gmail.com',
+      location: 'Villa 99, 1st District, 90 Street, New Cairo 1, Cairo',
+      ai_instructions: '',
+    };
+  }
+}
+
+function buildSystemPrompt(s: Record<string, string>): string {
+  const phone = s.phone || '01100111618';
+  const whatsapp = s.whatsapp || '201100111618';
+  const email = s.email || 'greatsociety6@gmail.com';
+  const location = s.location || 'Villa 99, 1st District, 90 Street, New Cairo 1, Cairo';
+  const extraInstructions = s.ai_instructions ? `\n\n═══════════════════════════════════\n📝 تعليمات إضافية:\n═══════════════════════════════════\n${s.ai_instructions}` : '';
+
+  return `أنت مساعد عقاري ذكي ومتخصص لشركة Great Society للاستثمار العقاري - شركة مصرية رائدة في تقديم خدمات عقارية شاملة.
 مهمتك مساعدة المستخدمين في إيجاد العقار المناسب من محفظة Great Society وتقديم معلومات عن الشركة والعقارات المتاحة.
 تحدث بالعربية البسيطة دائماً وكن ودوداً ومفيداً ومباشراً.
 
 ═══════════════════════════════════
 معلومات عن شركة Great Society:
 ═══════════════════════════════════
-📍 الموقع: Villa 99 1st District 90 street, New Cairo 1, Cairo, Egypt
-📞 رقم الهاتف: 01100111618
-💬 WhatsApp: 01100111618
-📧 البريد الإلكتروني: info@greatsocietyeg.com
+📍 الموقع: ${location}
+📞 رقم الهاتف: ${phone}
+💬 WhatsApp: ${whatsapp}
+📧 البريد الإلكتروني: ${email}
 🔗 وسائل التواصل الاجتماعي:
    - LinkedIn: https://www.linkedin.com/in/great-society-9bb6722bb/
    - Facebook: https://www.facebook.com/share/14XzeQWvGTz/
@@ -116,20 +148,26 @@ const SYSTEM_PROMPT = `أنت مساعد عقاري ذكي ومتخصص لشرك
 
 - جميع العقارات مدعومة بخدمة عملاء احترافية من Great Society
 - يمكن للمستخدمين التسجيل والحصول على تفاصيل أكثر عبر الموقع
-- للمزيد من المعلومات والمعاينات، اتصل برقم الهاتف: 01100111618 أو أرسل بريد إلى info@greatsocietyeg.com
-- يمكن التواصل عبر جميع وسائل التواصل الاجتماعي المدرجة أعلاه`;
+- للمزيد من المعلومات والمعاينات، اتصل برقم الهاتف: ${phone} أو أرسل بريد إلى ${email}
+- يمكن التواصل عبر جميع وسائل التواصل الاجتماعي المدرجة أعلاه${extraInstructions}`;
+}
 
 router.post('/chat', async (req: AuthRequest, res: Response) => {
   try {
     const { messages, conversationId, sessionId } = req.body;
 
-    const propertiesRes = await query(`
-      SELECT id, title_ar, title, type, purpose, price, area, bedrooms, bathrooms, floor, district, address
-      FROM properties WHERE status='approved' ORDER BY is_featured DESC, created_at DESC LIMIT 100
-    `);
+    const [siteSettings, propertiesRes] = await Promise.all([
+      getSiteSettings(),
+      query(`
+        SELECT id, title_ar, title, type, purpose, price, area, bedrooms, bathrooms, floor, district, address
+        FROM properties WHERE status='approved' ORDER BY is_featured DESC, created_at DESC LIMIT 100
+      `),
+    ]);
+
+    const SYSTEM_PROMPT = buildSystemPrompt(siteSettings);
     
     const purposeMap: Record<string,string> = { sale: 'للبيع', rent: 'للإيجار' };
-    const propertyContext = propertiesRes.rows.map(p =>
+    const propertyContext = propertiesRes.rows.map((p: any) =>
       `[ID:${p.id}] ${p.title_ar || p.title} | ${p.type} | ${purposeMap[p.purpose] || p.purpose} | السعر: ${Number(p.price).toLocaleString('ar-EG')} جنيه | ${p.bedrooms || 0} غرف نوم | ${p.bathrooms || 0} حمامات | المساحة: ${p.area}م² | الطابق: ${p.floor || 'أرضي'} | المنطقة: ${p.district}`
     ).join('\n');
 

@@ -707,6 +707,27 @@ export default function SuperAdminDashboard() {
                     </div>
                   </div>
 
+                  {/* AI Chat Settings */}
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5">
+                    <h3 className="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
+                      <MessageCircle size={16} className="text-[#bca056]" /> إعدادات المساعد الذكي (AI Chat)
+                    </h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                        تعليمات إضافية للمساعد الذكي
+                        <span className="font-normal text-gray-400 mr-1">(اختياري - تُضاف لشخصية المساعد)</span>
+                      </label>
+                      <textarea
+                        value={siteForm.ai_instructions || ''}
+                        onChange={e => setSiteForm(p => ({ ...p, ai_instructions: e.target.value }))}
+                        rows={4}
+                        placeholder="مثال: ركّز على عروض التجمع الخامس، أو لا تذكر العروض المنتهية، أو..."
+                        className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all resize-none"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">ملاحظة: الرقم المستخدم في المساعد الذكي هو نفس رقم الهاتف المدخل أعلاه</p>
+                    </div>
+                  </div>
+
                   {/* Preview */}
                   <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">معاينة سريعة</h4>

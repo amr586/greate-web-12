@@ -11,6 +11,7 @@ export interface SiteSettings {
   location_url: string;
   working_hours: string;
   footer_description: string;
+  ai_instructions: string;
 }
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -24,6 +25,7 @@ const DEFAULT_SETTINGS: SiteSettings = {
   location_url: 'https://www.google.com/maps/search/Villa+99+1st+District+90+street,+New+Cairo+1,+Cairo,+Egypt',
   working_hours: 'السبت - الخميس: 9ص - 9م',
   footer_description: 'شركة Great Society للاستثمار العقاري - شركة مصرية متخصصة في تقديم خدمات عقارية شاملة في مجالات متعددة',
+  ai_instructions: '',
 };
 
 interface SiteSettingsContextType {
