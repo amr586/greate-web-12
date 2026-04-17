@@ -4,6 +4,22 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
 async function runMigrations(pool: any) {
+  // Add email_verified column if it doesn't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false`);
+  } catch (e: any) {
+    if (!e.message.includes('Duplicate column name')) {
+      console.log('[MIGRATION] email_verified column:', e.message);
+    }
+  }
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL`);
+  } catch (e: any) {
+    if (!e.message.includes('Duplicate column name')) {
+      console.log('[MIGRATION] email_verified_at column:', e.message);
+    }
+  }
+  
   const migrations = [
     `CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -479,13 +495,14 @@ export default async function handler(req: any, res: any) {
   // POST /api/auth/login (exact match)
   if (method === 'POST' && url === '/api/auth/login') {
     try {
+      console.log('[LOGIN] Attempting login');
       const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
 
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-      const clientDeviceId = deviceId || Buffer.from(clientIP + (headers['user-agent'] || 'unknown')).toString('base64').slice(0, 64);
+      const clientDeviceId = deviceId || generateDeviceId({ headers });
       
       const emailKey = `login:${emailOrPhone}`;
       const ipKey = `ip:${clientIP}`;
@@ -497,10 +514,14 @@ export default async function handler(req: any, res: any) {
       }
 
       const cleanEmail = emailOrPhone.trim().toLowerCase();
+      console.log('[LOGIN] Looking for user with:', cleanEmail);
+      
       const [rows] = await pool.query(
         'SELECT * FROM users WHERE (LOWER(email)=? OR phone=?) AND is_active != 0',
         [cleanEmail, emailOrPhone]
       );
+      
+      console.log('[LOGIN] Found rows:', rows?.length);
       
       if (!rows || rows.length === 0) {
         // Record failed attempt
