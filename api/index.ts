@@ -751,9 +751,11 @@ export default async function handler(req: any, res: any) {
       );
 
       // Send email with OTP (fire and forget but log errors)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch((err) => {
-        console.log('[EMAIL] Register OTP failed:', err?.message);
-      });
+      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register')
+        .then((sent) => console.log('[EMAIL] Register OTP result:', sent))
+        .catch((err) => {
+          console.log('[EMAIL] Register OTP failed:', err?.message);
+        });
 
       // If email skipped, include OTP in response for testing
       if (SKIP_EMAIL) {
