@@ -16,6 +16,9 @@ const OTP_MAX_ATTEMPTS = 3;
 const OTP_LOCKOUT_MS = 10 * 60 * 1000;
 const DEVICE_TOKEN_EXPIRY_DAYS = 30;
 
+// Only expose debug endpoint in development
+const isDev = process.env.NODE_ENV !== 'production';
+
 async function ensureOTPTable() {
   await query(`
     CREATE TABLE IF NOT EXISTS otp_codes (
@@ -449,6 +452,9 @@ router.post('/verify-email', async (req: Request, res: Response) => {
 });
 
 router.delete('/debug/otp/:email', async (req: Request, res: Response) => {
+  if (!isDev) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   try {
     const { email } = req.params;
     await query("DELETE FROM otp_codes WHERE identifier=$1", [email]);
@@ -575,7 +581,7 @@ router.post('/verify-login-otp', async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: user.id, role: user.role, sub_role: user.sub_role, email: user.email, deviceId },
       JWT_SECRET,
-      { expiresIn: DEVICE_TOKEN_EXPIRY_DAYS + 'd' }
+      { expiresIn: `${DEVICE_TOKEN_EXPIRY_DAYS}d` as string }
     );
     console.log('[verify-login-otp] Token created, length:', token.length);
     const { password_hash, ...safeUser } = user;

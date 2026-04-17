@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-cors';
+const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET not configured'); })();
 
 async function runMigrations(pool: any) {
   const migrations = [
@@ -197,9 +197,8 @@ async function runMigrations(pool: any) {
 }
 
 function generateDeviceId(req: any): string {
-  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
-  const ua = req.headers['user-agent'] || 'unknown';
-  return Buffer.from(ip + ua).toString('base64').slice(0, 64);
+  const deviceId = req.headers['x-device-id'] || crypto.randomUUID();
+  return deviceId.slice(0, 64);
 }
 
 function generateOTP(): string {
@@ -375,7 +374,7 @@ function verifyToken(token: string): any {
 }
 
 function generateToken(payload: any): string {
-  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
 
 async function consumeOTP(identifier: string, code: string, type: string, pool: any) {
@@ -441,6 +440,8 @@ export default async function handler(req: any, res: any) {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://greatsociety-eg.com https://greate-web-12.vercel.app");
     
     // CORS for actual requests
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
@@ -456,15 +457,19 @@ export default async function handler(req: any, res: any) {
   const user = token ? verifyToken(token) : null;
 
   const dbConfig = {
-    host: process.env.DB_HOST || 'srv2121.hstgr.io',
-    user: process.env.DB_USER || 'u156204542_amr',
-    password: process.env.DB_PASSWORD || 'Amrahmed01281378331',
-    database: process.env.DB_NAME || 'u156204542_Dbase',
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
     connectionLimit: 2,
     queueLimit: 0
   };
+
+  if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
+    return res.status(500).json({ ok: false, error: 'Database configuration missing' });
+  }
 
   let pool;
   try {
@@ -1175,8 +1180,9 @@ export default async function handler(req: any, res: any) {
       if (maxPrice) { conditions.push(`p.price <= ?`); params.push(Number(maxPrice)); }
       if (rooms) { conditions.push(`p.rooms >= ?`); params.push(Number(rooms)); }
       if (search) {
+        const sanitized = search.replace(/[<>'";&]/g, '').slice(0, 100);
         conditions.push(`(p.title LIKE ? OR p.title_ar LIKE ? OR p.district LIKE ?)`);
-        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        params.push(`%${sanitized}%`, `%${sanitized}%`, `%${sanitized}%`);
       }
 
       const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
