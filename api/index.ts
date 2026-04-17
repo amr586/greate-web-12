@@ -1,8 +1,22 @@
 import mysql from 'mysql2/promise';
+import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
+function verifyToken(token: string): any {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function generateToken(payload: any): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+// ============ MIGRATION FUNCTION ============
 async function runMigrations(pool: any) {
   // Add missing columns if they don't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
   const columnsToAdd = [
@@ -540,19 +554,6 @@ function validateBoolean(value: any): boolean {
 function validateEnum(value: string | undefined, allowed: string[]): string | null {
   if (!value) return null;
   return allowed.includes(value) ? value : null;
-}
-
-function verifyToken(token: string): any {
-  try {
-    const jwt = require('jsonwebtoken');
-    return jwt.verify(token, JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
-
-function generateToken(payload: any): string {
-  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
 async function consumeOTP(identifier: string, code: string, type: string, pool: any) {
