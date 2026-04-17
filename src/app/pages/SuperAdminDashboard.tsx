@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutDashboard, Building2, Users, CreditCard, CheckCircle, XCircle, Clock, LogOut, Eye, ShieldCheck, MessageSquare, Phone, Mail, Lock, X, EyeOff, User, Plus, Edit3, Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, CreditCard, CheckCircle, XCircle, Clock, LogOut, Eye, ShieldCheck, MessageSquare, Phone, Mail, Lock, X, EyeOff, User, Plus, Edit3, Trash2, PlusCircle, Loader2, Settings, Globe, MapPin, MessageCircle, Image, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import PropertyChat from '../components/PropertyChat';
 import ProfileTab from '../components/ProfileTab';
 import PropertyImageManager from '../components/PropertyImageManager';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=120&fit=crop';
 
@@ -20,6 +21,7 @@ const SUB_ROLES = [
 
 export default function SuperAdminDashboard() {
   const { user, logout, isSuperAdmin, updateUser } = useAuth();
+  const { settings, refreshSettings } = useSiteSettings();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<any>(null);
@@ -41,12 +43,34 @@ export default function SuperAdminDashboard() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [planUploading, setPlanUploading] = useState(false);
   const planInputRef = useRef<HTMLInputElement>(null);
+  const [siteForm, setSiteForm] = useState<Record<string, string>>({});
+  const [siteLoading, setSiteLoading] = useState(false);
+  const [siteMsg, setSiteMsg] = useState('');
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
     if (!isSuperAdmin) { navigate('/dashboard'); return; }
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    setSiteForm({ ...settings });
+  }, [settings]);
+
+  const handleSiteSettingsSave = async () => {
+    setSiteLoading(true);
+    setSiteMsg('');
+    try {
+      await api.updateSiteSettings(siteForm);
+      await refreshSettings();
+      setSiteMsg('success');
+      setTimeout(() => setSiteMsg(''), 3000);
+    } catch (err: any) {
+      setSiteMsg('error:' + (err.message || 'خطأ'));
+    } finally {
+      setSiteLoading(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -188,6 +212,7 @@ export default function SuperAdminDashboard() {
     { id: 'users', label: 'المستخدمين', icon: <Users size={16} /> },
     { id: 'payments', label: 'المدفوعات', icon: <CreditCard size={16} />, badge: pendingPayments.length },
     { id: 'contact', label: 'رسائل التواصل', icon: <Mail size={16} />, badge: unreadContact },
+    { id: 'site_settings', label: 'إعدادات الموقع', icon: <Settings size={16} /> },
     { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
   ];
 
@@ -561,6 +586,152 @@ export default function SuperAdminDashboard() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'site_settings' && (
+              <div className="space-y-6" dir="rtl">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#bca056] to-[#a68a47] rounded-xl flex items-center justify-center">
+                      <Settings size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900 text-lg">إعدادات الموقع</h3>
+                      <p className="text-gray-500 text-sm">تعديل المعلومات الظاهرة على الموقع</p>
+                    </div>
+                  </div>
+
+                  {siteMsg === 'success' && (
+                    <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2">
+                      <CheckCircle size={16} />تم حفظ الإعدادات بنجاح
+                    </div>
+                  )}
+                  {siteMsg.startsWith('error:') && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 mb-5 text-sm">
+                      {siteMsg.replace('error:', '')}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Logo & Brand */}
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <Image size={15} className="text-[#bca056]" />الهوية والشعار
+                      </h4>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رابط اللوجو (Header & Footer)</label>
+                        <div className="flex gap-2">
+                          <input value={siteForm.logo_url || ''} onChange={e => setSiteForm(p => ({ ...p, logo_url: e.target.value }))}
+                            placeholder="/logo_gs.png أو رابط صورة"
+                            className="flex-1 border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          />
+                          {siteForm.logo_url && (
+                            <img src={siteForm.logo_url} alt="preview" className="w-12 h-12 object-contain border border-gray-200 rounded-xl flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">اسم الشركة</label>
+                        <input value={siteForm.company_name || ''} onChange={e => setSiteForm(p => ({ ...p, company_name: e.target.value }))}
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">الشعار الفرعي</label>
+                        <input value={siteForm.company_tagline || ''} onChange={e => setSiteForm(p => ({ ...p, company_tagline: e.target.value }))}
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">وصف الشركة (الفوتر)</label>
+                        <textarea value={siteForm.footer_description || ''} rows={3} onChange={e => setSiteForm(p => ({ ...p, footer_description: e.target.value }))}
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                        <Phone size={15} className="text-[#bca056]" />معلومات التواصل
+                      </h4>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم الهاتف</label>
+                        <input value={siteForm.phone || ''} onChange={e => setSiteForm(p => ({ ...p, phone: e.target.value }))}
+                          placeholder="01100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">يُعرض في الهيدر والفوتر وصفحة التواصل</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم الواتساب (بدون +)</label>
+                        <input value={siteForm.whatsapp || ''} onChange={e => setSiteForm(p => ({ ...p, whatsapp: e.target.value }))}
+                          placeholder="201100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">رقم زرار الواتساب الطائر في الموقع</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">البريد الإلكتروني</label>
+                        <input value={siteForm.email || ''} onChange={e => setSiteForm(p => ({ ...p, email: e.target.value }))}
+                          placeholder="greatsociety6@gmail.com"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">العنوان</label>
+                        <input value={siteForm.location || ''} onChange={e => setSiteForm(p => ({ ...p, location: e.target.value }))}
+                          placeholder="Villa 99, 1st District, New Cairo"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رابط الموقع على الخريطة</label>
+                        <input value={siteForm.location_url || ''} onChange={e => setSiteForm(p => ({ ...p, location_url: e.target.value }))}
+                          placeholder="https://maps.google.com/..."
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">مواعيد العمل</label>
+                        <input value={siteForm.working_hours || ''} onChange={e => setSiteForm(p => ({ ...p, working_hours: e.target.value }))}
+                          placeholder="السبت - الخميس: 9ص - 9م"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <h4 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">معاينة سريعة</h4>
+                    <div className="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100">
+                      <img src={siteForm.logo_url || '/logo_gs.png'} alt="logo" className="w-10 h-10 object-contain"
+                        onError={e => { (e.target as HTMLImageElement).src = '/logo_gs.png'; }} />
+                      <div>
+                        <div className="text-[#bca056] font-black text-sm">{siteForm.company_name || 'GREAT SOCIETY'}</div>
+                        <div className="text-gray-400 text-[10px]">{siteForm.company_tagline || 'REALESTATE & CONSTRUCTION'}</div>
+                      </div>
+                      <div className="mr-auto text-right text-xs text-gray-500">
+                        <div dir="ltr">{siteForm.phone}</div>
+                        <div className="text-green-600" dir="ltr">wa.me/{siteForm.whatsapp}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-start">
+                    <button onClick={handleSiteSettingsSave} disabled={siteLoading}
+                      className="flex items-center gap-2 bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white font-bold px-8 py-3 rounded-xl hover:opacity-90 transition-all disabled:opacity-60"
+                    >
+                      {siteLoading ? <><Loader2 size={16} className="animate-spin" />جاري الحفظ...</> : <><Save size={16} />حفظ الإعدادات</>}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

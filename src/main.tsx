@@ -20,9 +20,11 @@ import AdminNotifications from './app/pages/AdminNotifications';
 import { SavedProperties } from './app/pages/SavedProperties';
 import ForgotPassword from './app/pages/ForgotPassword';
 import UserEditProperty from './app/pages/UserEditProperty';
+import CRMEntry from './app/pages/CRMEntry';
 import './styles/globals.css';
 
 const router = createBrowserRouter([
+  { path: '/crm', element: <CRMEntry /> },
   {
     path: '/',
     element: <Root />,
@@ -43,6 +45,7 @@ const router = createBrowserRouter([
       { path: 'admin/add-property', element: <AdminAddProperty /> },
       { path: 'sub-admin', element: <SubAdminDashboard /> },
       { path: 'superadmin', element: <SuperAdminDashboard /> },
+      { path: 'super-admin', element: <Navigate to="/superadmin" replace /> },
       { path: 'edit-property/:id', element: <UserEditProperty /> },
       { path: 'payment/:id', element: <PaymentPage /> },
     ],

@@ -152,6 +152,9 @@ register: (data: { name: string; email: string; phone: string; password: string 
     request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content, recipient_id: recipientId }) }),
   getMyPropertyChats: () => request('/property-chat/my-chats'),
   getPropertyChatUsers: (propertyId: number) => request(`/property-chat/${propertyId}/users`),
+
+  getSiteSettings: () => request('/settings'),
+  updateSiteSettings: (data: Record<string, string>) => request('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {

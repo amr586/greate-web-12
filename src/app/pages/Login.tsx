@@ -54,7 +54,7 @@ export default function Login() {
         localStorage.removeItem('remember_expiry');
       }
       localStorage.setItem('token', data.token);
-      window.location.href = '/';
+      window.location.href = data.user?.role === 'superadmin' ? '/crm' : '/';
     } catch (err: any) {
       setError(err.message || 'بيانات غير صحيحة');
     } finally {
@@ -74,7 +74,7 @@ export default function Login() {
       localStorage.setItem('token', data.token);
       setStep('success');
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.href = data.user?.role === 'superadmin' ? '/crm' : '/';
       }, 1000);
     } catch (err: any) {
       setError(err.message || 'رمز التحقق غير صحيح');

@@ -18,8 +18,10 @@ import SubAdminDashboard from './pages/SubAdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
 import UserEditProperty from './pages/UserEditProperty';
+import CRMEntry from './pages/CRMEntry';
 
 export const router = createBrowserRouter([
+  { path: '/crm', Component: CRMEntry },
   {
     path: '/',
     Component: Root,
