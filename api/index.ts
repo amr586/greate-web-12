@@ -184,7 +184,6 @@ async function runMigrations(pool: any) {
       email VARCHAR(200) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
-  ];
     `CREATE TABLE IF NOT EXISTS properties (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(300),
@@ -328,6 +327,13 @@ async function runMigrations(pool: any) {
       is_verified BOOLEAN DEFAULT false,
       verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS site_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      setting_key VARCHAR(100) UNIQUE NOT NULL,
+      setting_value TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`,
   ];
 
@@ -2013,6 +2019,45 @@ export default async function handler(req: any, res: any) {
     } catch (err: any) {
       console.log('[CRON] Error:', err.message);
       return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ========== SETTINGS ==========
+
+  // GET /api/settings
+  if (method === 'GET' && url?.includes('/api/settings')) {
+    try {
+      const [rows]: any = await pool.query('SELECT * FROM site_settings LIMIT 1');
+      await pool.end();
+      return res.json(rows[0] || { site_name: 'Great Society', contact_phone: '01100111618' });
+    } catch (e: any) {
+      await pool.end();
+      return res.json({ site_name: 'Great Society', contact_phone: '01100111618' });
+    }
+  }
+
+  // PATCH /api/settings
+  if (method === 'PATCH' && url?.includes('/api/settings')) {
+    if (!user || user.role !== 'superadmin') {
+      await pool.end();
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const settings = req.body;
+      const fields = ['site_name', 'site_name_ar', 'contact_phone', 'contact_email', 'address', 'about_text', 'about_text_ar'];
+      for (const field of fields) {
+        if (settings[field] !== undefined) {
+          await pool.query(
+            `INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+            [field, settings[field]]
+          );
+        }
+      }
+      await pool.end();
+      return res.json({ success: true });
+    } catch (e: any) {
+      await pool.end();
+      return res.status(500).json({ error: e.message });
     }
   }
 

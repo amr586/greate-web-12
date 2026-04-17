@@ -1,20 +1,21 @@
 --
--- PostgreSQL database dump
+-- SQLINES DEMO *** se dump
 --
 
 
--- Dumped from database version 16.10
--- Dumped by pg_dump version 16.10
+-- SQLINES DEMO *** ase version 16.10
+-- SQLINES DEMO ***  version 16.10
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
+/* SET statement_timeout = 0; */
+/* SET lock_timeout = 0; */
 SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
+/* SET client_encoding = 'UTF8'; */
+/* SET standard_conforming_strings = on; */
+-- SQLINES FOR EVALUATION USE ONLY (14 DAYS)
 SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
+/* SET check_function_bodies = false; */
 SET xmloption = content;
-SET client_min_messages = warning;
+/* SET client_min_messages = warning; */
 SET row_security = off;
 
 SET default_tablespace = '';
@@ -22,39 +23,34 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: admin_emails; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** s; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.admin_emails (
     id integer NOT NULL,
     email character varying(200) NOT NULL,
     is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: admin_emails_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** s_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.admin_emails_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.admin_emails_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: admin_emails_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** s_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.admin_emails_id_seq OWNED BY public.admin_emails.id;
 
 
 --
--- Name: contact_messages; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** sages; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.contact_messages (
@@ -63,34 +59,29 @@ CREATE TABLE public.contact_messages (
     email character varying(200) NOT NULL,
     phone character varying(30),
     subject character varying(300) NOT NULL,
-    message text NOT NULL,
+    message longtext NOT NULL,
     is_read boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: contact_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** sages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.contact_messages_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.contact_messages_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: contact_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** sages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.contact_messages_id_seq OWNED BY public.contact_messages.id;
 
 
 --
--- Name: notifications; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** ns; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.notifications (
@@ -98,37 +89,32 @@ CREATE TABLE public.notifications (
     user_id integer,
     type character varying(50),
     title character varying(300),
-    message text,
+    message longtext,
     property_data jsonb,
     user_data jsonb,
     is_read boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now(),
-    link text
+    created_at datetime DEFAULT now(),
+    link longtext
 );
 
 
 --
--- Name: notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** ns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.notifications_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.notifications_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** ns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.notifications_id_seq OWNED BY public.notifications.id;
 
 
 --
--- Name: otp_codes; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.otp_codes (
@@ -138,37 +124,32 @@ CREATE TABLE public.otp_codes (
     type character varying(20) NOT NULL,
     user_data jsonb,
     attempts integer DEFAULT 0,
-    locked_until timestamp with time zone,
-    expires_at timestamp with time zone NOT NULL,
+    locked_until datetime,
+    expires_at datetime NOT NULL,
     used boolean DEFAULT false,
-    last_sent_at timestamp with time zone DEFAULT now(),
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT otp_codes_type_check CHECK (((type)::text = ANY ((ARRAY['register'::character varying, 'login'::character varying, 'forgot-password'::character varying])::text[])))
+    last_sent_at datetime DEFAULT now(),
+    created_at datetime DEFAULT now(),
+    CONSTRAINT otp_codes_type_check CHECK (((type)::longtext = ANY ((ARRAY['register'::character varying, 'login'::character varying, 'forgot-password'::character varying])::text[])))
 );
 
 
 --
--- Name: otp_codes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** d_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.otp_codes_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.otp_codes_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: otp_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** d_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.otp_codes_id_seq OWNED BY public.otp_codes.id;
 
 
 --
--- Name: payment_requests; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** uests; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.payment_requests (
@@ -177,60 +158,55 @@ CREATE TABLE public.payment_requests (
     buyer_id integer,
     amount numeric,
     payment_method character varying(50),
-    notes text,
-    status character varying(20) DEFAULT 'pending'::character varying,
+    notes longtext,
+    status character varying(20) DEFAULT 'pending'::character varying(1),
     processed_by integer,
-    processed_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    screenshot_url text,
+    processed_at datetime,
+    created_at datetime DEFAULT now(),
+    screenshot_url longtext,
     contact_phone character varying(20)
 );
 
 
 --
--- Name: payment_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** uests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.payment_requests_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.payment_requests_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: payment_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** uests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.payment_requests_id_seq OWNED BY public.payment_requests.id;
 
 
 --
--- Name: properties; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO ***  Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.properties (
     id integer NOT NULL,
     title character varying(300),
     title_ar character varying(300),
-    description text,
-    description_ar text,
+    description longtext,
+    description_ar longtext,
     type character varying(50),
-    purpose character varying(20) DEFAULT 'sale'::character varying,
+    purpose character varying(20) DEFAULT 'sale'::character varying(1),
     price numeric,
     area numeric,
     rooms integer,
     bedrooms integer,
     bathrooms integer,
     floor integer,
-    address text,
+    address longtext,
     district character varying(100),
     city character varying(100),
-    contact_phone character varying(20) DEFAULT '01100111618'::character varying,
+    contact_phone character varying(20) DEFAULT '01100111618'::character varying(1),
     owner_id integer,
-    status character varying(20) DEFAULT 'pending'::character varying,
+    status character varying(20) DEFAULT 'pending'::character varying(1),
     is_featured boolean DEFAULT false,
     views integer DEFAULT 0,
     has_parking boolean DEFAULT false,
@@ -239,211 +215,181 @@ CREATE TABLE public.properties (
     has_pool boolean DEFAULT false,
     is_furnished boolean DEFAULT false,
     approved_by integer,
-    approved_at timestamp with time zone,
+    approved_at datetime,
     sold_to integer,
-    sold_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
+    sold_at datetime,
+    created_at datetime DEFAULT now(),
+    updated_at datetime DEFAULT now(),
     down_payment character varying(100),
     delivery_status character varying(100),
     finishing_type character varying(50),
-    floor_plan_image text,
-    google_maps_url text,
+    floor_plan_image longtext,
+    google_maps_url longtext,
     has_basement boolean DEFAULT false,
-    CONSTRAINT properties_purpose_check CHECK (((purpose)::text = ANY ((ARRAY['sale'::character varying, 'rent'::character varying, 'resale'::character varying])::text[]))),
-    CONSTRAINT properties_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'sold'::character varying])::text[])))
+    CONSTRAINT properties_purpose_check CHECK (((purpose)::longtext = ANY ((ARRAY['sale'::character varying, 'rent'::character varying, 'resale'::character varying])::text[]))),
+    CONSTRAINT properties_status_check CHECK (((status)::longtext = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'sold'::character varying])::text[])))
 );
 
 
 --
--- Name: properties_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.properties_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.properties_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: properties_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.properties_id_seq OWNED BY public.properties.id;
 
 
 --
--- Name: property_chat_messages; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.property_chat_messages (
     id integer NOT NULL,
     property_id integer,
     sender_id integer,
-    content text,
+    content longtext,
     is_admin boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: property_chat_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.property_chat_messages_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.property_chat_messages_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: property_chat_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.property_chat_messages_id_seq OWNED BY public.property_chat_messages.id;
 
 
 --
--- Name: property_images; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** ages; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.property_images (
     id integer NOT NULL,
     property_id integer,
-    url text NOT NULL,
+    url longtext NOT NULL,
     is_primary boolean DEFAULT false,
     order_index integer DEFAULT 0,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: property_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** ages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.property_images_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.property_images_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: property_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** ages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.property_images_id_seq OWNED BY public.property_images.id;
 
 
 --
--- Name: saved_properties; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** rties; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.saved_properties (
     id integer NOT NULL,
     user_id integer,
     property_id integer,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: saved_properties_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** rties_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.saved_properties_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.saved_properties_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: saved_properties_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** rties_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.saved_properties_id_seq OWNED BY public.saved_properties.id;
 
 
 --
--- Name: support_messages; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** sages; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.support_messages (
     id integer NOT NULL,
     ticket_id integer,
     sender_id integer,
-    content text,
+    content longtext,
     is_admin boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now()
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: support_messages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** sages_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.support_messages_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.support_messages_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: support_messages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** sages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.support_messages_id_seq OWNED BY public.support_messages.id;
 
 
 --
--- Name: support_tickets; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** kets; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.support_tickets (
     id integer NOT NULL,
     user_id integer,
-    subject text,
-    status character varying(20) DEFAULT 'open'::character varying,
-    created_at timestamp with time zone DEFAULT now()
+    subject longtext,
+    status character varying(20) DEFAULT 'open'::character varying(1),
+    created_at datetime DEFAULT now()
 );
 
 
 --
--- Name: support_tickets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** kets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.support_tickets_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.support_tickets_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: support_tickets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** kets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.support_tickets_id_seq OWNED BY public.support_tickets.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
+-- SQLINES DEMO *** : TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.users (
@@ -451,122 +397,117 @@ CREATE TABLE public.users (
     name character varying(200) NOT NULL,
     email character varying(200) NOT NULL,
     phone character varying(30),
-    password_hash text NOT NULL,
-    role character varying(20) DEFAULT 'user'::character varying,
+    password_hash longtext NOT NULL,
+    role character varying(20) DEFAULT 'user'::character varying(1),
     sub_role character varying(30),
-    avatar_url text,
+    avatar_url longtext,
     is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT users_role_check CHECK (((role)::text = ANY ((ARRAY['user'::character varying, 'admin'::character varying, 'superadmin'::character varying])::text[])))
+    created_at datetime DEFAULT now(),
+    CONSTRAINT users_role_check CHECK (((role)::longtext = ANY ((ARRAY['user'::character varying, 'admin'::character varying, 'superadmin'::character varying])::text[])))
 );
 
 
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- SQLINES DEMO *** q; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.users_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+CALL CreateSequence('public.users_id_seq', 1, 1)
+    NO 1;
 
 
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- SQLINES DEMO *** q; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- Name: admin_emails id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** s id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.admin_emails ALTER COLUMN id SET DEFAULT nextval('public.admin_emails_id_seq'::regclass);
 
 
 --
--- Name: contact_messages id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** sages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.contact_messages ALTER COLUMN id SET DEFAULT nextval('public.contact_messages_id_seq'::regclass);
 
 
 --
--- Name: notifications id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** ns id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('public.notifications_id_seq'::regclass);
 
 
 --
--- Name: otp_codes id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** d; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.otp_codes ALTER COLUMN id SET DEFAULT nextval('public.otp_codes_id_seq'::regclass);
 
 
 --
--- Name: payment_requests id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** uests id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payment_requests ALTER COLUMN id SET DEFAULT nextval('public.payment_requests_id_seq'::regclass);
 
 
 --
--- Name: properties id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.properties ALTER COLUMN id SET DEFAULT nextval('public.properties_id_seq'::regclass);
 
 
 --
--- Name: property_chat_messages id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_chat_messages ALTER COLUMN id SET DEFAULT nextval('public.property_chat_messages_id_seq'::regclass);
 
 
 --
--- Name: property_images id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** ages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_images ALTER COLUMN id SET DEFAULT nextval('public.property_images_id_seq'::regclass);
 
 
 --
--- Name: saved_properties id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** rties id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.saved_properties ALTER COLUMN id SET DEFAULT nextval('public.saved_properties_id_seq'::regclass);
 
 
 --
--- Name: support_messages id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** sages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_messages ALTER COLUMN id SET DEFAULT nextval('public.support_messages_id_seq'::regclass);
 
 
 --
--- Name: support_tickets id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** kets id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_tickets ALTER COLUMN id SET DEFAULT nextval('public.support_tickets_id_seq'::regclass);
 
 
 --
--- Name: users id; Type: DEFAULT; Schema: public; Owner: -
+-- SQLINES DEMO *** ype: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 
 --
--- Name: admin_emails admin_emails_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** s admin_emails_email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.admin_emails
@@ -574,79 +515,79 @@ ALTER TABLE ONLY public.admin_emails
 
 
 --
--- Name: admin_emails admin_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** s admin_emails_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.admin_emails
-    ADD CONSTRAINT admin_emails_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT admin_emails_pkey PRIMARY KEY(id);
 
 
 --
--- Name: contact_messages contact_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** sages contact_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.contact_messages
-    ADD CONSTRAINT contact_messages_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT contact_messages_pkey PRIMARY KEY(id);
 
 
 --
--- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** ns notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT notifications_pkey PRIMARY KEY(id);
 
 
 --
--- Name: otp_codes otp_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** tp_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.otp_codes
-    ADD CONSTRAINT otp_codes_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT otp_codes_pkey PRIMARY KEY(id);
 
 
 --
--- Name: payment_requests payment_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** uests payment_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payment_requests
-    ADD CONSTRAINT payment_requests_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT payment_requests_pkey PRIMARY KEY(id);
 
 
 --
--- Name: properties properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.properties
-    ADD CONSTRAINT properties_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT properties_pkey PRIMARY KEY(id);
 
 
 --
--- Name: property_chat_messages property_chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages property_chat_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_chat_messages
-    ADD CONSTRAINT property_chat_messages_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT property_chat_messages_pkey PRIMARY KEY(id);
 
 
 --
--- Name: property_images property_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** ages property_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_images
-    ADD CONSTRAINT property_images_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT property_images_pkey PRIMARY KEY(id);
 
 
 --
--- Name: saved_properties saved_properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** rties saved_properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.saved_properties
-    ADD CONSTRAINT saved_properties_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT saved_properties_pkey PRIMARY KEY(id);
 
 
 --
--- Name: saved_properties saved_properties_user_id_property_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** rties saved_properties_user_id_property_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.saved_properties
@@ -654,23 +595,23 @@ ALTER TABLE ONLY public.saved_properties
 
 
 --
--- Name: support_messages support_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** sages support_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_messages
-    ADD CONSTRAINT support_messages_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT support_messages_pkey PRIMARY KEY(id);
 
 
 --
--- Name: support_tickets support_tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** kets support_tickets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_tickets
-    ADD CONSTRAINT support_tickets_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT support_tickets_pkey PRIMARY KEY(id);
 
 
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** _email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
@@ -678,111 +619,111 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** _pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT users_pkey PRIMARY KEY(id);
 
 
 --
--- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** ns notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
--- Name: payment_requests payment_requests_buyer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.payment_requests
-    ADD CONSTRAINT payment_requests_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public.users(id);
-
-
---
--- Name: payment_requests payment_requests_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** uests payment_requests_buyer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payment_requests
-    ADD CONSTRAINT payment_requests_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id);
+    ADD CONSTRAINT payment_requests_buyer_id_fkey FOREIGN KEY(buyer_id) REFERENCES public.users(id);
 
 
 --
--- Name: properties properties_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** uests payment_requests_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.payment_requests
+    ADD CONSTRAINT payment_requests_property_id_fkey FOREIGN KEY(property_id) REFERENCES public.properties(id);
+
+
+--
+-- SQLINES DEMO *** properties_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.properties
-    ADD CONSTRAINT properties_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id);
+    ADD CONSTRAINT properties_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES public.users(id);
 
 
 --
--- Name: property_chat_messages property_chat_messages_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.property_chat_messages
-    ADD CONSTRAINT property_chat_messages_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
-
-
---
--- Name: property_chat_messages property_chat_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages property_chat_messages_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_chat_messages
-    ADD CONSTRAINT property_chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id);
+    ADD CONSTRAINT property_chat_messages_property_id_fkey FOREIGN KEY(property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
 
 
 --
--- Name: property_images property_images_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** at_messages property_chat_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_chat_messages
+    ADD CONSTRAINT property_chat_messages_sender_id_fkey FOREIGN KEY(sender_id) REFERENCES public.users(id);
+
+
+--
+-- SQLINES DEMO *** ages property_images_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.property_images
-    ADD CONSTRAINT property_images_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
+    ADD CONSTRAINT property_images_property_id_fkey FOREIGN KEY(property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
 
 
 --
--- Name: saved_properties saved_properties_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.saved_properties
-    ADD CONSTRAINT saved_properties_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
-
-
---
--- Name: saved_properties saved_properties_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** rties saved_properties_property_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.saved_properties
-    ADD CONSTRAINT saved_properties_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT saved_properties_property_id_fkey FOREIGN KEY(property_id) REFERENCES public.properties(id) ON DELETE CASCADE;
 
 
 --
--- Name: support_messages support_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** rties saved_properties_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.saved_properties
+    ADD CONSTRAINT saved_properties_user_id_fkey FOREIGN KEY(user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- SQLINES DEMO *** sages support_messages_sender_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_messages
-    ADD CONSTRAINT support_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.users(id);
+    ADD CONSTRAINT support_messages_sender_id_fkey FOREIGN KEY(sender_id) REFERENCES public.users(id);
 
 
 --
--- Name: support_messages support_messages_ticket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** sages support_messages_ticket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_messages
-    ADD CONSTRAINT support_messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.support_tickets(id) ON DELETE CASCADE;
+    ADD CONSTRAINT support_messages_ticket_id_fkey FOREIGN KEY(ticket_id) REFERENCES public.support_tickets(id) ON DELETE CASCADE;
 
 
 --
--- Name: support_tickets support_tickets_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- SQLINES DEMO *** kets support_tickets_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.support_tickets
-    ADD CONSTRAINT support_tickets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+    ADD CONSTRAINT support_tickets_user_id_fkey FOREIGN KEY(user_id) REFERENCES public.users(id);
 
 
 --
--- PostgreSQL database dump complete
+-- SQLINES DEMO *** se dump complete
 --
 
 
