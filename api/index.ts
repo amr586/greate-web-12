@@ -4,19 +4,25 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
 async function runMigrations(pool: any) {
-  // Add email_verified column if it doesn't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
-  try {
-    await pool.query(`ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false`);
-  } catch (e: any) {
-    if (!e.message.includes('Duplicate column name')) {
-      console.log('[MIGRATION] email_verified column:', e.message);
-    }
-  }
-  try {
-    await pool.query(`ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL`);
-  } catch (e: any) {
-    if (!e.message.includes('Duplicate column name')) {
-      console.log('[MIGRATION] email_verified_at column:', e.message);
+  // Add missing columns if they don't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
+  const columnsToAdd = [
+    { table: 'users', col: 'email_verified', sql: 'ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false' },
+    { table: 'users', col: 'email_verified_at', sql: 'ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL' },
+    { table: 'users', col: 'sub_role', sql: 'ALTER TABLE users ADD COLUMN sub_role VARCHAR(30)' },
+    { table: 'otp_codes', col: 'device_id', sql: 'ALTER TABLE otp_codes ADD COLUMN device_id VARCHAR(64)' },
+    { table: 'otp_codes', col: 'last_sent_at', sql: 'ALTER TABLE otp_codes ADD COLUMN last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+    { table: 'properties', col: 'description_ar', sql: 'ALTER TABLE properties ADD COLUMN description_ar TEXT' },
+    { table: 'properties', col: 'title_ar', sql: 'ALTER TABLE properties ADD COLUMN title_ar VARCHAR(300)' },
+  ];
+  
+  for (const { table, col, sql } of columnsToAdd) {
+    try {
+      await pool.query(sql);
+      console.log(`[MIGRATION] Added column ${table}.${col}`);
+    } catch (e: any) {
+      if (!e.message.includes('Duplicate column name') && !e.message.includes('Unknown column')) {
+        console.log(`[MIGRATION] ${table}.${col}:`, e.message);
+      }
     }
   }
   
@@ -35,6 +41,150 @@ async function runMigrations(pool: any) {
       email_verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
+    `CREATE TABLE IF NOT EXISTS properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(300),
+      title_ar VARCHAR(300),
+      description TEXT,
+      description_ar TEXT,
+      type VARCHAR(50),
+      purpose VARCHAR(20) DEFAULT 'sale',
+      price NUMERIC,
+      area NUMERIC,
+      rooms INT,
+      bedrooms INT,
+      bathrooms INT,
+      floor INT,
+      address TEXT,
+      district VARCHAR(100),
+      city VARCHAR(100),
+      contact_phone VARCHAR(20) DEFAULT '01100111618',
+      owner_id INT,
+      status VARCHAR(20) DEFAULT 'pending',
+      is_featured BOOLEAN DEFAULT false,
+      views INT DEFAULT 0,
+      has_parking BOOLEAN DEFAULT false,
+      has_elevator BOOLEAN DEFAULT false,
+      has_garden BOOLEAN DEFAULT false,
+      has_pool BOOLEAN DEFAULT false,
+      is_furnished BOOLEAN DEFAULT false,
+      approved_by INT,
+      approved_at TIMESTAMP NULL,
+      sold_to INT,
+      sold_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      down_payment VARCHAR(50),
+      delivery_status VARCHAR(100),
+      finishing_type VARCHAR(50),
+      floor_plan_image TEXT,
+      google_maps_url TEXT,
+      has_basement BOOLEAN DEFAULT false
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT NOT NULL,
+      url TEXT NOT NULL,
+      is_primary BOOLEAN DEFAULT false,
+      order_index INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS saved_properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      property_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_save (user_id, property_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      title VARCHAR(200),
+      message TEXT,
+      type VARCHAR(20) DEFAULT 'info',
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS payment_requests (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      property_id INT,
+      amount NUMERIC,
+      status VARCHAR(20) DEFAULT 'pending',
+      payment_method VARCHAR(20),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS contact_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(200),
+      email VARCHAR(200),
+      phone VARCHAR(30),
+      message TEXT,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_tickets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      subject VARCHAR(300),
+      description TEXT,
+      status VARCHAR(20) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      sender_id INT NOT NULL,
+      message TEXT,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_chat_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT NOT NULL,
+      sender_id INT,
+      sender_name VARCHAR(200),
+      message TEXT,
+      is_admin BOOLEAN DEFAULT false,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS otp_codes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      identifier VARCHAR(200) NOT NULL,
+      code VARCHAR(6) NOT NULL,
+      type VARCHAR(20) NOT NULL,
+      user_data JSON,
+      device_id VARCHAR(64),
+      attempts INT DEFAULT 0,
+      locked_until TIMESTAMP NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT false,
+      last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS trusted_devices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      device_id VARCHAR(64) NOT NULL,
+      device_name VARCHAR(200),
+      last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_device (user_id, device_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS email_verification (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      is_verified BOOLEAN DEFAULT false,
+      verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS admin_emails (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(200) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+  ];
     `CREATE TABLE IF NOT EXISTS properties (
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(300),
