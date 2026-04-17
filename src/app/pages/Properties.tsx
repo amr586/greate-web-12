@@ -87,8 +87,7 @@ export default function Properties() {
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
   });
 
-  const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
-  const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
+  const filteredDbNormal = filteredDb;
 
   const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setFeaturedFilter('الكل'); };
   const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice, featuredFilter !== 'الكل' ? featuredFilter : ''].filter(Boolean).length;
@@ -218,17 +217,17 @@ export default function Properties() {
           </div>
           <h2 className="text-xl font-black text-gray-900">عقارات مميزة</h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#bca056]/30" />
-          <span className="text-sm text-gray-400">{filtered.length + filteredDbFeatured.length} عقار</span>
+          <span className="text-sm text-gray-400">{filtered.length + filteredDb.length} عقار</span>
         </div>
 
-        {filtered.length === 0 && filteredDbFeatured.length === 0 ? (
+        {filtered.length === 0 && filteredDb.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200 mb-8">
             <Building2 size={32} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">لا توجد عقارات مميزة تطابق البحث</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {[...filtered, ...filteredDbFeatured.map(p => ({
+            {[...filtered, ...filteredDb.filter(p => p.is_featured).map(p => ({
               id: String(p.id),
               title: p.title_ar || p.title || 'عقار مميز',
               badge: 'عرض مميز',
