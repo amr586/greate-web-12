@@ -48,6 +48,8 @@ export default function Register() {
         password: form.password,
       });
       
+      console.log('[Register] Response:', data);
+      
       if (data.success) {
         if (data.devOtp) setDevOtp(data.devOtp);
         setStep('verify');
@@ -57,6 +59,8 @@ export default function Register() {
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
+      } else {
+        console.log('[Register] No success or token - data:', JSON.stringify(data));
       }
     } catch (err: any) {
       setError(err.message || 'خطأ في إنشاء الحساب');
