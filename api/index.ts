@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET not configured'); })();
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
 async function runMigrations(pool: any) {
   const migrations = [
@@ -197,8 +198,9 @@ async function runMigrations(pool: any) {
 }
 
 function generateDeviceId(req: any): string {
-  const deviceId = req.headers['x-device-id'] || crypto.randomUUID();
-  return deviceId.slice(0, 64);
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  const ua = req.headers['user-agent'] || 'unknown';
+  return Buffer.from(ip + ua).toString('base64').slice(0, 64);
 }
 
 function generateOTP(): string {
@@ -209,17 +211,9 @@ function generateOTP(): string {
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SKIP_EMAIL = process.env.SKIP_EMAIL === 'true';
-
-console.log('[DEBUG] SMTP configured:', !!SMTP_USER, 'PASS set:', !!SMTP_PASS);
+const IS_DEV = process.env.NODE_ENV !== 'production';
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
-  // Skip email if SKIP_EMAIL=true (for testing without SMTP)
-  if (SKIP_EMAIL) {
-    console.log(`[EMAIL] Skipped - SKIP_EMAIL=true, OTP: ${otp}`);
-    return false;
-  }
-  
   if (!SMTP_USER || !SMTP_PASS) {
     console.log('[EMAIL] SMTP not configured, skipping email');
     return false;
@@ -232,19 +226,9 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
     port: 587,
     secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2' },
-    connectionTimeout: 10000,
-    socketTimeout: 10000
+    tls: { minVersion: 'TLSv1.2' }
   });
-  
-  // Verify connection on startup
-  try {
-    await transporter.verify();
-    console.log('[EMAIL] SMTP connection verified');
-  } catch (e) {
-    console.log('[EMAIL] SMTP verification failed:', e);
-  }
-
+ // 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
   const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
 
@@ -393,7 +377,7 @@ function verifyToken(token: string): any {
 }
 
 function generateToken(payload: any): string {
-  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
 async function consumeOTP(identifier: string, code: string, type: string, pool: any) {
@@ -438,57 +422,40 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://greatsociety-eg.com,https://greate-web-12.vercel.app').split(',');
 
 export default async function handler(req: any, res: any) {
-  try {
-    // CORS - must be first, before any other processing
-    const origin = req.headers.origin;
-    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-    
-    // Handle preflight OPTIONS immediately
-    if (req.method === 'OPTIONS') {
-      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.setHeader('Access-Control-Max-Age', '86400');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Vary', 'Origin');
-      return res.status(204).end();
-    }
-    
-    // Security headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://greatsociety-eg.com https://greate-web-12.vercel.app");
-    
-    // CORS for actual requests
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // CORS - specific origins only
+  const origin = req.headers.origin;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
 
-    const { query: urlQuery, method, url, headers, body } = req;
-    
-    // Strip query string for route matching
-    const cleanUrl = url?.split('?')[0] || url;
-    
+  const { query: urlQuery, method, url, headers, body } = req;
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
 
   const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.DB_HOST || 'srv2121.hstgr.io',
+    user: process.env.DB_USER || 'u156204542_amr',
+    password: process.env.DB_PASSWORD || 'Amrahmed01281378331',
+    database: process.env.DB_NAME || 'u156204542_Dbase',
     port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
     connectionLimit: 2,
     queueLimit: 0
   };
-
-  if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
-    return res.status(500).json({ ok: false, error: 'Database configuration missing' });
-  }
 
   let pool;
   try {
@@ -503,7 +470,7 @@ export default async function handler(req: any, res: any) {
   // ========== AUTH ENDPOINTS ==========
 
   // POST /api/auth/login (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/login') {
+  if (method === 'POST' && url === '/api/auth/login') {
     try {
       const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
@@ -595,15 +562,12 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(userData.email, otp, userData.name, 'login').catch(() => {});
 
-      // If email skipped, include OTP in response for testing
-      const response: any = { 
+      return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
+        devOtp: IS_DEV ? otp : undefined,
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
-      };
-      if (SKIP_EMAIL) response.devOtp = otp;
-
-      return res.json(response);
+      });
     } catch (err: any) {
       console.log('[ERROR] Login:', err.message);
       return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
@@ -611,7 +575,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/login/verify-otp (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/login/verify-otp') {
+  if (method === 'POST' && url === '/api/auth/login/verify-otp') {
     try {
       const { email, otp, rememberDevice, deviceName } = body;
       if (!email || !otp) {
@@ -663,7 +627,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/resend-login-otp (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/resend-login-otp') {
+  if (method === 'POST' && url === '/api/auth/resend-login-otp') {
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
@@ -697,7 +661,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
 
-      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -706,7 +670,7 @@ export default async function handler(req: any, res: any) {
   
 
   // POST /api/auth/register (exact match - no /verify, /resend, etc.)
-  if (method === 'POST' && cleanUrl === '/api/auth/register') {
+  if (method === 'POST' && url === '/api/auth/register') {
     try {
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
@@ -760,19 +724,10 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
       );
 
-      // Send email with OTP (fire and forget but log errors)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register')
-        .then((sent) => console.log('[EMAIL] Register OTP result:', sent))
-        .catch((err) => {
-          console.log('[EMAIL] Register OTP failed:', err?.message);
-        });
+      // Send email with OTP (don't await, fire and forget)
+      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch(() => {});
 
-      // If email skipped, include OTP in response for testing
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail} (OTP: ${otp})`, devOtp: otp });
-      }
-
-      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
@@ -780,7 +735,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/register/verify (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/register/verify') {
+  if (method === 'POST' && url === '/api/auth/register/verify') {
     let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
@@ -856,7 +811,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/register/verify/resend (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/register/verify/resend') {
+  if (method === 'POST' && url === '/api/auth/register/verify/resend') {
     console.log('[RESEND] Raw body:', JSON.stringify(body));
     try {
       const { email } = body;
@@ -885,12 +840,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register').catch(() => {});
 
-      // If email skipped, include OTP in response for testing
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق (OTP: ${otp})`, devOtp: otp });
-      }
-
-      return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Resend OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -898,7 +848,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/verify-email (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/verify-email') {
+  if (method === 'POST' && url === '/api/auth/verify-email') {
     try {
       const { email, otp } = body;
       if (!email || !otp) {
@@ -955,7 +905,7 @@ export default async function handler(req: any, res: any) {
         [email, otp, type, expiresAt]
       );
 
-      return res.json({ success: true, message: `تم إنشاء رمز التحقق` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إنشاء رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Send OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -1046,11 +996,7 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
 
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, devOtp: otp });
-      }
-
-      return res.json({ success: true });
+      return res.json({ success: true, devOtp: otp });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -1219,9 +1165,8 @@ export default async function handler(req: any, res: any) {
       if (maxPrice) { conditions.push(`p.price <= ?`); params.push(Number(maxPrice)); }
       if (rooms) { conditions.push(`p.rooms >= ?`); params.push(Number(rooms)); }
       if (search) {
-        const sanitized = search.replace(/[<>'";&]/g, '').slice(0, 100);
         conditions.push(`(p.title LIKE ? OR p.title_ar LIKE ? OR p.district LIKE ?)`);
-        params.push(`%${sanitized}%`, `%${sanitized}%`, `%${sanitized}%`);
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
       const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -1880,12 +1825,4 @@ export default async function handler(req: any, res: any) {
   // Default response
   await pool.end();
   return res.json({ ok: true, service: 'Great Society API' });
-  } catch (err: any) {
-    console.error('[ERROR]', err.message);
-    const origin = req.headers.origin;
-    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(500).json({ ok: false, error: err.message || 'Internal server error' });
-  }
 }
