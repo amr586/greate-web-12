@@ -1333,8 +1333,9 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // GET /api/properties/:id - numeric ID
+  // GET /api/properties/:id - numeric ID (must be BEFORE list route)
   if (method === 'GET' && url?.match(/^\/api\/properties\/\d+$/)) {
+    console.log('[ROUTE] Property detail:', url);
     try {
       const idStr = url.match(/\/api\/properties\/(\d+)/)?.[1];
       const id = validateId(idStr);

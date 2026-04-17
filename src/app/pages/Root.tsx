@@ -50,7 +50,7 @@ function RootInner() {
   }, [showSplash]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   const noFooter = ['/login', '/register'].includes(location.pathname);
