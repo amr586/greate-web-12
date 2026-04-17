@@ -229,10 +229,10 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
   
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2' }
+    tls: { minVersion: 'TLSv1.2', rejectUnauthorized: false }
   });
 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
