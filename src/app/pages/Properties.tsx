@@ -84,7 +84,7 @@ export default function Properties() {
 
   const activeDistrict = district === 'مناطق أخرى' ? districtSearch.trim() : district;
 
-  const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
+const safeDbProperties = Array.isArray(dbProperties) ? dbProperties : [];
 
   const filteredDb = safeDbProperties.filter(p => {
     const matchSearch = !search || (p.title_ar || p.title || '').includes(search) || (p.description_ar || p.description || '').includes(search) || (p.district || '').includes(search);
@@ -97,9 +97,7 @@ export default function Properties() {
     return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
   });
 
-  const filteredAreas = districtSearch.trim()
-    ? SEARCH_AREAS.filter(a => a.includes(districtSearch.trim()))
-    : [];
+  console.log('[Properties] dbProperties:', safeDbProperties.length, 'filteredDb:', filteredDb.length);
 
   const filteredDbFeatured = filteredDb.filter(p => p.is_featured);
   const filteredDbNormal = filteredDb.filter(p => !p.is_featured);
