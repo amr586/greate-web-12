@@ -14,7 +14,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
-  const [devOtp, setDevOtp] = useState<string | undefined>();
 
   useEffect(() => {
     const saved = localStorage.getItem('remembered_email');
@@ -40,7 +39,6 @@ export default function Login() {
       
       if (data.requiresOTP) {
         setEmail(data.email);
-        setDevOtp(data.devOtp);
         setStep('otp');
         setLoading(false);
         return;
@@ -86,16 +84,11 @@ export default function Login() {
   const handleResendOTP = async () => {
     setError('');
     try {
-      const data = await api.resendLoginOTP(email);
-      setDevOtp(data.devOtp);
-      setTimeout(() => setDevOtp(undefined), 10000);
+      await api.resendLoginOTP(email);
     } catch (err: any) {
       setError(err.message);
     }
   };
-
-  // Show devOtp in UI for debugging
-  const displayDevOtp = devOtp || (otp.length >= 6 ? undefined : undefined);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-white to-[#e6f2f5] flex items-center justify-center px-4 pt-20" dir="rtl">
@@ -243,9 +236,6 @@ export default function Login() {
                     <p className="text-blue-600 text-sm">
                       تم إرسال رمز التحقق إلى بريدك الإلكتروني. يرجى إدخال الرمز للمتابعة.
                     </p>
-                    {devOtp && (
-                      <p className="text-xs text-blue-500 mt-2">رمز التطوير: {devOtp}</p>
-                    )}
                   </div>
 
                   <div>

@@ -397,7 +397,6 @@ function generateOTP(): string {
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const IS_DEV = process.env.NODE_ENV !== 'production';
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
   if (!SMTP_USER || !SMTP_PASS) {
@@ -755,7 +754,6 @@ export default async function handler(req: any, res: any) {
       return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
-        devOtp: otp, // Always include for debugging
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
       });
     } catch (err: any) {
@@ -851,7 +849,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${email}` });
+      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -921,7 +919,7 @@ export default async function handler(req: any, res: any) {
         return res.status(503).json({ error: 'تعذّر إرسال البريد الإلكتروني. تحقق من الإعدادات أو حاول لاحقاً' });
       }
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
+      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
@@ -1037,7 +1035,7 @@ export default async function handler(req: any, res: any) {
         .then(() => console.log('[RESEND] Email sent successfully'))
         .catch((err) => console.log('[RESEND] Email error:', err.message));
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
+      return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Resend OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -1102,7 +1100,7 @@ export default async function handler(req: any, res: any) {
         [email, otp, type, expiresAt]
       );
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إنشاء رمز التحقق` });
+      return res.json({ success: true, message: `تم إنشاء رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Send OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -1193,7 +1191,7 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
 
-      return res.json({ success: true, devOtp: otp });
+      return res.json({ success: true, message: 'تم إرسال رمز التحقق' });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
