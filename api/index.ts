@@ -814,12 +814,16 @@ export default async function handler(req: any, res: any) {
   if (method === 'POST' && url?.includes('/api/auth/register/verify/resend')) {
     try {
       const { email } = body;
-      const rateCheck = checkRateLimit(`otp:${email}`);
+      if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+
+      const sanitizedEmail = sanitizeEmail(email);
+      if (!sanitizedEmail) return res.status(400).json({ error: 'بريد إلكتروني غير صحيح' });
+
+      const rateCheck = checkRateLimit(`otp:${sanitizedEmail}`);
       if (!rateCheck.allowed) {
         return res.status(429).json({ error: `يرجى الانتظار ${Math.ceil((rateCheck.resetAt - Date.now()) / 1000)} ثانية` });
       }
 
-      const sanitizedEmail = sanitizeEmail(email);
       const otp = generateOTP();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
       
@@ -837,6 +841,7 @@ export default async function handler(req: any, res: any) {
 
       return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
+      console.log('[ERROR] Resend OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
