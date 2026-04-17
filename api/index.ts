@@ -624,7 +624,8 @@ export default async function handler(req: any, res: any) {
     return res.status(204).end();
   }
 
-  const { query: urlQuery, method, url, headers, body } = req;
+  const { query: urlQuery, method, url: rawUrl, headers, body } = req;
+  const url = rawUrl?.split('?')[0] || rawUrl;
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;

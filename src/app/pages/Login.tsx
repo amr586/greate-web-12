@@ -88,10 +88,14 @@ export default function Login() {
     try {
       const data = await api.resendLoginOTP(email);
       setDevOtp(data.devOtp);
+      setTimeout(() => setDevOtp(undefined), 10000);
     } catch (err: any) {
       setError(err.message);
     }
   };
+
+  // Show devOtp in UI for debugging
+  const displayDevOtp = devOtp || (otp.length >= 6 ? undefined : undefined);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-white to-[#e6f2f5] flex items-center justify-center px-4 pt-20" dir="rtl">
