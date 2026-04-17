@@ -447,6 +447,7 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     const { query: urlQuery, method, url, headers, body } = req;
+    console.log('[DEBUG] Request URL:', url, 'Method:', method);
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
