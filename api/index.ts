@@ -1309,13 +1309,26 @@ export default async function handler(req: any, res: any) {
         ORDER BY p.created_at DESC LIMIT 6
       `);
       
-      for (const prop of rows) {
-        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [prop.id]);
-        prop.images = imgs;
+      const propIds = rows.map((r: any) => r.id);
+      if (propIds.length > 0) {
+        const [allImgs]: any = await pool.query(
+          'SELECT id, property_id, url, is_primary FROM property_images WHERE property_id IN (?)',
+          [propIds]
+        );
+        const imgMap: Record<number, any[]> = {};
+        for (const img of allImgs) {
+          if (!imgMap[img.property_id]) imgMap[img.property_id] = [];
+          imgMap[img.property_id].push(img);
+        }
+        for (const prop of rows) {
+          prop.images = imgMap[prop.id] || [];
+        }
       }
       
+      await pool.end();
       return res.json(rows);
     } catch {
+      await pool.end();
       return res.status(500).json({ error: 'خطأ' });
     }
   }
