@@ -24,10 +24,12 @@ async function request(path: string, options: RequestInit = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const url = path.includes('?') ? `${path}&t=${Date.now()}` : `${path}?t=${Date.now()}`;
     
-    const res = await fetch(BASE_URL + path, { ...options, headers, signal: controller.signal });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    
+    const res = await fetch(BASE_URL + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
     const data = await res.json();
