@@ -226,9 +226,12 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
     port: 587,
     secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2' }
+    tls: {
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2'
+    }
   });
-  
+
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
   const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
 
