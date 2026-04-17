@@ -71,7 +71,7 @@ export default function AddProperty() {
       const formData = new FormData();
       formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/upload', {
+      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

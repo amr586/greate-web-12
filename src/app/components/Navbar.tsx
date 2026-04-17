@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X, Home, Building2, Phone, LogIn, User, LayoutDashboard, LogOut, Heart, PlusCircle, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
@@ -10,6 +11,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, logout, isAdmin, isSuperAdmin, subRole } = useAuth();
+  const { settings } = useSiteSettings();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -47,11 +49,11 @@ export default function Navbar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
             <div className="group-hover:scale-105 transition-transform flex-shrink-0">
-              <img src="/logo_gs.png" alt="Great Society" className="w-11 h-11 object-contain" />
+              <img src={settings.logo_url || '/logo_gs.png'} alt={settings.company_name} className="w-11 h-11 object-contain" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-[#bca056] font-black text-sm tracking-tight">GREAT SOCIETY</span>
-              <span className="text-gray-500 text-[8px] font-medium">REALESTATE & CONSTRUCTION</span>
+              <span className="text-[#bca056] font-black text-sm tracking-tight">{settings.company_name}</span>
+              <span className="text-gray-500 text-[8px] font-medium">{settings.company_tagline}</span>
             </div>
           </a>
 
@@ -89,8 +91,8 @@ export default function Navbar() {
                       className="absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl shadow-[#005a7d]/10 border border-[#e6f2f5] overflow-hidden z-50"
                     >
                       {isSuperAdmin && (
-                        <Link to="/superadmin" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[#e6f2f5] text-[#005a7d] font-semibold transition-colors">
-                          <ShieldCheck size={16} />سوبر أدمن
+                        <Link to="/crm" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[#e6f2f5] text-[#005a7d] font-semibold transition-colors">
+                          <ShieldCheck size={16} />لوحة CRM
                         </Link>
                       )}
                       {isAdmin && (
@@ -149,7 +151,7 @@ export default function Navbar() {
                       <div className="w-8 h-8 bg-gradient-to-br from-[#005a7d] to-[#004a68] rounded-lg flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || '؟'}</div>
                       <span className="text-sm font-medium">{user.name}</span>
                     </div>
-                    {isSuperAdmin && <Link to="/superadmin" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-[#005a7d] hover:bg-[#e6f2f5]"><ShieldCheck size={16} />سوبر أدمن</Link>}
+                    {isSuperAdmin && <Link to="/crm" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-[#005a7d] hover:bg-[#e6f2f5]"><ShieldCheck size={16} />لوحة CRM</Link>}
                     {isAdmin && <Link to={subRole ? '/sub-admin' : '/admin'} className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm hover:bg-[#e6f2f5]"><LayoutDashboard size={16} className="text-[#005a7d]" />لوحة الإدارة</Link>}
                     <Link to="/dashboard" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm hover:bg-[#e6f2f5]"><User size={16} className="text-[#005a7d]" />حسابي</Link>
                     <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50"><LogOut size={16} />تسجيل الخروج</button>

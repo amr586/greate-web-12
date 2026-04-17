@@ -1,75 +1,74 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, MessageCircle, Bot, Phone } from 'lucide-react';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 
-const CONTACT = '01100111618';
-
-function getSmartReply(msg: string): string {
+function getSmartReply(msg: string, contact: string, whatsapp: string): string {
   const m = msg.toLowerCase();
 
   if (/مرحب|هلو|هاي|السلام|أهلا|اهلا/.test(m)) {
-    return `أهلاً وسهلاً! 🏡\nأنا مساعد Great Society العقاري.\nيسعدني مساعدتك في إيجاد عقار أحلامك.\n\nما الذي تبحث عنه؟\n• شقة أم فيلا؟\n• في أي منطقة؟\n• ما هي ميزانيتك؟`;
+    return `أهلاً وسهلاً! 🏡\nأنا مساعد Great Society العقاري.\nyيسعدني مساعدتك في إيجاد عقار أحلامك.\n\nما الذي تبحث عنه؟\n• شقة أم فيلا؟\n• في أي منطقة؟\n• ما هي ميزانيتك؟`;
   }
 
   if (/طريق السويس|سويس/.test(m)) {
-    return `🏠 شقق 3 غرف – طريق السويس\n\n📍 أقوى لوكيشن على طريق السويس مباشرةً\n🏛️ جنب أول جامعة ومستشفى بريطانية في مصر\n\n💰 السعر: تبدأ من 3,200,000 جنيه\n💵 المقدم: 750,000 جنيه\n🏗️ نسبة إنشاءات: 40% على أرض الواقع\n✅ متشطبة بالكامل\n\n📞 للمعاينة والحجز: ${CONTACT}`;
+    return `🏠 شقق 3 غرف – طريق السويس\n\n📍 أقوى لوكيشن على طريق السويس مباشرةً\n🏛️ جنب أول جامعة ومستشفى بريطانية في مصر\n\n💰 السعر: تبدأ من 3,200,000 جنيه\n💵 المقدم: 750,000 جنيه\n🏗️ نسبة إنشاءات: 40% على أرض الواقع\n✅ متشطبة بالكامل\n\n📞 للمعاينة والحجز: ${contact}`;
   }
 
   if (/تجمع سادس|كازار/.test(m)) {
-    return `🏢 شقق التجمع السادس – أمام كمبوند الكازار\n\n📍 أفضل موقع في التجمع السادس\n🎓 10 دقائق من الجامعة الأمريكية\n\n💰 الأسعار:\n• غرفة واحدة: 3,000,000 جنيه\n• غرفتان: 4,500,000 جنيه\n💵 المقدم: 300,000 جنيه فقط!\n\n📞 كلمنا دلوقتي: ${CONTACT}`;
+    return `🏢 شقق التجمع السادس – أمام كمبوند الكازار\n\n📍 أفضل موقع في التجمع السادس\n🎓 10 دقائق من الجامعة الأمريكية\n\n💰 الأسعار:\n• غرفة واحدة: 3,000,000 جنيه\n• غرفتان: 4,500,000 جنيه\n💵 المقدم: 300,000 جنيه فقط!\n\n📞 كلمنا دلوقتي: ${contact}`;
   }
 
   if (/تجمع خامس|تجمع ال5/.test(m)) {
-    return `🏘️ عقارات التجمع الخامس – Great Society\n\nلدينا خيارات متعددة:\n\n🏠 شقق 3 غرف:\n• السعر: 12,000,000 جنيه (متوسط)\n• المقدم: 1,200,000 جنيه\n• تقسيط حتى 10 سنوات\n\n🏡 فيلات:\n• السعر: 20,000,000 جنيه (متوسط)\n• المقدم: 2,000,000 جنيه\n\n✅ استلام فوري في أفضل مواقع:\n• النرجس الجديدة\n• النورث هاوس\n• بيت الوطن\n• شمال الرحاب\n\n📞 للتفاصيل: ${CONTACT}`;
+    return `🏘️ عقارات التجمع الخامس – Great Society\n\nلدينا خيارات متعددة:\n\n🏠 شقق 3 غرف:\n• السعر: 12,000,000 جنيه (متوسط)\n• المقدم: 1,200,000 جنيه\n• تقسيط حتى 10 سنوات\n\n🏡 فيلات:\n• السعر: 20,000,000 جنيه (متوسط)\n• المقدم: 2,000,000 جنيه\n\n✅ استلام فوري في أفضل مواقع:\n• النرجس الجديدة\n• النورث هاوس\n• بيت الوطن\n• شمال الرحاب\n\n📞 للتفاصيل: ${contact}`;
   }
 
   if (/جولدن سكوير|golden square|نادي أهلي|التسعين/.test(m)) {
-    return `⭐ شقق جولدن سكوير – فرصة لا تتكرر!\n\n📍 في قلب جولدن سكوير\n🏟️ 600 متر من النادي الأهلي\n🛣️ خطوات من التسعين الجنوبي\n🏬 قريب من الفيوزون وشارع النوادي\n\n💵 المقدم: يبدأ من 1,800,000 جنيه\n📅 تقسيط مريح: حتى 5 سنوات\n🏠 شقة 3 غرف ماستر\n✅ استلام فوري وخلال 6 شهور\n🪟 واجهات مميزة وفيو مفتوح\n\n📞 احجز الآن: ${CONTACT}`;
+    return `⭐ شقق جولدن سكوير – فرصة لا تتكرر!\n\n📍 في قلب جولدن سكوير\n🏟️ 600 متر من النادي الأهلي\n🛣️ خطوات من التسعين الجنوبي\n🏬 قريب من الفيوزون وشارع النوادي\n\n💵 المقدم: يبدأ من 1,800,000 جنيه\n📅 تقسيط مريح: حتى 5 سنوات\n🏠 شقة 3 غرف ماستر\n✅ استلام فوري وخلال 6 شهور\n🪟 واجهات مميزة وفيو مفتوح\n\n📞 احجز الآن: ${contact}`;
   }
 
   if (/عاصمة|r8|العاصمه/.test(m)) {
-    return `🏛️ فيلتك بسعر شقة – العاصمة الإدارية R8\n\n🤝 مع أقوى مطور في العاصمة الإدارية\n\n💰 المقدم: 10% فقط!\n💳 القسط الشهري: 60,000 جنيه\n🎁 خصم وسعر الطرح الأول\n⚠️ أسعار لن تتكرر!\n\n📞 للحجز الفوري: ${CONTACT}\n💬 واتساب: wa.me/20${CONTACT}`;
+    return `🏛️ فيلتك بسعر شقة – العاصمة الإدارية R8\n\n🤝 مع أقوى مطور في العاصمة الإدارية\n\n💰 المقدم: 10% فقط!\n💳 القسط الشهري: 60,000 جنيه\n🎁 خصم وسعر الطرح الأول\n⚠️ أسعار لن تتكرر!\n\n📞 للحجز الفوري: ${contact}\n💬 واتساب: wa.me/${whatsapp}`;
   }
 
   if (/مقدم|دفعة|دفعه/.test(m)) {
-    return `💵 خيارات المقدم المتاحة:\n\n• طريق السويس: مقدم 750,000 ج\n• التجمع السادس: مقدم 300,000 ج فقط!\n• التجمع الخامس (شقق): مقدم 1,200,000 ج\n• التجمع الخامس (فيلات): مقدم 2,000,000 ج\n• جولدن سكوير: مقدم 1,800,000 ج\n• العاصمة الإدارية R8: مقدم 10% فقط!\n\nأي منطقة تهمك أكثر؟ 📞 ${CONTACT}`;
+    return `💵 خيارات المقدم المتاحة:\n\n• طريق السويس: مقدم 750,000 ج\n• التجمع السادس: مقدم 300,000 ج فقط!\n• التجمع الخامس (شقق): مقدم 1,200,000 ج\n• التجمع الخامس (فيلات): مقدم 2,000,000 ج\n• جولدن سكوير: مقدم 1,800,000 ج\n• العاصمة الإدارية R8: مقدم 10% فقط!\n\nأي منطقة تهمك أكثر؟ 📞 ${contact}`;
   }
 
   if (/قسط|تقسيط|أقساط/.test(m)) {
-    return `📅 خطط التقسيط المتاحة:\n\n• التجمع الخامس: تقسيط حتى 10 سنوات\n• جولدن سكوير: تقسيط حتى 5 سنوات\n• العاصمة الإدارية: قسط شهري 60,000 جنيه\n• التجمع السادس: مقدم 300,000 ج وأقساط مريحة\n\nللحصول على خطة تقسيط مخصصة:\n📞 ${CONTACT}`;
+    return `📅 خطط التقسيط المتاحة:\n\n• التجمع الخامس: تقسيط حتى 10 سنوات\n• جولدن سكوير: تقسيط حتى 5 سنوات\n• العاصمة الإدارية: قسط شهري 60,000 جنيه\n• التجمع السادس: مقدم 300,000 ج وأقساط مريحة\n\nللحصول على خطة تقسيط مخصصة:\n📞 ${contact}`;
   }
 
   if (/فيلا|فيله|villa/.test(m)) {
-    return `🏡 فيلات Great Society:\n\n1️⃣ فيلات التجمع الخامس:\n• السعر: 20,000,000 جنيه\n• المقدم: 2,000,000 جنيه\n• استلام فوري\n\n2️⃣ فيلات العاصمة الإدارية R8:\n• المقدم: 10% فقط\n• قسط شهري: 60,000 جنيه\n• مع أقوى مطور في العاصمة\n\n📞 للمزيد: ${CONTACT}`;
+    return `🏡 فيلات Great Society:\n\n1️⃣ فيلات التجمع الخامس:\n• السعر: 20,000,000 جنيه\n• المقدم: 2,000,000 جنيه\n• استلام فوري\n\n2️⃣ فيلات العاصمة الإدارية R8:\n• المقدم: 10% فقط\n• قسط شهري: 60,000 جنيه\n• مع أقوى مطور في العاصمة\n\n📞 للمزيد: ${contact}`;
   }
 
   if (/شقة|شقه|apartment/.test(m)) {
-    return `🏠 شقق Great Society:\n\n1️⃣ طريق السويس - 3 غرف:\nمن 3,200,000 ج | مقدم 750,000 ج\n\n2️⃣ التجمع الخامس - 3 غرف:\nمن 12,000,000 ج | مقدم 1,200,000 ج\n\n3️⃣ التجمع السادس:\n3,000,000 ج (غرفة) | 4,500,000 ج (غرفتين)\nمقدم 300,000 ج\n\n4️⃣ جولدن سكوير - 3 غرف ماستر:\nمقدم 1,800,000 ج\n\nأي منطقة تفضل؟ 📞 ${CONTACT}`;
+    return `🏠 شقق Great Society:\n\n1️⃣ طريق السويس - 3 غرف:\nمن 3,200,000 ج | مقدم 750,000 ج\n\n2️⃣ التجمع الخامس - 3 غرف:\nمن 12,000,000 ج | مقدم 1,200,000 ج\n\n3️⃣ التجمع السادس:\n3,000,000 ج (غرفة) | 4,500,000 ج (غرفتين)\nمقدم 300,000 ج\n\n4️⃣ جولدن سكوير - 3 غرف ماستر:\nمقدم 1,800,000 ج\n\nأي منطقة تفضل؟ 📞 ${contact}`;
   }
 
   if (/سعر|اسعار|كام|تكلف|ميزانية/.test(m)) {
-    return `💰 أسعار عقارات Great Society:\n\n🟢 تبدأ من الأقل:\n• التجمع السادس: 3,000,000 ج (غرفة)\n• طريق السويس: 3,200,000 ج (3 غرف)\n• النرجس/النورث هاوس: 4,000,000 ج\n• التجمع الخامس شقق: 12,000,000 ج\n• التجمع الخامس فيلات: 20,000,000 ج\n\nما هي ميزانيتك التقريبية؟ 📞 ${CONTACT}`;
+    return `💰 أسعار عقارات Great Society:\n\n🟢 تبدأ من الأقل:\n• التجمع السادس: 3,000,000 ج (غرفة)\n• طريق السويس: 3,200,000 ج (3 غرف)\n• النرجس/النورث هاوس: 4,000,000 ج\n• التجمع الخامس شقق: 12,000,000 ج\n• التجمع الخامس فيلات: 20,000,000 ج\n\nما هي ميزانيتك التقريبية؟ 📞 ${contact}`;
   }
 
   if (/موقع|منطقة|فين|مناطق/.test(m)) {
-    return `📍 مناطق عقارات Great Society:\n\n• طريق السويس (شقق 3 غرف)\n• التجمع الخامس (شقق وفيلات)\n• جولدن سكوير (شقق 3 غرف ماستر)\n• العاصمة الإدارية R8 (فيلات)\n• التجمع السادس (شقق بأرخص الأسعار)\n• النرجس الجديدة، النورث هاوس، بيت الوطن، شمال الرحاب\n\nأي منطقة تهمك؟ 📞 ${CONTACT}`;
+    return `📍 مناطق عقارات Great Society:\n\n• طريق السويس (شقق 3 غرف)\n• التجمع الخامس (شقق وفيلات)\n• جولدن سكوير (شقق 3 غرف ماستر)\n• العاصمة الإدارية R8 (فيلات)\n• التجمع السادس (شقق بأرخص الأسعار)\n• النرجس الجديدة، النورث هاوس، بيت الوطن، شمال الرحاب\n\nأي منطقة تهمك؟ 📞 ${contact}`;
   }
 
   if (/تواصل|اتصل|واتساب|هاتف|رقم/.test(m)) {
-    return `📞 تواصل معنا الآن:\n\n📱 هاتف: ${CONTACT}\n💬 واتساب: wa.me/20${CONTACT}\n📧 بريد: info@greatsocietyeg.com\n📍 العنوان: Villa 99, 1st District, 90th Street, New Cairo\n\nفريقنا جاهز للمساعدة وتحديد موعد معاينة! 🏠`;
+    return `📞 تواصل معنا الآن:\n\n📱 هاتف: ${contact}\n💬 واتساب: wa.me/${whatsapp}\n📧 بريد: info@greatsocietyeg.com\n📍 العنوان: Villa 99, 1st District, 90th Street, New Cairo\n\nفريقنا جاهز للمساعدة وتحديد موعد معاينة! 🏠`;
   }
 
   if (/استلام|تسليم|جاهز/.test(m)) {
-    return `✅ عقارات استلام فوري:\n\n🏠 التجمع الخامس:\n• شقق وفيلات - استلام فوري\n• مقدم 1,200,000 ج (شقق)\n• مقدم 2,000,000 ج (فيلات)\n\n🏢 جولدن سكوير:\n• استلام فوري وخلال 6 شهور\n• مقدم 1,800,000 ج\n\n📞 احجز وحدتك: ${CONTACT}`;
+    return `✅ عقارات استلام فوري:\n\n🏠 التجمع الخامس:\n• شقق وفيلات - استلام فوري\n• مقدم 1,200,000 ج (شقق)\n• مقدم 2,000,000 ج (فيلات)\n\n🏢 جولدن سكوير:\n• استلام فوري وخلال 6 شهور\n• مقدم 1,800,000 ج\n\n📞 احجز وحدتك: ${contact}`;
   }
 
   if (/كل|اعرض|عندك|محفظة|عقارات/.test(m)) {
-    return `🏢 محفظة Great Society الكاملة:\n\n1️⃣ شقق طريق السويس (3 غرف) - من 3.2 مليون\n2️⃣ التجمع الخامس - شقق وفيلات (استلام فوري)\n3️⃣ جولدن سكوير - 3 غرف ماستر (مقدم 1.8 م)\n4️⃣ النرجس/النورث هاوس/بيت الوطن - من 4 مليون\n5️⃣ العاصمة الإدارية R8 - فيلات (مقدم 10%)\n6️⃣ التجمع السادس - شقق (من 3 مليون)\n\n📞 للتفاصيل والمعاينة: ${CONTACT}`;
+    return `🏢 محفظة Great Society الكاملة:\n\n1️⃣ شقق طريق السويس (3 غرف) - من 3.2 مليون\n2️⃣ التجمع الخامس - شقق وفيلات (استلام فوري)\n3️⃣ جولدن سكوير - 3 غرف ماستر (مقدم 1.8 م)\n4️⃣ النرجس/النورث هاوس/بيت الوطن - من 4 مليون\n5️⃣ العاصمة الإدارية R8 - فيلات (مقدم 10%)\n6️⃣ التجمع السادس - شقق (من 3 مليون)\n\n📞 للتفاصيل والمعاينة: ${contact}`;
   }
 
-  return `شكراً لتواصلك مع Great Society! 🏠\n\nيمكنني مساعدتك في:\n• معرفة أسعار العقارات\n• تفاصيل المناطق المتاحة\n• خيارات المقدم والتقسيط\n• مواعيد المعاينة\n\nأو تواصل مباشرةً مع فريقنا:\n📞 ${CONTACT}\n💬 واتساب: wa.me/20${CONTACT}`;
+  return `شكراً لتواصلك مع Great Society! 🏠\n\nيمكنني مساعدتك في:\n• معرفة أسعار العقارات\n• تفاصيل المناطق المتاحة\n• خيارات المقدم والتقسيط\n• مواعيد المعاينة\n\nأو تواصل مباشرةً مع فريقنا:\n📞 ${contact}\n💬 واتساب: wa.me/${whatsapp}`;
 }
 
 const SUGGESTIONS = [
@@ -80,7 +79,18 @@ const SUGGESTIONS = [
   'تواصل معنا',
 ];
 
+interface FaqItem { q: string; a: string; }
+
+function parseFaq(raw: string): FaqItem[] {
+  try { return JSON.parse(raw || '[]'); } catch { return []; }
+}
+
 export default function AIChat() {
+  const { settings } = useSiteSettings();
+  const contact = settings.phone || '01100111618';
+  const whatsapp = settings.whatsapp || '201100111618';
+  const faqList = parseFaq(settings.ai_faq);
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -105,6 +115,16 @@ export default function AIChat() {
     }
   }, [open]);
 
+  const getFaqReply = (msg: string): string | null => {
+    const normalized = msg.trim();
+    const match = faqList.find(f =>
+      f.q.trim() === normalized ||
+      normalized.includes(f.q.trim()) ||
+      f.q.trim().includes(normalized)
+    );
+    return match ? match.a : null;
+  };
+
   const send = async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading) return;
@@ -113,7 +133,14 @@ export default function AIChat() {
     setMessages(newMessages);
     setLoading(true);
 
-    await new Promise(res => setTimeout(res, 600 + Math.random() * 400));
+    await new Promise(res => setTimeout(res, 400 + Math.random() * 300));
+
+    const faqReply = getFaqReply(msg);
+    if (faqReply) {
+      setMessages(prev => [...prev, { role: 'assistant', content: faqReply }]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const controller = new AbortController();
@@ -166,7 +193,7 @@ export default function AIChat() {
       }
     } catch {}
 
-    const reply = getSmartReply(msg);
+    const reply = getSmartReply(msg, contact, whatsapp);
     setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     setLoading(false);
   };
@@ -224,7 +251,7 @@ export default function AIChat() {
                   <span className="text-white/80 text-xs">متاح الآن</span>
                 </div>
               </div>
-              <a href={`tel:+20${CONTACT}`} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-white transition-colors" title="اتصل بنا">
+              <a href={`tel:+20${contact}`} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center text-white transition-colors" title="اتصل بنا">
                 <Phone size={15} />
               </a>
               <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white transition-colors p-1">
@@ -273,6 +300,11 @@ export default function AIChat() {
               <div className="px-4 py-2 border-t border-gray-100 bg-white flex-shrink-0">
                 <p className="text-xs text-gray-400 mb-2">اقتراحات سريعة:</p>
                 <div className="flex flex-wrap gap-1.5">
+                  {faqList.slice(0, 3).map((f, i) => (
+                    <button key={`faq-${i}`} onClick={() => send(f.q)}
+                      className="text-xs px-3 py-1.5 bg-[#bca056]/15 text-[#8a6f38] rounded-full hover:bg-[#bca056]/25 transition-colors font-medium border border-[#bca056]/30"
+                    >{f.q}</button>
+                  ))}
                   {SUGGESTIONS.map(s => (
                     <button key={s} onClick={() => send(s)}
                       className="text-xs px-3 py-1.5 bg-[#e6f2f5] text-[#005a7d] rounded-full hover:bg-[#ccdfed] transition-colors font-medium"

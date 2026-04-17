@@ -1,8 +1,45 @@
 import mysql from 'mysql2/promise';
+import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET not configured'); })();
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
+function verifyToken(token: string): any {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function generateToken(payload: any): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+// ============ MIGRATION FUNCTION ============
 async function runMigrations(pool: any) {
+  // Add missing columns if they don't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
+  const columnsToAdd = [
+    { table: 'users', col: 'email_verified', sql: 'ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false' },
+    { table: 'users', col: 'email_verified_at', sql: 'ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP NULL' },
+    { table: 'users', col: 'sub_role', sql: 'ALTER TABLE users ADD COLUMN sub_role VARCHAR(30)' },
+    { table: 'otp_codes', col: 'device_id', sql: 'ALTER TABLE otp_codes ADD COLUMN device_id VARCHAR(64)' },
+    { table: 'otp_codes', col: 'last_sent_at', sql: 'ALTER TABLE otp_codes ADD COLUMN last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+    { table: 'properties', col: 'description_ar', sql: 'ALTER TABLE properties ADD COLUMN description_ar TEXT' },
+    { table: 'properties', col: 'title_ar', sql: 'ALTER TABLE properties ADD COLUMN title_ar VARCHAR(300)' },
+  ];
+  
+  for (const { table, col, sql } of columnsToAdd) {
+    try {
+      await pool.query(sql);
+      console.log(`[MIGRATION] Added column ${table}.${col}`);
+    } catch (e: any) {
+      if (!e.message.includes('Duplicate column name') && !e.message.includes('Unknown column')) {
+        console.log(`[MIGRATION] ${table}.${col}:`, e.message);
+      }
+    }
+  }
+  
   const migrations = [
     `CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -16,6 +53,149 @@ async function runMigrations(pool: any) {
       is_active BOOLEAN DEFAULT true,
       email_verified BOOLEAN DEFAULT false,
       email_verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(300),
+      title_ar VARCHAR(300),
+      description TEXT,
+      description_ar TEXT,
+      type VARCHAR(50),
+      purpose VARCHAR(20) DEFAULT 'sale',
+      price NUMERIC,
+      area NUMERIC,
+      rooms INT,
+      bedrooms INT,
+      bathrooms INT,
+      floor INT,
+      address TEXT,
+      district VARCHAR(100),
+      city VARCHAR(100),
+      contact_phone VARCHAR(20) DEFAULT '01100111618',
+      owner_id INT,
+      status VARCHAR(20) DEFAULT 'pending',
+      is_featured BOOLEAN DEFAULT false,
+      views INT DEFAULT 0,
+      has_parking BOOLEAN DEFAULT false,
+      has_elevator BOOLEAN DEFAULT false,
+      has_garden BOOLEAN DEFAULT false,
+      has_pool BOOLEAN DEFAULT false,
+      is_furnished BOOLEAN DEFAULT false,
+      approved_by INT,
+      approved_at TIMESTAMP NULL,
+      sold_to INT,
+      sold_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      down_payment VARCHAR(50),
+      delivery_status VARCHAR(100),
+      finishing_type VARCHAR(50),
+      floor_plan_image TEXT,
+      google_maps_url TEXT,
+      has_basement BOOLEAN DEFAULT false
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT NOT NULL,
+      url TEXT NOT NULL,
+      is_primary BOOLEAN DEFAULT false,
+      order_index INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS saved_properties (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      property_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_save (user_id, property_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      title VARCHAR(200),
+      message TEXT,
+      type VARCHAR(20) DEFAULT 'info',
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS payment_requests (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      property_id INT,
+      amount NUMERIC,
+      status VARCHAR(20) DEFAULT 'pending',
+      payment_method VARCHAR(20),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS contact_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(200),
+      email VARCHAR(200),
+      phone VARCHAR(30),
+      message TEXT,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_tickets (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      subject VARCHAR(300),
+      description TEXT,
+      status VARCHAR(20) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS support_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      sender_id INT NOT NULL,
+      message TEXT,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS property_chat_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      property_id INT NOT NULL,
+      sender_id INT,
+      sender_name VARCHAR(200),
+      message TEXT,
+      is_admin BOOLEAN DEFAULT false,
+      is_read BOOLEAN DEFAULT false,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS otp_codes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      identifier VARCHAR(200) NOT NULL,
+      code VARCHAR(6) NOT NULL,
+      type VARCHAR(20) NOT NULL,
+      user_data JSON,
+      device_id VARCHAR(64),
+      attempts INT DEFAULT 0,
+      locked_until TIMESTAMP NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used BOOLEAN DEFAULT false,
+      last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS trusted_devices (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      device_id VARCHAR(64) NOT NULL,
+      device_name VARCHAR(200),
+      last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_device (user_id, device_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS email_verification (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      is_verified BOOLEAN DEFAULT false,
+      verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS admin_emails (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(200) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
     `CREATE TABLE IF NOT EXISTS properties (
@@ -162,6 +342,13 @@ async function runMigrations(pool: any) {
       verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
+    `CREATE TABLE IF NOT EXISTS site_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      setting_key VARCHAR(100) UNIQUE NOT NULL,
+      setting_value TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`,
   ];
 
   for (const sql of migrations) {
@@ -197,8 +384,9 @@ async function runMigrations(pool: any) {
 }
 
 function generateDeviceId(req: any): string {
-  const deviceId = req.headers['x-device-id'] || crypto.randomUUID();
-  return deviceId.slice(0, 64);
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  const ua = req.headers['user-agent'] || 'unknown';
+  return Buffer.from(ip + ua).toString('base64').slice(0, 64);
 }
 
 function generateOTP(): string {
@@ -209,17 +397,9 @@ function generateOTP(): string {
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const SKIP_EMAIL = process.env.SKIP_EMAIL === 'true';
-
-console.log('[DEBUG] SMTP configured:', !!SMTP_USER, 'PASS set:', !!SMTP_PASS);
+const IS_DEV = process.env.NODE_ENV !== 'production';
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
-  // Skip email if SKIP_EMAIL=true (for testing without SMTP)
-  if (SKIP_EMAIL) {
-    console.log(`[EMAIL] Skipped - SKIP_EMAIL=true, OTP: ${otp}`);
-    return false;
-  }
-  
   if (!SMTP_USER || !SMTP_PASS) {
     console.log('[EMAIL] SMTP not configured, skipping email');
     return false;
@@ -232,18 +412,11 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
     port: 587,
     secure: false,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { minVersion: 'TLSv1.2' },
-    connectionTimeout: 10000,
-    socketTimeout: 10000
+    tls: {
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2'
+    }
   });
-  
-  // Verify connection on startup
-  try {
-    await transporter.verify();
-    console.log('[EMAIL] SMTP connection verified');
-  } catch (e) {
-    console.log('[EMAIL] SMTP verification failed:', e);
-  }
 
   const actionLabel = context === 'login' ? 'تسجيل الدخول إلى حسابك' : context === 'forgot-password' ? 'استعادة كلمة المرور' : 'تأكيد إنشاء حسابك';
   const subject = context === 'login' ? 'رمز تسجيل الدخول — Great Society' : context === 'forgot-password' ? 'رمز استعادة كلمة المرور — Great Society' : 'رمز التحقق لإنشاء حسابك — Great Society';
@@ -383,19 +556,6 @@ function validateEnum(value: string | undefined, allowed: string[]): string | nu
   return allowed.includes(value) ? value : null;
 }
 
-function verifyToken(token: string): any {
-  try {
-    const jwt = require('jsonwebtoken');
-    return jwt.verify(token, JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
-
-function generateToken(payload: any): string {
-  return require('jsonwebtoken').sign(payload, JWT_SECRET, { expiresIn: '24h' });
-}
-
 async function consumeOTP(identifier: string, code: string, type: string, pool: any) {
   const [rows]: any = await pool.query(
     `SELECT * FROM otp_codes 
@@ -404,11 +564,15 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
     [identifier, type]
   );
 
+  console.log('[consumeOTP] Found rows:', rows.length, 'identifier:', identifier, 'type:', type);
+
   if (rows.length === 0) {
     return { valid: false, error: 'لم يتم طلب رمز تحقق لهذا الحساب، أعد الإرسال' };
   }
 
   const rec = rows[0];
+  console.log('[consumeOTP] Record found, code in DB:', rec.code, 'code provided:', code, 'expires_at:', rec.expires_at, 'now:', new Date().toISOString());
+  console.log('[consumeOTP] Code match:', rec.code === code.trim());
 
   if (rec.locked_until && new Date(rec.locked_until) > new Date()) {
     const mins = Math.ceil((new Date(rec.locked_until).getTime() - Date.now()) / 60000);
@@ -438,39 +602,29 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://greatsociety-eg.com,https://greate-web-12.vercel.app').split(',');
 
 export default async function handler(req: any, res: any) {
-  try {
-    // CORS - must be first, before any other processing
-    const origin = req.headers.origin;
-    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-    
-    // Handle preflight OPTIONS immediately
-    if (req.method === 'OPTIONS') {
-      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.setHeader('Access-Control-Max-Age', '86400');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Vary', 'Origin');
-      return res.status(204).end();
-    }
-    
-    // Security headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://greatsociety-eg.com https://greate-web-12.vercel.app");
-    
-    // CORS for actual requests
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  
+  // CORS - specific origins only
+  const origin = req.headers.origin;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
 
-    const { query: urlQuery, method, url, headers, body } = req;
-    
-    // Strip query string for route matching
-    const cleanUrl = url?.split('?')[0] || url;
-    
+  const { query: urlQuery, method, url, headers, body } = req;
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
@@ -502,16 +656,17 @@ export default async function handler(req: any, res: any) {
 
   // ========== AUTH ENDPOINTS ==========
 
-  // POST /api/auth/login (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/login') {
+  // POST /api/auth/login
+  if (method === 'POST' && url?.includes('/auth/login') && !url?.includes('/verify') && !url?.includes('/resend')) {
     try {
+      console.log('[LOGIN] Attempting login');
       const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
         return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
       }
 
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
-      const clientDeviceId = deviceId || Buffer.from(clientIP + (headers['user-agent'] || 'unknown')).toString('base64').slice(0, 64);
+      const clientDeviceId = deviceId || generateDeviceId({ headers });
       
       const emailKey = `login:${emailOrPhone}`;
       const ipKey = `ip:${clientIP}`;
@@ -523,8 +678,9 @@ export default async function handler(req: any, res: any) {
       }
 
       const cleanEmail = emailOrPhone.trim().toLowerCase();
+      
       const [rows] = await pool.query(
-        'SELECT * FROM users WHERE (LOWER(email)=? OR phone=?) AND is_active != 0',
+        'SELECT * FROM users WHERE (email = ? OR phone = ?) AND is_active = true',
         [cleanEmail, emailOrPhone]
       );
       
@@ -595,15 +751,12 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(userData.email, otp, userData.name, 'login').catch(() => {});
 
-      // If email skipped, include OTP in response for testing
-      const response: any = { 
+      return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
+        devOtp: IS_DEV ? otp : undefined,
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
-      };
-      if (SKIP_EMAIL) response.devOtp = otp;
-
-      return res.json(response);
+      });
     } catch (err: any) {
       console.log('[ERROR] Login:', err.message);
       return res.status(500).json({ error: 'خطأ في تسجيل الدخول' });
@@ -611,7 +764,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/login/verify-otp (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/login/verify-otp') {
+  if (method === 'POST' && url === '/api/auth/login/verify-otp') {
     try {
       const { email, otp, rememberDevice, deviceName } = body;
       if (!email || !otp) {
@@ -663,7 +816,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/resend-login-otp (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/resend-login-otp') {
+  if (method === 'POST' && url === '/api/auth/resend-login-otp') {
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
@@ -697,7 +850,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
 
-      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -706,7 +859,8 @@ export default async function handler(req: any, res: any) {
   
 
   // POST /api/auth/register (exact match - no /verify, /resend, etc.)
-  if (method === 'POST' && cleanUrl === '/api/auth/register') {
+  if (method === 'POST' && url?.includes('/auth/register') && !url?.includes('/verify') && !url?.includes('/resend')) {
+    console.log('[REGISTER] Matched URL:', url);
     try {
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
@@ -760,27 +914,21 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
       );
 
-      // Send email with OTP (fire and forget but log errors)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register')
-        .then((sent) => console.log('[EMAIL] Register OTP result:', sent))
-        .catch((err) => {
-          console.log('[EMAIL] Register OTP failed:', err?.message);
-        });
-
-      // If email skipped, include OTP in response for testing
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail} (OTP: ${otp})`, devOtp: otp });
+      // Send email with OTP
+      const emailSent = await sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register');
+      if (!emailSent) {
+        return res.status(503).json({ error: 'تعذّر إرسال البريد الإلكتروني. تحقق من الإعدادات أو حاول لاحقاً' });
       }
 
-      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
     }
   }
 
-  // POST /api/auth/register/verify (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/register/verify') {
+  // POST /api/auth/register/verify
+  if (method === 'POST' && url?.includes('/auth/register/verify') && !url?.includes('/resend')) {
     let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
@@ -789,7 +937,8 @@ export default async function handler(req: any, res: any) {
       }
 
       const sanitizedEmail = sanitizeEmail(email);
-      const result = await consumeOTP(sanitizedEmail, otp, 'register', pool);
+      const result = await consumeOTP(sanitizedEmail, otp.trim(), 'register', pool);
+      
       if (!result.valid) {
         return res.status(400).json({ error: result.error });
       }
@@ -855,8 +1004,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/register/verify/resend (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/register/verify/resend') {
+  // POST /api/auth/register/verify/resend
+  if (method === 'POST' && url?.includes('/auth/register/verify/resend')) {
     console.log('[RESEND] Raw body:', JSON.stringify(body));
     try {
       const { email } = body;
@@ -883,14 +1032,11 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, expiresAt]
       );
 
-      sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register').catch(() => {});
+      sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register')
+        .then(() => console.log('[RESEND] Email sent successfully'))
+        .catch((err) => console.log('[RESEND] Email error:', err.message));
 
-      // If email skipped, include OTP in response for testing
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق (OTP: ${otp})`, devOtp: otp });
-      }
-
-      return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Resend OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -898,7 +1044,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // POST /api/auth/verify-email (exact match)
-  if (method === 'POST' && cleanUrl === '/api/auth/verify-email') {
+  if (method === 'POST' && url === '/api/auth/verify-email') {
     try {
       const { email, otp } = body;
       if (!email || !otp) {
@@ -955,7 +1101,7 @@ export default async function handler(req: any, res: any) {
         [email, otp, type, expiresAt]
       );
 
-      return res.json({ success: true, message: `تم إنشاء رمز التحقق` });
+      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إنشاء رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Send OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -1046,11 +1192,7 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
 
-      if (SKIP_EMAIL) {
-        return res.json({ success: true, devOtp: otp });
-      }
-
-      return res.json({ success: true });
+      return res.json({ success: true, devOtp: otp });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -1167,13 +1309,26 @@ export default async function handler(req: any, res: any) {
         ORDER BY p.created_at DESC LIMIT 6
       `);
       
-      for (const prop of rows) {
-        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [prop.id]);
-        prop.images = imgs;
+      const propIds = rows.map((r: any) => r.id);
+      if (propIds.length > 0) {
+        const [allImgs]: any = await pool.query(
+          'SELECT id, property_id, url, is_primary FROM property_images WHERE property_id IN (?)',
+          [propIds]
+        );
+        const imgMap: Record<number, any[]> = {};
+        for (const img of allImgs) {
+          if (!imgMap[img.property_id]) imgMap[img.property_id] = [];
+          imgMap[img.property_id].push(img);
+        }
+        for (const prop of rows) {
+          prop.images = imgMap[prop.id] || [];
+        }
       }
       
+      await pool.end();
       return res.json(rows);
     } catch {
+      await pool.end();
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1186,21 +1341,31 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       
       const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
-        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
+        SELECT p.*, 
+          u.name as owner_name, 
+          u.phone as owner_phone, 
+          u.email as owner_email,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
+        FROM properties p 
+        LEFT JOIN users u ON u.id = p.owner_id 
+        WHERE p.id = ?
       `, [id]);
 
       if (rows.length === 0) {
         return res.status(404).json({ error: 'العقار غير موجود' });
       }
       
-      const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [id]);
+      const [imgs]: any = await pool.query(
+        'SELECT id, url, is_primary FROM property_images WHERE property_id = ? ORDER BY is_primary DESC, id',
+        [id]
+      );
       rows[0].images = imgs;
 
       await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
 
       return res.json(rows[0]);
-    } catch {
+    } catch (err: any) {
+      console.log('[ERROR] Property detail:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1219,9 +1384,8 @@ export default async function handler(req: any, res: any) {
       if (maxPrice) { conditions.push(`p.price <= ?`); params.push(Number(maxPrice)); }
       if (rooms) { conditions.push(`p.rooms >= ?`); params.push(Number(rooms)); }
       if (search) {
-        const sanitized = search.replace(/[<>'";&]/g, '').slice(0, 100);
         conditions.push(`(p.title LIKE ? OR p.title_ar LIKE ? OR p.district LIKE ?)`);
-        params.push(`%${sanitized}%`, `%${sanitized}%`, `%${sanitized}%`);
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
       const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -1877,15 +2041,126 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // ========== SETTINGS ==========
+
+  // GET /api/settings
+  if (method === 'GET' && url?.includes('/api/settings')) {
+    try {
+      const [rows]: any = await pool.query('SELECT * FROM site_settings LIMIT 1');
+      await pool.end();
+      return res.json(rows[0] || { site_name: 'Great Society', contact_phone: '01100111618' });
+    } catch (e: any) {
+      await pool.end();
+      return res.json({ site_name: 'Great Society', contact_phone: '01100111618' });
+    }
+  }
+
+  // PATCH /api/settings
+  if (method === 'PATCH' && url?.includes('/api/settings')) {
+    if (!user || user.role !== 'superadmin') {
+      await pool.end();
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const settings = req.body;
+      const fields = ['site_name', 'site_name_ar', 'contact_phone', 'contact_email', 'address', 'about_text', 'about_text_ar'];
+      for (const field of fields) {
+        if (settings[field] !== undefined) {
+          await pool.query(
+            `INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+            [field, settings[field]]
+          );
+        }
+      }
+      await pool.end();
+      return res.json({ success: true });
+    } catch (e: any) {
+      await pool.end();
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ========== UPLOAD (File to Hostinger) ==========
+
+  // POST /api/upload
+  if (method === 'POST' && url?.includes('/api/upload')) {
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const formData = await import('form-data');
+      const fs = await import('fs');
+      
+      const contentType = headers['content-type'] || '';
+      if (!contentType.includes('multipart/form-data')) {
+        return res.status(400).json({ error: 'Invalid content type' });
+      }
+
+      const boundary = contentType.split('boundary=')[1];
+      if (!boundary) {
+        return res.status(400).json({ error: 'No boundary' });
+      }
+
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      
+      const parts = buffer.toString('utf-8').split(`--${boundary}`);
+      let fileBuffer: Buffer | null = null;
+      let fileName = 'upload';
+      let fieldName = 'file';
+      
+      for (const part of parts) {
+        if (part.includes('filename=')) {
+          const nameMatch = part.match(/name="([^"]+)"/);
+          const fileNameMatch = part.match(/filename="([^"]+)"/);
+          if (nameMatch) fieldName = nameMatch[1];
+          if (fileNameMatch) fileName = fileNameMatch[1];
+          
+          const headerEnd = part.indexOf('\r\n\r\n');
+          if (headerEnd > 0) {
+            const base64Part = part.slice(headerEnd + 4, -2);
+            fileBuffer = Buffer.from(base64Part, 'binary');
+          }
+          break;
+        }
+      }
+
+      if (!fileBuffer) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+      const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+      if (!allowedExts.includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type' });
+      }
+
+      const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`.replace(/[^a-z0-9._-]/gi, '');
+      
+      const uploadDir = process.env.UPLOAD_DIR || '/home/u156204542/public_html/uploads';
+      const uploadPath = `${uploadDir}/${safeFileName}`;
+
+      try {
+        fs.writeFileSync(uploadPath, fileBuffer);
+      } catch (writeErr: any) {
+        console.log('[UPLOAD] Write error, trying alternative path:', writeErr.message);
+        const altPath = `/home/u156204542/domains/greatsociety-eg.com/public_html/uploads/${safeFileName}`;
+        fs.writeFileSync(altPath, fileBuffer);
+      }
+
+      const fileUrl = `https://greatsociety-eg.com/uploads/${safeFileName}`;
+      return res.json({ success: true, url: fileUrl, filename: safeFileName });
+    } catch (err: any) {
+      console.log('[UPLOAD] Error:', err.message);
+      return res.status(500).json({ error: 'Upload failed: ' + err.message });
+    }
+  }
+
   // Default response
+  console.log('[DEBUG] No route matched for:', method, url);
   await pool.end();
   return res.json({ ok: true, service: 'Great Society API' });
-  } catch (err: any) {
-    console.error('[ERROR]', err.message);
-    const origin = req.headers.origin;
-    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(500).json({ ok: false, error: err.message || 'Internal server error' });
-  }
 }

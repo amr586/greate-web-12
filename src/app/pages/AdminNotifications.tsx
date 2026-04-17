@@ -35,7 +35,7 @@ export default function AdminNotifications() {
 
   const loadNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications/admin', {
+      const response = await fetch('https://greate-web-12.vercel.app/api/notifications/admin', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },

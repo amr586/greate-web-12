@@ -40,12 +40,15 @@ export default function Register() {
     
     setLoading(true);
     try {
+      console.log('[Register] Sending request to:', form.email);
       const data = await api.register({
         name: form.name,
         email: form.email,
         phone: form.phone,
         password: form.password,
       });
+      
+      console.log('[Register] Response:', data);
       
       if (data.success) {
         setStep('verify');

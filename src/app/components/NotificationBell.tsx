@@ -72,7 +72,7 @@ export default function NotificationBell() {
   const fetchCount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/notifications/unread-count', {
+      const res = await fetch('https://greate-web-12.vercel.app/api/notifications/unread-count', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -86,7 +86,7 @@ export default function NotificationBell() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/notifications/mine', {
+      const res = await fetch('https://greate-web-12.vercel.app/api/notifications/mine', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -100,7 +100,7 @@ export default function NotificationBell() {
   const markAllRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('/api/notifications/mark-all-read', {
+      await fetch('https://greate-web-12.vercel.app/api/notifications/mark-all-read', {
         method: 'PATCH',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -118,7 +118,7 @@ export default function NotificationBell() {
     if (!n.is_read) {
       try {
         const token = localStorage.getItem('token');
-        await fetch(`/api/notifications/mark-read/${n.id}`, {
+        await fetch(`https://greate-web-12.vercel.app/api/notifications/mark-read/${n.id}`, {
           method: 'PATCH',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

@@ -1,6 +1,6 @@
 import { PROPERTIES } from '../data/mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -25,6 +25,7 @@ async function request(path: string, options: RequestInit = {}) {
   
   try {
     const url = path.includes('?') ? `${path}&t=${Date.now()}` : `${path}?t=${Date.now()}`;
+    console.log('[API] Request:', BASE_URL + url, options.method || 'GET');
     
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
@@ -32,10 +33,15 @@ async function request(path: string, options: RequestInit = {}) {
     const res = await fetch(BASE_URL + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
+    console.log('[API] Response:', res.status, res.statusText);
+    
     const data = await res.json();
+    console.log('[API] Data:', data);
+    
     if (!res.ok) throw new Error(data.error || 'خطأ غير متوقع');
     return data;
   } catch (err: any) {
+    console.log('[API] Error:', err.message);
     if (err.name === 'AbortError') {
       throw new Error('انتهت مهلة الاتصال - تحقق من الاتصال بالخادم');
     }
@@ -152,6 +158,9 @@ register: (data: { name: string; email: string; phone: string; password: string 
     request(`/property-chat/${propertyId}/messages`, { method: 'POST', body: JSON.stringify({ content, recipient_id: recipientId }) }),
   getMyPropertyChats: () => request('/property-chat/my-chats'),
   getPropertyChatUsers: (propertyId: number) => request(`/property-chat/${propertyId}/users`),
+
+  getSiteSettings: () => request('/settings'),
+  updateSiteSettings: (data: Record<string, string>) => request('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {

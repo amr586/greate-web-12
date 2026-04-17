@@ -89,7 +89,8 @@ async function loadRoutes() {
     { name: 'upload', path: './routes/upload.ts' },
     { name: 'notifications', path: './routes/notifications.ts' },
     { name: 'property-chat', path: './routes/property-chat.ts' },
-    { name: 'contact', path: './routes/contact.ts' }
+    { name: 'contact', path: './routes/contact.ts' },
+    { name: 'settings', path: './routes/settings.ts' }
   ];
   
   for (const route of routes) {

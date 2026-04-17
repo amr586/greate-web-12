@@ -57,3 +57,11 @@ run = ["bash", "-c", "NODE_ENV=production npx tsx server/index.ts"]
 NODE_ENV = "production"
 
 [userenv.development]
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
+localPort = 5000
+externalPort = 80

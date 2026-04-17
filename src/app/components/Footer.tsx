@@ -1,8 +1,11 @@
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import { MapPin, Phone, Mail, Facebook, Instagram, Linkedin, MessageCircle, Music } from 'lucide-react';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 export default function Footer() {
+  const { settings } = useSiteSettings();
+
   return (
     <footer className="bg-[#005a7d] text-white" dir="rtl">
       <div className="w-full overflow-hidden leading-none -mb-1">
@@ -13,15 +16,15 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4 group">
               <div className="group-hover:scale-105 transition-transform flex-shrink-0">
-                <img src="/logo_gs.png" alt="Great Society" className="w-12 h-12 object-contain" />
+                <img src={settings.logo_url || '/logo_gs.png'} alt={settings.company_name} className="w-12 h-12 object-contain" />
               </div>
               <div>
-                <div className="text-white font-black text-lg">GREAT SOCIETY</div>
-                <div className="text-white/80 text-xs font-medium">REALESTATE & CONSTRUCTION</div>
+                <div className="text-white font-black text-lg">{settings.company_name}</div>
+                <div className="text-white/80 text-xs font-medium">{settings.company_tagline}</div>
               </div>
             </Link>
             <p className="text-white/80 text-sm leading-relaxed">
-              شركة Great Society للاستثمار العقاري - شركة مصرية متخصصة في تقديم خدمات عقارية شاملة في مجالات متعددة
+              {settings.footer_description}
             </p>
             <div className="flex items-center gap-3 mt-5">
               {[
@@ -78,9 +81,8 @@ export default function Footer() {
                   <MapPin size={14} className="text-white" />
                 </div>
                 <div>
-                  <a href="https://www.google.com/maps/search/Villa+99+1st+District+90+street,+New+Cairo+1,+Cairo,+Egypt" target="_blank" rel="noopener noreferrer" className="hover:underline transition-colors">
-                    <div className="text-white text-sm">Villa 99 1st District 90 street</div>
-                    <div className="text-white/70 text-xs">New Cairo 1, Cairo, Egypt</div>
+                  <a href={settings.location_url} target="_blank" rel="noopener noreferrer" className="hover:underline transition-colors">
+                    <div className="text-white text-sm">{settings.location}</div>
                   </a>
                 </div>
               </li>
@@ -88,20 +90,20 @@ export default function Footer() {
                 <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Phone size={14} className="text-white" />
                 </div>
-                <a href="tel:+201100111618" className="text-white/80 hover:text-white transition-colors text-sm" dir="ltr">01100111618</a>
+                <a href={`tel:+2${settings.phone}`} className="text-white/80 hover:text-white transition-colors text-sm" dir="ltr">{settings.phone}</a>
               </li>
               <li className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Mail size={14} className="text-white" />
                 </div>
-                <a href="mailto:greatsociety6@gmail.com" className="text-white/80 hover:text-white transition-colors text-sm break-all">greatsociety6@gmail.com</a>
+                <a href={`mailto:${settings.email}`} className="text-white/80 hover:text-white transition-colors text-sm break-all">{settings.email}</a>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/20 mt-10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-white/70 text-sm">© {new Date().getFullYear()} Great Society — جميع الحقوق محفوظة</p>
+          <p className="text-white/70 text-sm">© {new Date().getFullYear()} {settings.company_name} — جميع الحقوق محفوظة</p>
           <div className="flex items-center gap-4">
             <Link to="/privacy" className="text-white/60 hover:text-white transition-colors text-xs">سياسة الخصوصية</Link>
             <Link to="/terms" className="text-white/60 hover:text-white transition-colors text-xs">الشروط والأحكام</Link>
