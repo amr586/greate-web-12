@@ -210,7 +210,6 @@ function generateOTP(): string {
 
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const IS_DEV = process.env.NODE_ENV !== 'production';
 
 async function sendOTPEmail(to: string, otp: string, name: string, context: 'login' | 'register' | 'forgot-password' = 'register'): Promise<boolean> {
   if (!SMTP_USER || !SMTP_PASS) {
@@ -448,7 +447,6 @@ export default async function handler(req: any, res: any) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     const { query: urlQuery, method, url, headers, body } = req;
-    console.log('[DEBUG] Request URL:', url, 'Method:', method);
     
     // Strip query string for route matching
     const cleanUrl = url?.split('?')[0] || url;
@@ -576,7 +574,6 @@ export default async function handler(req: any, res: any) {
       return res.json({ 
         requiresOTP: true, 
         email: userData.email, 
-        devOtp: IS_DEV ? otp : undefined,
         message: `تم إرسال رمز التحقق إلى ${userData.email}`
       });
     } catch (err: any) {
@@ -672,7 +669,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${email}` });
+      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -740,7 +737,7 @@ export default async function handler(req: any, res: any) {
         console.log('[EMAIL] Register OTP failed:', err?.message);
       });
 
-      return res.json({ success: true, devOtp: otp, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
+      return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
       console.log('[ERROR] Register:', err.message);
       return res.status(500).json({ error: 'خطأ في التسجيل' });
@@ -853,7 +850,7 @@ export default async function handler(req: any, res: any) {
 
       sendOTPEmail(sanitizedEmail, otp, sanitizedEmail.split('@')[0], 'register').catch(() => {});
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إعادة إرسال رمز التحقق` });
+      return res.json({ success: true, message: `تم إعادة إرسال رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Resend OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -918,7 +915,7 @@ export default async function handler(req: any, res: any) {
         [email, otp, type, expiresAt]
       );
 
-      return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إنشاء رمز التحقق` });
+      return res.json({ success: true, message: `تم إنشاء رمز التحقق` });
     } catch (err: any) {
       console.log('[ERROR] Send OTP:', err.message);
       return res.status(500).json({ error: 'خطأ' });
@@ -1009,7 +1006,7 @@ export default async function handler(req: any, res: any) {
       // Send email
       sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
 
-      return res.json({ success: true, devOtp: otp });
+      return res.json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ error: 'خطأ' });
     }

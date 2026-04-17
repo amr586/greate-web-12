@@ -15,7 +15,6 @@ export default function Register() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<Step>('register');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState<string | undefined>();
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -48,10 +47,7 @@ export default function Register() {
         password: form.password,
       });
       
-      console.log('[Register] Response:', data);
-      
       if (data.success) {
-        if (data.devOtp) setDevOtp(data.devOtp);
         setStep('verify');
       } else if (data.token) {
         localStorage.setItem('token', data.token);
@@ -59,8 +55,8 @@ export default function Register() {
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
-      } else {
-        console.log('[Register] No success or token - data:', JSON.stringify(data));
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch (err: any) {
       setError(err.message || 'خطأ في إنشاء الحساب');
@@ -94,8 +90,7 @@ export default function Register() {
   const handleResend = async () => {
     setError('');
     try {
-      const data = await api.resendRegisterOTP(form.email);
-      setDevOtp(data.devOtp);
+      await api.resendRegisterOTP(form.email);
     } catch (err: any) {
       setError(err.message);
     }
@@ -161,9 +156,6 @@ export default function Register() {
                     <p className="text-blue-600 text-sm">
                       تم إرسال رمز التحقق إلى <strong>{form.email}</strong>
                     </p>
-                    {devOtp && (
-                      <p className="text-xs text-blue-500 mt-2">Dev OTP: {devOtp}</p>
-                    )}
                   </div>
 
                   <div>
