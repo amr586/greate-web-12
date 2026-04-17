@@ -142,57 +142,6 @@ export default function AIChat() {
       return;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (res.ok) {
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let full = '';
-        let aiResponseAdded = false;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.content) {
-                full += data.content;
-                if (!aiResponseAdded) {
-                  setMessages(prev => [...prev, { role: 'assistant', content: full }]);
-                  aiResponseAdded = true;
-                } else {
-                  setMessages(prev => {
-                    const updated = [...prev];
-                    updated[updated.length - 1] = { role: 'assistant', content: full };
-                    return updated;
-                  });
-                }
-              }
-            } catch {}
-          }
-        }
-
-        if (!full.trim()) throw new Error('empty');
-        setLoading(false);
-        return;
-      }
-    } catch {}
-
     const reply = getSmartReply(msg, contact, whatsapp);
     setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     setLoading(false);
