@@ -469,8 +469,8 @@ export default async function handler(req: any, res: any) {
 
   // ========== AUTH ENDPOINTS ==========
 
-  // POST /api/auth/login
-  if (method === 'POST' && url?.includes('/api/auth/login')) {
+  // POST /api/auth/login (exact match)
+  if (method === 'POST' && url === '/api/auth/login') {
     try {
       const { emailOrPhone, password, deviceId } = body;
       if (!emailOrPhone || !password) {
@@ -574,8 +574,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/login/verify-otp
-  if (method === 'POST' && url?.includes('/api/auth/login/verify-otp')) {
+  // POST /api/auth/login/verify-otp (exact match)
+  if (method === 'POST' && url === '/api/auth/login/verify-otp') {
     try {
       const { email, otp, rememberDevice, deviceName } = body;
       if (!email || !otp) {
@@ -626,8 +626,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/resend-login-otp
-  if (method === 'POST' && url?.includes('/api/auth/resend-login-otp')) {
+  // POST /api/auth/resend-login-otp (exact match)
+  if (method === 'POST' && url === '/api/auth/resend-login-otp') {
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
@@ -669,8 +669,8 @@ export default async function handler(req: any, res: any) {
 
   
 
-  // POST /api/auth/register - Step 1: Send OTP
-  if (method === 'POST' && url?.includes('/api/auth/register')) {
+  // POST /api/auth/register (exact match - no /verify, /resend, etc.)
+  if (method === 'POST' && url === '/api/auth/register') {
     try {
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
       const rateCheck = checkRateLimit(`register:${clientIP}`);
@@ -734,8 +734,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/register/verify - Step 2: Verify OTP and create user
-  if (method === 'POST' && url?.includes('/api/auth/register/verify')) {
+  // POST /api/auth/register/verify (exact match)
+  if (method === 'POST' && url === '/api/auth/register/verify') {
     let userIdForCleanup: number | null = null;
     try {
       const { email, otp } = body;
@@ -810,8 +810,9 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/register/verify/resend
-  if (method === 'POST' && url?.includes('/api/auth/register/verify/resend')) {
+  // POST /api/auth/register/verify/resend (exact match)
+  if (method === 'POST' && url === '/api/auth/register/verify/resend') {
+    console.log('[RESEND] Raw body:', JSON.stringify(body));
     try {
       const { email } = body;
       if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
@@ -846,8 +847,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/verify-email (for email verification after login)
-  if (method === 'POST' && url?.includes('/api/auth/verify-email')) {
+  // POST /api/auth/verify-email (exact match)
+  if (method === 'POST' && url === '/api/auth/verify-email') {
     try {
       const { email, otp } = body;
       if (!email || !otp) {
@@ -911,8 +912,8 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // POST /api/auth/verify-otp
-  if (method === 'POST' && url?.includes('/api/auth/verify-otp')) {
+  // POST /api/auth/verify-otp (must be after specific routes like register/verify/resend)
+  if (method === 'POST' && url?.match(/^\/api\/auth\/verify-otp$/)) {
     try {
       const { email, otp, type = 'register' } = body;
       if (!email || !otp) {
