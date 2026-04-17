@@ -1078,7 +1078,7 @@ export default async function handler(req: any, res: any) {
   // ========== PROPERTIES ENDPOINTS ==========
 
   // GET /api/properties/user/saved - specific endpoint first
-  if (method === 'GET' && url?.includes('/api/properties/user/saved')) {
+  if (method === 'GET' && url?.startsWith('/api/properties/user/saved')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const [rows]: any = await pool.query(`
@@ -1091,13 +1091,60 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // GET /api/properties/featured - specific endpoint before generic
-  if (method === 'GET' && url?.includes('/api/properties/featured')) {
+  // GET /api/properties/featured - must check exact path
+  if (method === 'GET' && url?.startsWith('/api/properties/featured')) {
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT p.*,
+          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
+        FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
+        ORDER BY p.created_at DESC LIMIT 6
+      `);
+      
+      for (const prop of rows) {
+        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [prop.id]);
+        prop.images = imgs;
+      }
+      
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/properties/:id - numeric ID
+  if (method === 'GET' && url?.match(/^\/api\/properties\/\d+$/)) {
+    try {
+      const idStr = url.match(/\/api\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(`
+        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
+        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
+      `, [id]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'العقار غير موجود' });
+      }
+      
+      const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [id]);
+      rows[0].images = imgs;
+
+      await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
+
+      return res.json(rows[0]);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/properties - list all (catch-all at the end)
+  if (method === 'GET' && url?.startsWith('/api/properties')) {
     try {
       const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12 } = urlQuery;
       let conditions = ["p.status = 'approved'"];
       const params: any[] = [];
-      let idx = 1;
 
       if (type) { conditions.push(`p.type = ?`); params.push(type); }
       if (purpose) { conditions.push(`p.purpose = ?`); params.push(purpose); }
@@ -1133,55 +1180,6 @@ export default async function handler(req: any, res: any) {
     } catch (err: any) {
       console.log('[ERROR] Properties:', err.message);
       return res.status(500).json({ error: err.message });
-    }
-  }
-
-  // GET /api/properties/featured
-  if (method === 'GET' && url?.includes('/api/properties/featured')) {
-    try {
-      const [rows]: any = await pool.query(`
-        SELECT p.*,
-          (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
-        FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
-        ORDER BY p.created_at DESC LIMIT 6
-      `);
-      
-      for (const prop of rows) {
-        const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [prop.id]);
-        prop.images = imgs;
-      }
-      
-      return res.json(rows);
-    } catch {
-      return res.status(500).json({ error: 'خطأ' });
-    }
-  }
-
-  // GET /api/properties/:id
-  if (method === 'GET' && url?.match(/\/api\/properties\/\d+/)) {
-    try {
-      const idStr = url.match(/\/api\/properties\/(\d+)/)?.[1];
-      const id = validateId(idStr);
-      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
-      
-      const [rows]: any = await pool.query(`
-        SELECT p.*, u.name as owner_name, u.phone as owner_phone, u.email as owner_email
-        FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?
-      `, [id]);
-
-      if (rows.length === 0) {
-        return res.status(404).json({ error: 'العقار غير موجود' });
-      }
-      
-      // Get images separately
-      const [imgs]: any = await pool.query('SELECT id, url, is_primary FROM property_images WHERE property_id = ?', [id]);
-      rows[0].images = imgs;
-
-      await pool.query('UPDATE properties SET views = views + 1 WHERE id = ?', [id]);
-
-      return res.json(rows[0]);
-    } catch {
-      return res.status(500).json({ error: 'خطأ' });
     }
   }
 
