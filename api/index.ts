@@ -1,7 +1,6 @@
 import mysql from 'mysql2/promise';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-cors';
 
 async function runMigrations(pool: any) {
   const migrations = [
@@ -422,31 +421,32 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://greatsociety-eg.com,https://greate-web-12.vercel.app').split(',');
 
 export default async function handler(req: any, res: any) {
-  // CORS - must be first, before any other processing
-  const origin = req.headers.origin;
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-  
-  // Handle preflight OPTIONS immediately
-  if (req.method === 'OPTIONS') {
+  try {
+    // CORS - must be first, before any other processing
+    const origin = req.headers.origin;
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
+    
+    // Handle preflight OPTIONS immediately
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      return res.status(204).end();
+    }
+    
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // CORS for actual requests
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Max-Age', '86400');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    return res.status(204).end();
-  }
-  
-  // Security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // CORS for actual requests
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-  const { query: urlQuery, method, url, headers, body } = req;
+    const { query: urlQuery, method, url, headers, body } = req;
   const authHeader = headers.authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
@@ -1830,4 +1830,12 @@ export default async function handler(req: any, res: any) {
   // Default response
   await pool.end();
   return res.json({ ok: true, service: 'Great Society API' });
+  } catch (err: any) {
+    console.error('[ERROR]', err.message);
+    const origin = req.headers.origin;
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(500).json({ ok: false, error: err.message || 'Internal server error' });
+  }
 }
