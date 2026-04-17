@@ -727,8 +727,11 @@ export default async function handler(req: any, res: any) {
         [sanitizedEmail, otp, JSON.stringify({ name: sanitizedName, email: sanitizedEmail, phone: sanitizedPhone, passwordHash }), expiresAt]
       );
 
-      // Send email with OTP (don't await, fire and forget)
-      sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register').catch(() => {});
+      // Send email with OTP
+      const emailSent = await sendOTPEmail(sanitizedEmail, otp, sanitizedName, 'register');
+      if (!emailSent) {
+        return res.status(503).json({ error: 'تعذّر إرسال البريد الإلكتروني. تحقق من الإعدادات أو حاول لاحقاً' });
+      }
 
       return res.json({ success: true, devOtp: IS_DEV ? otp : undefined, message: `تم إرسال رمز التحقق إلى ${sanitizedEmail}` });
     } catch (err: any) {
