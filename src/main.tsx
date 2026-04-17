@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router';
+import { createBrowserRouter, RouterProvider, Navigate, Link } from 'react-router';
+import { motion } from 'motion/react';
 import { AuthProvider } from './app/context/AuthContext';
 import Root from './app/pages/Root';
 import Home from './app/pages/Home';
@@ -21,7 +22,71 @@ import { SavedProperties } from './app/pages/SavedProperties';
 import ForgotPassword from './app/pages/ForgotPassword';
 import UserEditProperty from './app/pages/UserEditProperty';
 import CRMEntry from './app/pages/CRMEntry';
+import { Home as HomeIcon, ArrowRight, Building2 } from 'lucide-react';
 import './styles/globals.css';
+
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#e6f2f5] via-white to-[#e6f2f5] flex items-center justify-center px-4 pt-20" dir="rtl">
+      <div className="text-center">
+        <motion.div 
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <div className="relative inline-block">
+            <span className="text-[10rem] font-black text-[#005a7d]/10 leading-none">404</span>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Building2 size={48} className="text-[#bca056]" />
+            </div>
+          </div>
+        </motion.div>
+        
+        <motion.h1 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-3xl font-black text-gray-900 mb-4"
+        >
+          الصفحة غير موجودة
+        </motion.h1>
+        
+        <motion.p 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-gray-600 mb-8 text-lg"
+        >
+          عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها
+        </motion.p>
+        
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="flex gap-4 justify-center"
+        >
+          <Link 
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#005a7d] text-white rounded-xl font-semibold hover:bg-[#004a68] transition-all"
+          >
+            <HomeIcon size={18} />
+            الرئيسية
+          </Link>
+          <Link 
+            to="/properties"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#bca056] text-white rounded-xl font-semibold hover:bg-[#a68a47] transition-all"
+          >
+            <Building2 size={18} />
+            العقارات
+            <ArrowRight size={16} />
+          </Link>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
 
 const router = createBrowserRouter([
   { path: '/crm', element: <CRMEntry /> },
@@ -49,6 +114,11 @@ const router = createBrowserRouter([
       { path: 'edit-property/:id', element: <UserEditProperty /> },
       { path: 'payment/:id', element: <PaymentPage /> },
     ],
+    errorElement: <NotFound />,
+  },
+  {
+    path: '*',
+    element: <NotFound />,
   },
 ]);
 
