@@ -71,7 +71,7 @@ export default function SuperAdminDashboard() {
       await api.updateSiteSettings(siteForm);
       await refreshSettings();
       setSiteMsg('success');
-      setTimeout(() => setSiteMsg(''), 3000);
+      setTimeout(() => setSiteMsg(''), 5000);
     } catch (err: any) {
       setSiteMsg('error:' + (err.message || 'خطأ'));
     } finally {
