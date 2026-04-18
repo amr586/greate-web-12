@@ -2076,13 +2076,18 @@ export default async function handler(req: any, res: any) {
       if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
       
       const [rows]: any = await pool.query(`
-        SELECT DISTINCT u.id, u.name, u.role, u.email, u.phone
+        SELECT u.id, u.name, u.role, u.email, u.phone,
+          COUNT(m.id) as msg_count,
+          MAX(m.created_at) as last_msg_at
         FROM property_chat_messages m
         JOIN users u ON u.id = m.sender_id
         WHERE m.property_id = ?
+        GROUP BY u.id, u.name, u.role, u.email, u.phone
+        ORDER BY last_msg_at DESC
       `, [propertyId]);
       return res.json(Array.isArray(rows) ? rows : []);
-    } catch {
+    } catch (err: any) {
+      console.log('[ERROR] Chat users:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
