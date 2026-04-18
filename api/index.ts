@@ -367,10 +367,10 @@ async function runMigrations(pool: any) {
 
   // Seed default accounts
   const seedAccounts = [
-    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01100111618', password: 'Admin@2026', role: 'superadmin', sub_role: null },
-    { name: 'مدخل بيانات', email: 'moam2808@gmail.com', phone: '01100111619', password: 'Data@2026', role: 'admin', sub_role: 'data_entry' },
-    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01100111620', password: 'Prop@2026', role: 'admin', sub_role: 'property_manager' },
-    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01100111621', password: 'Support@2026', role: 'admin', sub_role: 'support' },
+    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01034517293', password: 'Admin@2026', role: 'superadmin', sub_role: null },
+    { name: 'مدخل بيانات', email: 'moam2808@gmail.com', phone: '01034517293', password: 'Data@2026', role: 'admin', sub_role: 'data_entry' },
+    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01034517293', password: 'Prop@2026', role: 'admin', sub_role: 'property_manager' },
+    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01034517293', password: 'Support@2026', role: 'admin', sub_role: 'support' },
   ];
 
   for (const acc of seedAccounts) {
