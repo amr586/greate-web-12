@@ -127,6 +127,15 @@ export default function SubAdminDashboard() {
     finally { setActionLoading(null); }
   };
 
+  const handleMarkAvailable = async (id: number) => {
+    setActionLoading(id);
+    try {
+      await api.markAvailable(id);
+      setProperties(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p));
+    } catch (e: any) { alert(e.message); }
+    finally { setActionLoading(null); }
+  };
+
   const openTicket = async (ticket: any) => {
     setActiveTicket(ticket);
     const msgs = await api.getTicketMessages(ticket.id);
@@ -170,6 +179,7 @@ export default function SubAdminDashboard() {
       delivery_status: prop.delivery_status || '',
       google_maps_url: prop.google_maps_url || '',
       floor_plan_image: prop.floor_plan_image || '',
+      status: prop.status || 'approved',
     });
   };
 
@@ -578,13 +588,21 @@ export default function SubAdminDashboard() {
               <motion.div key="sold" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 <div className="grid gap-3">
                   {filteredProps.filter(p => p.status === 'sold').map(prop => (
-                    <div key={prop.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center opacity-75">
+                    <div key={prop.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4 items-center">
                       <img src={prop.primary_image || DEFAULT_IMAGE} alt="" className="w-20 h-16 rounded-xl object-cover grayscale" onError={e => { (e.target as HTMLImageElement).src = DEFAULT_IMAGE; }} />
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-700 text-sm line-clamp-1">{prop.title_ar || prop.title}</p>
                         <p className="text-gray-400 text-xs">{prop.district} · {Number(prop.price).toLocaleString()} جنيه</p>
+                        {prop.owner_name && <p className="text-gray-400 text-xs mt-0.5">المالك: {prop.owner_name}</p>}
                       </div>
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">مباع</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">مباع</span>
+                        <button onClick={() => handleMarkAvailable(prop.id)} disabled={actionLoading === prop.id}
+                          className="flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                        >
+                          <RefreshCw size={12} />{actionLoading === prop.id ? '...' : 'إلغاء البيع'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {filteredProps.filter(p => p.status === 'sold').length === 0 && (
@@ -882,6 +900,17 @@ export default function SubAdminDashboard() {
                   >
                     <option value="normal">عادي</option>
                     <option value="featured">مميز</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">حالة العقار</label>
+                  <select value={editForm.status || 'approved'} onChange={e => setEditForm((p: any) => ({ ...p, status: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                  >
+                    <option value="pending">قيد المراجعة</option>
+                    <option value="approved">موافق عليه</option>
+                    <option value="rejected">مرفوض</option>
+                    <option value="sold">مباع</option>
                   </select>
                 </div>
                 <div className="col-span-2">

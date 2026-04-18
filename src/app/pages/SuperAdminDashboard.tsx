@@ -181,6 +181,11 @@ export default function SuperAdminDashboard() {
     setProperties(prev => prev.map(p => p.id === id ? { ...p, status: 'sold' } : p));
   };
 
+  const markAvailable = async (id: number) => {
+    await api.markAvailable(id);
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p));
+  };
+
   const approvePayment = async (id: number) => {
     await api.approvePayment(id);
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p));
@@ -221,6 +226,7 @@ export default function SuperAdminDashboard() {
       delivery_status: prop.delivery_status || '',
       google_maps_url: prop.google_maps_url || '',
       floor_plan_image: prop.floor_plan_image || '',
+      status: prop.status || 'approved',
     });
   };
 
@@ -478,6 +484,9 @@ export default function SuperAdminDashboard() {
                         )}
                         {p.status === 'approved' && (
                           <button onClick={() => markSold(p.id)} className="px-3 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-600 font-medium transition-colors">مباع</button>
+                        )}
+                        {p.status === 'sold' && (
+                          <button onClick={() => markAvailable(p.id)} className="px-3 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg text-xs text-blue-600 font-medium transition-colors">إلغاء البيع</button>
                         )}
                         <button
                           onClick={() => setChatProperty({ id: p.id, title: p.title_ar || p.title, ownerName: p.user_name })}
@@ -787,6 +796,50 @@ export default function SuperAdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Payment Details */}
+                  <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4 mt-6">
+                    <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                      <CreditCard size={16} className="text-[#bca056]" /> تفاصيل الدفع
+                    </h3>
+                    <p className="text-xs text-gray-400">هذه الأرقام تظهر لعملاء في صفحة الدفع عند التحويل</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم InstaPay</label>
+                        <input value={siteForm.payment_instapay || ''} onChange={e => setSiteForm(p => ({ ...p, payment_instapay: e.target.value }))}
+                          placeholder="01100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم فودافون كاش</label>
+                        <input value={siteForm.payment_vodafone || ''} onChange={e => setSiteForm(p => ({ ...p, payment_vodafone: e.target.value }))}
+                          placeholder="01100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم المحفظة للتحويل</label>
+                        <input value={siteForm.payment_wallet_phone || ''} onChange={e => setSiteForm(p => ({ ...p, payment_wallet_phone: e.target.value }))}
+                          placeholder="01100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">رقم يظهر كـ"رقم التحويل" في صفحة الدفع</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم التواصل في تفاصيل الدفع</label>
+                        <input value={siteForm.payment_contact || ''} onChange={e => setSiteForm(p => ({ ...p, payment_contact: e.target.value }))}
+                          placeholder="01100111618"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                          dir="ltr"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">رقم التواصل للمساعدة في الدفع عبر واتساب</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* AI Chat Settings */}
                   <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-5">
                     <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
@@ -1055,6 +1108,16 @@ export default function SuperAdminDashboard() {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]">
                       <option value="normal">عادي</option>
                       <option value="featured">مميز</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">حالة العقار</label>
+                    <select value={editForm.status || 'approved'} onChange={e => setEditForm((p: any) => ({ ...p, status: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]">
+                      <option value="pending">قيد المراجعة</option>
+                      <option value="approved">موافق عليه</option>
+                      <option value="rejected">مرفوض</option>
+                      <option value="sold">مباع</option>
                     </select>
                   </div>
                 </div>

@@ -93,6 +93,11 @@ export default function AdminDashboard() {
     setProperties(prev => prev.map(p => p.id === id ? { ...p, status: 'sold' } : p));
   };
 
+  const markAvailable = async (id: number) => {
+    await api.markAvailable(id);
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p));
+  };
+
   const approvePayment = async (id: number) => {
     await api.approvePayment(id);
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'approved' } : p));
@@ -253,6 +258,9 @@ export default function AdminDashboard() {
                         )}
                         {p.status === 'approved' && (
                           <button onClick={() => markSold(p.id)} className="px-3 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs text-gray-600 transition-colors font-medium">مباع</button>
+                        )}
+                        {p.status === 'sold' && (
+                          <button onClick={() => markAvailable(p.id)} className="px-3 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg text-xs text-blue-600 transition-colors font-medium">إلغاء البيع</button>
                         )}
                         <button
                           onClick={() => setChatProperty({ id: p.id, title: p.title_ar || p.title, ownerName: p.owner_name })}

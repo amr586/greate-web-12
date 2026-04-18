@@ -121,6 +121,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
   approveProperty: (id: number, data: any = {}) => request(`/admin/properties/${id}/approve`, { method: 'PATCH', body: JSON.stringify(data) }),
   rejectProperty: (id: number) => request(`/admin/properties/${id}/reject`, { method: 'PATCH' }),
   markSold: (id: number, buyer_id?: number) => request(`/admin/properties/${id}/sold`, { method: 'PATCH', body: JSON.stringify({ buyer_id }) }),
+  markAvailable: (id: number) => request(`/admin/properties/${id}/available`, { method: 'PATCH' }),
   getUsers: () => request('/admin/users'),
   updateRole: (id: number, role: string, sub_role?: string) => request(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role, sub_role }) }),
   toggleUser: (id: number) => request(`/admin/users/${id}/toggle`, { method: 'PATCH' }),

@@ -120,8 +120,10 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
       title, title_ar, description, description_ar, price, area, rooms, bedrooms, bathrooms, district,
       city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status,
       google_maps_url, floor_plan_image, is_furnished, has_parking, has_elevator, has_pool, has_garden,
-      has_basement, finishing_type
+      has_basement, finishing_type, status
     } = req.body;
+    const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'sold'];
+    const safeStatus = ALLOWED_STATUS.includes(status) ? status : null;
     await query(
       `UPDATE properties SET
         title=COALESCE($1,title), title_ar=COALESCE($2,title_ar),
@@ -138,8 +140,9 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
         has_elevator=COALESCE($24,has_elevator), has_pool=COALESCE($25,has_pool),
         has_garden=COALESCE($26,has_garden), has_basement=COALESCE($27,has_basement),
         finishing_type=COALESCE($28,finishing_type),
+        status=COALESCE($29,status),
         updated_at=NOW()
-      WHERE id=$29`,
+      WHERE id=$30`,
       [
         title, title_ar, description, description_ar, price, area, rooms, bedrooms || rooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
@@ -152,6 +155,7 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
         typeof has_garden === 'boolean' ? has_garden : null,
         typeof has_basement === 'boolean' ? has_basement : null,
         finishing_type || null,
+        safeStatus,
         req.params.id
       ]
     );
@@ -222,6 +226,18 @@ router.patch('/properties/:id/sold', authenticate, requireAdmin, async (req: Aut
     await query(
       "UPDATE properties SET status='sold', sold_to=$1, sold_at=NOW(), owner_id=$2 WHERE id=$3",
       [buyer_id || null, req.user!.id, req.params.id]
+    );
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'خطأ' });
+  }
+});
+
+router.patch('/properties/:id/available', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    await query(
+      "UPDATE properties SET status='approved', sold_to=NULL, sold_at=NULL WHERE id=$1",
+      [req.params.id]
     );
     res.json({ success: true });
   } catch {

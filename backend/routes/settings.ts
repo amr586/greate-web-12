@@ -17,6 +17,10 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   footer_description: 'شركة Great Society للاستثمار العقاري - شركة مصرية متخصصة في تقديم خدمات عقارية شاملة في مجالات متعددة',
   ai_instructions: '',
   ai_faq: '[]',
+  payment_instapay: '01100111618',
+  payment_vodafone: '01100111618',
+  payment_wallet_phone: '01100111618',
+  payment_contact: '01100111618',
 };
 
 async function ensureTable() {
