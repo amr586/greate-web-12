@@ -714,7 +714,9 @@ export default async function handler(req: any, res: any) {
         [userData.id, clientDeviceId]
       );
 
-      if (trusted.length > 0) {
+      const trustedArray = Array.isArray(trusted) ? trusted : (trusted ? [trusted] : []);
+      
+      if (trustedArray.length > 0) {
         // Trusted device - direct login
         await pool.query('UPDATE trusted_devices SET last_used=NOW() WHERE user_id=? AND device_id=?', [userData.id, clientDeviceId]);
         
@@ -1240,8 +1242,10 @@ export default async function handler(req: any, res: any) {
         'SELECT id, name, email, phone, role, sub_role, avatar_url, email_verified, email_verified_at, created_at FROM users WHERE id=?',
         [user.id]
       );
-      return res.json(rows[0] || { error: 'Not found' });
-    } catch {
+      const userData = Array.isArray(rows) ? rows[0] : rows;
+      return res.json(userData || { error: 'Not found' });
+    } catch (err: any) {
+      console.log('[AUTH/ME] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1896,7 +1900,7 @@ export default async function handler(req: any, res: any) {
   // ========== PROPERTY CHAT ENDPOINTS ==========
 
   // GET /api/property-chat/:propertyId/messages
-  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/messages/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
@@ -1910,14 +1914,15 @@ export default async function handler(req: any, res: any) {
         WHERE m.property_id = ?
         ORDER BY m.created_at ASC
       `, [propertyId]);
-      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
-    } catch {
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[CHAT] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
 
   // GET /api/property-chat/:propertyId/users
-  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/users$/)) {
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/users/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/users/)?.[1];
@@ -1930,14 +1935,14 @@ export default async function handler(req: any, res: any) {
         JOIN users u ON u.id = m.sender_id
         WHERE m.property_id = ?
       `, [propertyId]);
-      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
+      return res.json(Array.isArray(rows) ? rows : []);
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
   }
 
   // POST /api/property-chat/:propertyId/messages
-  if (method === 'POST' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+  if (method === 'POST' && url?.match(/\/api\/property-chat\/\d+\/messages/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
