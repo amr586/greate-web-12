@@ -1292,8 +1292,10 @@ export default async function handler(req: any, res: any) {
         SELECT p.*, (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
         FROM saved_properties sp JOIN properties p ON p.id = sp.property_id WHERE sp.user_id = ?
       `, [user.id]);
-      return res.json(rows);
-    } catch {
+      console.log('[SAVED] Rows:', rows.length, 'user_id:', user.id);
+      return res.json(Array.isArray(rows) ? rows : [rows]);
+    } catch (err: any) {
+      console.log('[SAVED] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
