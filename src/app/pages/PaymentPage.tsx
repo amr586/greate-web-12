@@ -76,13 +76,16 @@ export default function PaymentPage() {
     try {
       let screenshotUrl = '';
       setUploadingScreenshot(true);
-      const formData = new FormData();
-      formData.append('image', screenshotFile);
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(screenshotFile);
+      });
       const token = localStorage.getItem('token');
       const uploadRes = await fetch('https://greate-web-12.vercel.app/api/upload', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ image: base64, filename: screenshotFile.name }),
       });
       if (!uploadRes.ok) throw new Error('فشل رفع الصورة، حاول مرة أخرى');
       const uploadData = await uploadRes.json();

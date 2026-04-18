@@ -36,6 +36,7 @@ export default function AdminNotifications() {
   const loadNotifications = async () => {
     try {
       const response = await fetch('https://greate-web-12.vercel.app/api/notifications/admin', {
+        headers: { 'Cache-Control': 'no-cache' },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
@@ -54,7 +55,7 @@ export default function AdminNotifications() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      const response = await fetch(`/api/notifications/mark-read/${notificationId}`, {
+      const response = await fetch(`https://greate-web-12.vercel.app/api/notifications/mark-read/${notificationId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,

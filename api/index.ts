@@ -1717,15 +1717,44 @@ export default async function handler(req: any, res: any) {
 
   // ========== NOTIFICATIONS ENDPOINTS ==========
 
-  // GET /api/notifications
-  if (method === 'GET' && url?.includes('/api/notifications')) {
+  // GET /api/notifications (user's notifications)
+  if (method === 'GET' && url?.includes('/api/notifications') && !url?.includes('/unread-count') && !url?.includes('/mark')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const [rows]: any = await pool.query(
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
         [user.id]
       );
-      return res.json(rows);
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/mine (alias for user notifications)
+  if (method === 'GET' && url?.includes('/api/notifications/mine')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/admin (all notifications for admin)
+  if (method === 'GET' && url?.includes('/api/notifications/admin')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT n.*, u.name as user_name, u.email as user_email FROM notifications n LEFT JOIN users u ON n.user_id = u.id ORDER BY n.created_at DESC LIMIT 100'
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -1750,6 +1779,35 @@ export default async function handler(req: any, res: any) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       await pool.query('UPDATE notifications SET is_read = true WHERE user_id = ?', [user.id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/notifications/mark-read/:id
+  if (method === 'PATCH' && url?.match(/\/api\/notifications\/mark-read\/\d+$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const idStr = url.match(/\/api\/notifications\/mark-read\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      await pool.query('UPDATE notifications SET is_read = true WHERE id = ? AND user_id = ?', [id, user.id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/notifications (create notification)
+  if (method === 'POST' && url?.includes('/api/notifications')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { user_id, type, title, message, link } = body;
+      await pool.query(
+        'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)',
+        [user_id, type || 'info', title, message, link || null]
+      );
       return res.json({ success: true });
     } catch {
       return res.status(500).json({ error: 'خطأ' });
@@ -2210,10 +2268,42 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // ========== UPLOAD (File to Hostinger) ==========
+  // ========== UPLOAD (Base64 to DB) ==========
 
-  // POST /api/upload
+  // POST /api/upload (base64 JSON)
   if (method === 'POST' && url?.includes('/api/upload')) {
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const { image, filename } = body;
+      if (!image) {
+        return res.status(400).json({ error: 'No image data' });
+      }
+
+      const base64Data = image.replace(/^data:[^;]+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      const ext = filename?.split('.').pop()?.toLowerCase() || 'jpg';
+      const mimeTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+      const mimeType = mimeTypes[ext] || 'image/jpeg';
+      
+      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type' });
+      }
+
+      const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const dataUrl = `data:${mimeType};base64,${base64Data}`;
+      
+      return res.json({ success: true, url: dataUrl, filename: safeFileName });
+    } catch (err: any) {
+      console.log('[UPLOAD] Error:', err.message);
+      return res.status(500).json({ error: 'Upload failed: ' + err.message });
+    }
+  }
+
+  // POST /api/upload-legacy (multipart to Hostinger)
+  if (method === 'POST' && url?.includes('/api/upload-legacy')) {
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

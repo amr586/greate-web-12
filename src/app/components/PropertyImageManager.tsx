@@ -55,12 +55,15 @@ export default function PropertyImageManager({ propertyId }: Props) {
       const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
       await Promise.all(Array.from(files).map(async (file, idx) => {
         const compressed = await compressImage(file);
-        const formData = new FormData();
-        formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(compressed);
+        });
         const resp = await fetch(`${API_BASE}/api/upload`, {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ image: base64, filename: file.name }),
         });
         const result = await resp.json();
         if (result.url) {

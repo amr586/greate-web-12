@@ -84,13 +84,16 @@ export default function SuperAdminDashboard() {
     if (!file) return;
     setLogoUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
       const token = localStorage.getItem('token');
       const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ image: base64, filename: file.name }),
       });
       const data = await res.json();
       if (data.url) setSiteForm(p => ({ ...p, logo_url: data.url }));
@@ -196,10 +199,17 @@ export default function SuperAdminDashboard() {
     if (!file) return;
     setPlanUploading(true);
     try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
       const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: formData });
+      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ image: base64, filename: file.name }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل الرفع');
       setEditForm((p: any) => ({ ...p, floor_plan_image: data.url }));
