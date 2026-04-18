@@ -22,6 +22,8 @@ import { SavedProperties } from './app/pages/SavedProperties';
 import ForgotPassword from './app/pages/ForgotPassword';
 import UserEditProperty from './app/pages/UserEditProperty';
 import CRMEntry from './app/pages/CRMEntry';
+import PrivacyPolicy from './app/pages/PrivacyPolicy';
+import Terms from './app/pages/Terms';
 import { Home as HomeIcon, ArrowRight, Building2 } from 'lucide-react';
 import './styles/globals.css';
 
@@ -113,6 +115,8 @@ const router = createBrowserRouter([
       { path: 'super-admin', element: <Navigate to="/superadmin" replace /> },
       { path: 'edit-property/:id', element: <UserEditProperty /> },
       { path: 'payment/:id', element: <PaymentPage /> },
+      { path: 'privacy', element: <PrivacyPolicy /> },
+      { path: 'terms', element: <Terms /> },
     ],
     errorElement: <NotFound />,
   },
