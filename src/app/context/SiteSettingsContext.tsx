@@ -17,6 +17,8 @@ export interface SiteSettings {
   payment_vodafone: string;
   payment_wallet_phone: string;
   payment_contact: string;
+  payment_instapay_label: string;
+  payment_vodafone_label: string;
 }
 
 const DEFAULT_SETTINGS: SiteSettings = {
@@ -36,6 +38,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
   payment_vodafone: '01100111618',
   payment_wallet_phone: '01100111618',
   payment_contact: '01100111618',
+  payment_instapay_label: 'InstaPay',
+  payment_vodafone_label: 'Vodafone Cash',
 };
 
 interface SiteSettingsContextType {

@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router';
-import { motion } from 'motion/react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Bed, Bath, Maximize, MapPin, Phone, MessageCircle, Heart,
   ArrowRight, Share2, Calendar, Building2, CheckCircle, Send,
-  Star, CreditCard, ChevronRight, ChevronLeft, Loader2, MessageSquare, Map, ExternalLink
+  Star, CreditCard, ChevronRight, ChevronLeft, Loader2, MessageSquare, Map, ExternalLink, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import PropertyChat from '../components/PropertyChat';
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=500&fit=crop';
 const WHATSAPP_NUMBER = '201281378331';
 const COMPANY_PHONE = '01100111618';
@@ -196,12 +197,25 @@ export function PropertyDetailEnhanced() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [property, setProperty] = useState<any>(null);
   const [recommendedProperty, setRecommendedProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [adminChatOpen, setAdminChatOpen] = useState(false);
+  const [adminChatUserId, setAdminChatUserId] = useState<number | null>(null);
+
+  const isAdminUser = user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'subadmin';
+
+  useEffect(() => {
+    const openChatParam = searchParams.get('openChat');
+    if (openChatParam && isAdminUser) {
+      setAdminChatUserId(Number(openChatParam));
+      setAdminChatOpen(true);
+    }
+  }, [searchParams, isAdminUser]);
 
   useEffect(() => {
     if (!id) return;
@@ -635,6 +649,33 @@ export function PropertyDetailEnhanced() {
           </motion.div>
         )}
       </div>
+
+      {/* Admin: auto-open chat modal from notification */}
+      <AnimatePresence>
+        {adminChatOpen && property && isAdminUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={e => { if (e.target === e.currentTarget) setAdminChatOpen(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 60 }}
+              className="w-full max-w-md h-[70vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            >
+              <PropertyChat
+                propertyId={property.id}
+                propertyTitle={property.title_ar || property.title}
+                initialUserId={adminChatUserId ?? undefined}
+                onClose={() => setAdminChatOpen(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

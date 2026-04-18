@@ -20,6 +20,7 @@ interface ChatUser {
   id: number;
   name: string;
   email: string;
+  phone?: string;
   msg_count: number;
   last_msg_at: string;
 }
@@ -30,9 +31,10 @@ interface PropertyChatProps {
   ownerName?: string;
   onClose?: () => void;
   embedded?: boolean;
+  initialUserId?: number;
 }
 
-export default function PropertyChat({ propertyId, propertyTitle, ownerName, onClose, embedded = false }: PropertyChatProps) {
+export default function PropertyChat({ propertyId, propertyTitle, ownerName, onClose, embedded = false, initialUserId }: PropertyChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatUsers, setChatUsers] = useState<ChatUser[]>([]);
@@ -69,7 +71,10 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
     setLoadingUsers(true);
     try {
       const data = await api.getPropertyChatUsers(propertyId);
-      if (data) setChatUsers(data);
+      if (data) {
+        setChatUsers(data);
+        return data as ChatUser[];
+      }
     } catch {}
     finally { setLoadingUsers(false); }
   };
@@ -77,15 +82,30 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
   useEffect(() => {
     if (!user) return;
     if (isAdmin) {
-      setShowUserList(true);
-      loadChatUsers();
+      if (initialUserId) {
+        // Auto-open chat with a specific user from notification
+        setShowUserList(false);
+        setLoading(true);
+        setSelectedUser({ id: initialUserId, name: 'جاري التحميل...', email: '', msg_count: 0, last_msg_at: '' });
+        loadChatUsers().then((users) => {
+          if (users) {
+            const found = users.find((u: ChatUser) => u.id === initialUserId);
+            if (found) setSelectedUser(found);
+          }
+        });
+        loadMessages(initialUserId).finally(() => setLoading(false));
+        pollRef.current = setInterval(() => loadMessages(initialUserId), 5000);
+      } else {
+        setShowUserList(true);
+        loadChatUsers();
+      }
     } else {
       setLoading(true);
       loadMessages().finally(() => setLoading(false));
       pollRef.current = setInterval(loadMessages, 5000);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [propertyId, user]);
+  }, [propertyId, user, initialUserId]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -215,6 +235,9 @@ export default function PropertyChat({ propertyId, propertyTitle, ownerName, onC
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-gray-800 text-sm">{u.name}</div>
                     <div className="text-gray-500 text-xs truncate">{u.email}</div>
+                    {u.phone && (
+                      <div className="text-[#005a7d] text-xs font-medium mt-0.5" dir="ltr">{u.phone}</div>
+                    )}
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-[#005a7d] font-medium">{u.msg_count} رسالة</span>
                       {u.last_msg_at && (

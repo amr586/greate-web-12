@@ -288,7 +288,7 @@ export default function SuperAdminDashboard() {
     { id: 'users', label: 'المستخدمين', icon: <Users size={16} /> },
     { id: 'payments', label: 'المدفوعات', icon: <CreditCard size={16} />, badge: pendingPayments.length },
     { id: 'contact', label: 'رسائل التواصل', icon: <Mail size={16} />, badge: unreadContact },
-    { id: 'site_settings', label: 'إعدادات الموقع', icon: <Settings size={16} /> },
+    { id: 'site_settings', label: 'تعديل الموقع', icon: <Settings size={16} /> },
     { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
   ];
 
@@ -804,7 +804,15 @@ export default function SuperAdminDashboard() {
                     <p className="text-xs text-gray-400">هذه الأرقام تظهر لعملاء في صفحة الدفع عند التحويل</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم InstaPay</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">اسم خدمة الدفع الأولى</label>
+                        <input value={siteForm.payment_instapay_label || ''} onChange={e => setSiteForm(p => ({ ...p, payment_instapay_label: e.target.value }))}
+                          placeholder="مثال: InstaPay"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">الاسم الذي يظهر للعميل في صفحة الدفع</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم خدمة الدفع الأولى</label>
                         <input value={siteForm.payment_instapay || ''} onChange={e => setSiteForm(p => ({ ...p, payment_instapay: e.target.value }))}
                           placeholder="01100111618"
                           className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
@@ -812,7 +820,15 @@ export default function SuperAdminDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم فودافون كاش</label>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">اسم خدمة الدفع الثانية</label>
+                        <input value={siteForm.payment_vodafone_label || ''} onChange={e => setSiteForm(p => ({ ...p, payment_vodafone_label: e.target.value }))}
+                          placeholder="مثال: Vodafone Cash"
+                          className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">الاسم الذي يظهر للعميل في صفحة الدفع</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">رقم خدمة الدفع الثانية</label>
                         <input value={siteForm.payment_vodafone || ''} onChange={e => setSiteForm(p => ({ ...p, payment_vodafone: e.target.value }))}
                           placeholder="01100111618"
                           className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#bca056] transition-all"

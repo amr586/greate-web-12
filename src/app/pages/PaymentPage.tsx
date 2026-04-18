@@ -4,11 +4,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Phone, CheckCircle, AlertCircle, Copy, ArrowRight, Shield, Clock, Upload, ImageIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 export default function PaymentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { settings } = useSiteSettings();
+  const instapayLabel = settings.payment_instapay_label || 'InstaPay';
+  const vodafoneLabel = settings.payment_vodafone_label || 'Vodafone Cash';
   const [property, setProperty] = useState<any>(null);
   const [method, setMethod] = useState<'instapay' | 'vodafone'>('instapay');
   const [notes, setNotes] = useState('');
@@ -179,8 +183,8 @@ export default function PaymentPage() {
                       <label className="block text-sm font-bold text-gray-700 mb-3">طريقة الدفع</label>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { value: 'instapay', label: 'InstaPay', subLabel: 'إنستا باي', icon: '💳' },
-                          { value: 'vodafone', label: 'Vodafone Cash', subLabel: 'فودافون كاش', icon: '📱' },
+                          { value: 'instapay', label: instapayLabel, icon: '💳' },
+                          { value: 'vodafone', label: vodafoneLabel, icon: '📱' },
                         ].map(opt => (
                           <button
                             key={opt.value}
@@ -199,7 +203,6 @@ export default function PaymentPage() {
                             )}
                             <div className="text-3xl mb-2">{opt.icon}</div>
                             <p className="font-black text-gray-900 text-sm">{opt.label}</p>
-                            <p className="text-gray-500 text-xs">{opt.subLabel}</p>
                           </button>
                         ))}
                       </div>
@@ -239,7 +242,7 @@ export default function PaymentPage() {
                       </p>
                       <div className="space-y-2">
                         {[
-                          `افتح تطبيق ${method === 'instapay' ? 'InstaPay' : 'فودافون كاش'}`,
+                          `افتح تطبيق ${method === 'instapay' ? instapayLabel : vodafoneLabel}`,
                           `حوّل مبلغ ${Number(property.price).toLocaleString()} جنيه إلى: ${contactPhone}`,
                           'خذ صورة (screenshot) من إيصال التحويل',
                           'ارفع صورة الإيصال في الخانة أدناه',

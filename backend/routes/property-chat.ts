@@ -65,20 +65,21 @@ router.post('/:propertyId/messages', authenticate, async (req: AuthRequest, res:
     const propTitle = prop.rows[0].title_ar || prop.rows[0].title;
     const propLink = `/properties/${propertyId}`;
 
-    // Notify all admin/staff when a user sends an inquiry
+    // Notify all admin/staff/subadmin when a user sends an inquiry
     if (!isAdmin) {
       try {
-        const adminsRes = await query(
-          "SELECT id FROM users WHERE role IN ('admin','superadmin') AND is_active=true"
+        const staffRes = await query(
+          "SELECT id FROM users WHERE (role IN ('admin','superadmin') OR role='subadmin') AND is_active=true"
         );
-        for (const admin of adminsRes.rows) {
+        const chatLink = `/properties/${propertyId}?openChat=${req.user!.id}`;
+        for (const staff of staffRes.rows) {
           await query(
             `INSERT INTO notifications (user_id, type, title, message, link)
              VALUES ($1,'property_inquiry','استفسار جديد عن عقار',$2,$3)`,
             [
-              admin.id,
+              staff.id,
               `${sender.name} سأل عن: ${propTitle} - "${content.trim().substring(0, 80)}"`,
-              propLink,
+              chatLink,
             ]
           );
         }
@@ -163,7 +164,7 @@ router.get('/:propertyId/users', authenticate, async (req: AuthRequest, res: Res
     if (!isAdminUser(req.user)) return res.status(403).json({ error: 'غير مصرح' });
     const { propertyId } = req.params;
     const result = await query(
-      `SELECT DISTINCT u.id, u.name, u.email,
+      `SELECT DISTINCT u.id, u.name, u.email, u.phone,
         (SELECT COUNT(*) FROM property_chat_messages WHERE property_id=$1 AND sender_id=u.id AND is_admin=false) as msg_count,
         (SELECT created_at FROM property_chat_messages WHERE property_id=$1 AND sender_id=u.id ORDER BY created_at DESC LIMIT 1) as last_msg_at
        FROM property_chat_messages m

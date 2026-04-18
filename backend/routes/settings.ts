@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   payment_vodafone: '01100111618',
   payment_wallet_phone: '01100111618',
   payment_contact: '01100111618',
+  payment_instapay_label: 'InstaPay',
+  payment_vodafone_label: 'Vodafone Cash',
 };
 
 async function ensureTable() {
