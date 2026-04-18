@@ -755,8 +755,12 @@ export default async function handler(req: any, res: any) {
         [userData.email, otp, JSON.stringify({ userId: userData.id }), clientDeviceId, expiresAt]
       );
 
-      // Send email
-      sendOTPEmail(userData.email, otp, userData.name, 'login').catch((e) => console.log('[EMAIL] Send failed:', e.message));
+      // Send email synchronously
+      try {
+        await sendOTPEmail(userData.email, otp, userData.name, 'login');
+      } catch (e) {
+        console.log('[EMAIL] Send failed:', e.message);
+      }
 
       return res.json({ 
         requiresOTP: true, 
@@ -854,7 +858,9 @@ export default async function handler(req: any, res: any) {
         [email, otp, JSON.stringify({ userId: user.id }), clientDeviceId, expiresAt]
       );
 
-      sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
+      try {
+        await sendOTPEmail(email, otp, user.name, 'login');
+      } catch { }
 
       return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
@@ -1196,7 +1202,9 @@ export default async function handler(req: any, res: any) {
       );
 
       // Send email
-      sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
+      try {
+        await sendOTPEmail(email, otp, user.name, 'forgot-password');
+      } catch { }
 
       return res.json({ success: true, message: 'تم إرسال رمز التحقق' });
     } catch (err: any) {
