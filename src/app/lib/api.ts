@@ -1,6 +1,6 @@
 import { PROPERTIES } from '../data/mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
 
 function getToken() {
   return localStorage.getItem('token');
