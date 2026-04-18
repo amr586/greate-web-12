@@ -710,8 +710,9 @@ export default async function handler(req: any, res: any) {
     database: process.env.DB_NAME,
     port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
-    connectionLimit: 2,
-    queueLimit: 0
+    connectionLimit: 1,
+    queueLimit: 0,
+    idleTimeout: 10000
   };
 
   if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
@@ -721,6 +722,7 @@ export default async function handler(req: any, res: any) {
   let pool;
   try {
     pool = mysql.createPool(dbConfig);
+    await pool.query('SELECT 1');
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
   }
