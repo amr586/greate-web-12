@@ -1797,30 +1797,38 @@ export default async function handler(req: any, res: any) {
 
   // ========== NOTIFICATIONS ENDPOINTS ==========
 
-  // GET /api/notifications (user's notifications)
-  if (method === 'GET' && url?.includes('/api/notifications') && !url?.includes('/unread-count') && !url?.includes('/mark')) {
+  // GET /api/notifications (user's notifications) - must check specific paths first
+  if (method === 'GET' && url?.startsWith('/api/notifications')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
+      // Skip if already handled by other notification routes
+      if (url?.includes('/unread-count') || url?.includes('/mark') || url?.includes('/admin')) {
+        return res.status(404).json({ error: 'Not found' });
+      }
       const [rows]: any = await pool.query(
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
         [user.id]
       );
+      console.log('[notifications] user_id:', user.id, 'count:', rows.length);
       return res.json(Array.isArray(rows) ? rows : []);
-    } catch {
+    } catch (err: any) {
+      console.log('[notifications] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
 
   // GET /api/notifications/mine (alias for user notifications)
-  if (method === 'GET' && url?.includes('/api/notifications/mine')) {
+  if (method === 'GET' && url?.includes('/notifications/mine')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const [rows]: any = await pool.query(
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
         [user.id]
       );
+      console.log('[notifications/mine] user_id:', user.id, 'count:', rows.length);
       return res.json(Array.isArray(rows) ? rows : []);
-    } catch {
+    } catch (err: any) {
+      console.log('[notifications/mine] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1844,12 +1852,15 @@ export default async function handler(req: any, res: any) {
   if (method === 'GET' && url?.includes('/api/notifications/unread-count')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
+      console.log('[unread-count] user_id:', user.id);
       const [[row]]: any = await pool.query(
         'SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = false',
         [user.id]
       );
+      console.log('[unread-count] count:', row?.cnt);
       return res.json({ count: row?.cnt || 0 });
-    } catch {
+    } catch (err: any) {
+      console.log('[unread-count] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -2052,14 +2063,30 @@ export default async function handler(req: any, res: any) {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
       const propertyId = validateId(propertyIdStr);
       if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
+      console.log('[CHAT] Getting messages for property:', propertyId);
       
       const [rows]: any = await pool.query(`
-        SELECT m.*, u.name as sender_name, u.role as sender_role
-        FROM property_chat_messages m
-        JOIN users u ON u.id = m.sender_id
-        WHERE m.property_id = ?
-        ORDER BY m.created_at ASC
+        SELECT id, property_id, sender_id, content, is_admin, created_at
+        FROM property_chat_messages
+        WHERE property_id = ?
+        ORDER BY created_at ASC
       `, [propertyId]);
+      console.log('[CHAT] Found messages:', rows.length);
+      // Get user names separately
+      const senderIds = [...new Set(rows.map((r: any) => r.sender_id))];
+      if (senderIds.length > 0) {
+        const [users]: any = await pool.query(
+          'SELECT id, name, role FROM users WHERE id IN (?)',
+          [senderIds]
+        );
+        const userMap: Record<number, any> = {};
+        for (const u of users) userMap[u.id] = u;
+        for (const row of rows) {
+          const u = userMap[row.sender_id];
+          row.sender_name = u?.name || 'مستخدم';
+          row.sender_role = u?.role || 'user';
+        }
+      }
       return res.json(Array.isArray(rows) ? rows : []);
     } catch (err: any) {
       console.log('[CHAT] Error:', err.message);
