@@ -1905,7 +1905,27 @@ export default async function handler(req: any, res: any) {
         WHERE m.property_id = ?
         ORDER BY m.created_at ASC
       `, [propertyId]);
-      return res.json(rows);
+      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/property-chat/:propertyId/users
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/users$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/users/)?.[1];
+      const propertyId = validateId(propertyIdStr);
+      if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(`
+        SELECT DISTINCT u.id, u.name, u.role, u.email, u.phone
+        FROM property_chat_messages m
+        JOIN users u ON u.id = m.sender_id
+        WHERE m.property_id = ?
+      `, [propertyId]);
+      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
