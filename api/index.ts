@@ -17,7 +17,12 @@ function generateToken(payload: any): string {
 }
 
 // ============ MIGRATION FUNCTION ============
+let migrationsDone = false;
+
 async function runMigrations(pool: any) {
+  if (migrationsDone) return;
+  migrationsDone = true;
+  
   // Add missing columns if they don't exist (MySQL doesn't support IF NOT EXISTS for ALTER)
   const columnsToAdd = [
     { table: 'users', col: 'email_verified', sql: 'ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false' },
