@@ -14,6 +14,7 @@ type PropertySeed = {
   downPayment: string;
   deliveryStatus: string;
   finishingType: string;
+  isFeatured: boolean;
   images: string[];
 };
 
@@ -33,6 +34,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم مرن حسب الوحدة',
     deliveryStatus: 'متاح للسكن أو الاستثمار',
     finishingType: 'تشطيب مميز',
+    isFeatured: false,
     images: [
       'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&h=600&fit=crop',
@@ -55,6 +57,7 @@ const properties: PropertySeed[] = [
     downPayment: 'قسط ثابت 23 ألف جنيه',
     deliveryStatus: 'مطور بيسلم قبل ميعاده',
     finishingType: 'نصف تشطيب',
+    isFeatured: true,
     images: [
       'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=900&h=600&fit=crop',
@@ -77,6 +80,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم 50%',
     deliveryStatus: 'استلام فوري',
     finishingType: 'تشطيب حسب الوحدة',
+    isFeatured: true,
     images: [
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=900&h=600&fit=crop',
@@ -99,6 +103,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم 2.5 مليون وتقسيط حتى 60 شهر',
     deliveryStatus: 'آخر مرحلة متاحة',
     finishingType: 'تشطيب مميز',
+    isFeatured: false,
     images: [
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=900&h=600&fit=crop',
@@ -121,6 +126,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم 300 ألف',
     deliveryStatus: 'متاح للحجز',
     finishingType: 'نصف تشطيب',
+    isFeatured: false,
     images: [
       'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=900&h=600&fit=crop',
@@ -143,6 +149,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم 10% وتقسيط حتى 8 سنوات، خصم كاش 35%',
     deliveryStatus: 'استلام فوري',
     finishingType: 'تشطيب حسب نوع الوحدة',
+    isFeatured: false,
     images: [
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&h=600&fit=crop',
@@ -165,6 +172,7 @@ const properties: PropertySeed[] = [
     downPayment: 'مقدم 1.2 مليون للشقق و2 مليون للفيلات، تقسيط حتى 10 سنين',
     deliveryStatus: 'استلام فوري',
     finishingType: 'تشطيب مميز',
+    isFeatured: false,
     images: [
       'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=900&h=600&fit=crop',
       'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=900&h=600&fit=crop',
@@ -194,13 +202,13 @@ async function seedProperties() {
           type=$4, purpose='sale', price=$5, area=$6, rooms=$7, bedrooms=$7,
           bathrooms=$8, district=$9, city='القاهرة', address=$10, contact_phone=$11,
           down_payment=$12, delivery_status=$13, finishing_type=$14, status='approved',
-          is_featured=true, approved_by=$1, approved_at=COALESCE(approved_at, NOW()),
+          is_featured=$15, approved_by=$1, approved_at=COALESCE(approved_at, NOW()),
           floor_plan_image=NULL, google_maps_url=NULL, updated_at=NOW()
-         WHERE id=$15`,
+         WHERE id=$16`,
         [
           adminId, prop.title, prop.description, prop.type, prop.price, prop.area, prop.bedrooms,
           prop.bathrooms, prop.district, prop.address, CONTACT_PHONE, prop.downPayment,
-          prop.deliveryStatus, prop.finishingType, propertyId
+          prop.deliveryStatus, prop.finishingType, prop.isFeatured, propertyId
         ]
       );
       await query('DELETE FROM property_images WHERE property_id=$1', [propertyId]);
@@ -212,12 +220,12 @@ async function seedProperties() {
           delivery_status, finishing_type, status, is_featured, approved_by, approved_at,
           floor_plan_image, google_maps_url, updated_at
         )
-        VALUES ($1,$2,$2,$3,$3,$4,'sale',$5,$6,$7,$7,$8,$9,'القاهرة',$10,$11,$12,$13,$14,'approved',true,$1,NOW(),NULL,NULL,NOW())
+        VALUES ($1,$2,$2,$3,$3,$4,'sale',$5,$6,$7,$7,$8,$9,'القاهرة',$10,$11,$12,$13,$14,'approved',$15,$1,NOW(),NULL,NULL,NOW())
         RETURNING id`,
         [
           adminId, prop.title, prop.description, prop.type, prop.price, prop.area, prop.bedrooms,
           prop.bathrooms, prop.district, prop.address, CONTACT_PHONE, prop.downPayment,
-          prop.deliveryStatus, prop.finishingType
+          prop.deliveryStatus, prop.finishingType, prop.isFeatured
         ]
       );
       propertyId = propRes.rows[0].id;
