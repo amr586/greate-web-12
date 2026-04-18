@@ -153,10 +153,10 @@ export default function SuperAdminDashboard() {
         api.getContactMessages(),
       ]);
       if (statsData.status === 'fulfilled') setStats(statsData.value);
-      if (propData.status === 'fulfilled') setProperties(propData.value || []);
-      if (usersData.status === 'fulfilled') setUsers(usersData.value || []);
-      if (paymentsData.status === 'fulfilled') setPayments(paymentsData.value || []);
-      if (contactData.status === 'fulfilled') setContactMessages(contactData.value || []);
+      if (propData.status === 'fulfilled') setProperties(Array.isArray(propData.value) ? propData.value : []);
+      if (usersData.status === 'fulfilled') setUsers(Array.isArray(usersData.value) ? usersData.value : []);
+      if (paymentsData.status === 'fulfilled') setPayments(Array.isArray(paymentsData.value) ? paymentsData.value : []);
+      if (contactData.status === 'fulfilled') setContactMessages(Array.isArray(contactData.value) ? contactData.value : []);
     } catch {}
     finally { setLoading(false); }
   };
