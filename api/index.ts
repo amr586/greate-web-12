@@ -484,6 +484,75 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
   }
 }
 
+async function sendNotificationEmail(to: string, type: string, data: any): Promise<boolean> {
+  if (!SMTP_USER || !SMTP_PASS) return false;
+  
+  const nodemailer = await import('nodemailer');
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: { rejectUnauthorized: true, minVersion: 'TLSv1.2' }
+  });
+
+  const templates: Record<string, { subject: string; title: string; message: string }> = {
+    property_approved: {
+      subject: '✅ تم الموافقة على عقارك - Great Society',
+      title: 'تم الموافقة على عقارك',
+      message: `تم الموافقة على عقارك "${data.title}" وسيتم نشره على الموقع.`
+    },
+    property_rejected: {
+      subject: '❌ تم رفض عقارك - Great Society',
+      title: 'تم رفض عقارك',
+      message: `تم رفض عقارك "${data.title}". يرجى التواصل للدعم الفني.`
+    },
+    new_inquiry: {
+      subject: '💬 استفسار جديد على عقارك - Great Society',
+      title: 'لديك استفسار جديد',
+      message: `هناك استفسار جديد على عقارك "${data.title}".`
+    },
+    payment_received: {
+      subject: '💰 دفع جديد - Great Society',
+      title: 'تم استلام دفعة',
+      message: `تم استلام دفعة بقيمة ${data.amount} جنيه للعقار "${data.title}".`
+    },
+    support_reply: {
+      subject: '💬 رد على تذكرتك - Great Society',
+      title: 'تم الرد على تذكرتك',
+      message: `تم الرد على تذكرتك "${data.subject}".`
+    }
+  };
+
+  const tmpl = templates[type];
+  if (!tmpl) return false;
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#005a7d,#007a9a);padding:30px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:20px;">${tmpl.title}</h1>
+        </tr>
+        <tr><td style="padding:30px;text-align:center;">
+          <p style="margin:0 0 20px;color:#374151;font-size:16px;">${tmpl.message}</p>
+          <a href="https://greatsociety-eg.com" style="display:inline-block;background:#005a7d;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;">تصفح الموقع</a>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({ from: `"Great Society إسكنك" <${SMTP_USER}>`, to, subject: tmpl.subject, html });
+    return true;
+  } catch { return false; }
+}
+
 // ========== SECURITY HELPERS ==========
 
 // Rate limiting storage
@@ -1594,12 +1663,13 @@ export default async function handler(req: any, res: any) {
         [user.id, id]
       );
 
-      const [propRows]: any = await pool.query('SELECT owner_id FROM properties WHERE id=?', [id]);
-      if (propRows[0]?.owner_id) {
+      const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
+      if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
         await pool.query(
           `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_approved', 'تمت الموافقة على عقارك', 'تمت الموافقة على عقارك')`,
           [propRows[0].owner_id]
         );
+        sendNotificationEmail(propRows[0].owner_email, 'property_approved', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
       }
 
       return res.json({ success: true });
@@ -1619,6 +1689,16 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       
       await pool.query("UPDATE properties SET status='rejected' WHERE id=?", [id]);
+      
+      const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
+      if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_rejected', 'تم رفض عقارك', 'تم رفض عقارك')`,
+          [propRows[0].owner_id]
+        );
+        sendNotificationEmail(propRows[0].owner_email, 'property_rejected', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
+      }
+      
       return res.json({ success: true });
     } catch {
       return res.status(500).json({ error: 'خطأ' });

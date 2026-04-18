@@ -52,10 +52,16 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
+
   useEffect(() => {
     if (!user) return;
     fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    fetchNotifications();
+    const interval = setInterval(() => {
+      fetchCount();
+      fetchNotifications();
+    }, 10000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -68,8 +74,6 @@ export default function NotificationBell() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
-
-  const API_BASE = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
 
   const fetchCount = async () => {
     try {
