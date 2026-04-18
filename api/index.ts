@@ -2095,6 +2095,96 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // ========== ADMIN PROPERTY IMAGES ==========
+
+  // GET /api/admin/properties/:id/images
+  if (method === 'GET' && url?.match(/\/api\/admin\/properties\/\d+\/images$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/images/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(
+        'SELECT id, property_id, url, is_primary, order_index FROM property_images WHERE property_id = ? ORDER BY is_primary DESC, order_index ASC',
+        [id]
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[ERROR] Get property images:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/admin/properties/:id/images
+  if (method === 'POST' && url?.match(/\/api\/admin\/properties\/\d+\/images$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/images/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const { url: imgUrl, is_primary } = body;
+      if (!imgUrl) return res.status(400).json({ error: 'رابط الصورة مطلوب' });
+      
+      const [result]: any = await pool.query(
+        'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES (?, ?, ?, ?)',
+        [id, imgUrl, Boolean(is_primary), 0]
+      );
+      
+      return res.status(201).json({ id: result.insertId, url: imgUrl, is_primary: Boolean(is_primary) });
+    } catch (err: any) {
+      console.log('[ERROR] Add property image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // DELETE /api/admin/properties/:propertyId/images/:imageId
+  if (method === 'DELETE' && url?.match(/\/api\/admin\/properties\/\d+\/images\/\d+$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const match = url.match(/\/api\/admin\/properties\/(\d+)\/images\/(\d+)/);
+      const propertyId = validateId(match?.[1]);
+      const imageId = validateId(match?.[2]);
+      if (!propertyId || !imageId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('DELETE FROM property_images WHERE id = ? AND property_id = ?', [imageId, propertyId]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Delete property image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:propertyId/images/:imageId/primary
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/images\/\d+\/primary$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const match = url.match(/\/api\/admin\/properties\/(\d+)\/images\/(\d+)\/primary/);
+      const propertyId = validateId(match?.[1]);
+      const imageId = validateId(match?.[2]);
+      if (!propertyId || !imageId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('UPDATE property_images SET is_primary = false WHERE property_id = ?', [propertyId]);
+      await pool.query('UPDATE property_images SET is_primary = true WHERE id = ?', [imageId]);
+      
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Set primary image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== SETTINGS ==========
+
   // PATCH /api/settings
   if (method === 'PATCH' && url?.includes('/api/settings')) {
     if (!user || user.role !== 'superadmin') {

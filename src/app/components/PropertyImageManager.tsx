@@ -14,7 +14,7 @@ interface Props {
   propertyId: number;
 }
 
-const API_BASE = '';
+const API_BASE = 'https://greate-web-12.vercel.app';
 
 export default function PropertyImageManager({ propertyId }: Props) {
   const [images, setImages] = useState<PropertyImage[]>([]);
@@ -109,7 +109,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           {images.map(img => (
             <div key={img.id} className="relative rounded-xl overflow-hidden border-2 border-gray-100 group aspect-video">
               <img
-                src={img.url.startsWith('http') ? img.url : `${API_BASE}${img.url}`}
+                src={img.url?.startsWith('http') ? img.url : `${API_BASE}${img.url}`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=150&fit=crop'; }}
