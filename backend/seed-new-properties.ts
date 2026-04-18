@@ -1,159 +1,218 @@
 import 'dotenv/config';
 import { query } from './db.js';
 
+type PropertySeed = {
+  title: string;
+  description: string;
+  type: string;
+  price: number;
+  area: number;
+  bedrooms: number;
+  bathrooms: number;
+  district: string;
+  address: string;
+  downPayment: string;
+  deliveryStatus: string;
+  finishingType: string;
+  images: string[];
+};
+
+const CONTACT_PHONE = '01100111618';
+
+const properties: PropertySeed[] = [
+  {
+    title: 'فرصة في الجولدن سكوير قرب النادي الأهلي ومحور بن زايد',
+    description: 'تخيّل تدخل منطقة سعرها بيعلى كل يوم لأنك في الجولدن سكوير. خطوات من شارع النوادي، دقائق من الفيو زون، 600 متر فقط من النادي الأهلي، ومحور بن زايد الجنوبي على بعد لحظات. فرصة قوية للسكن أو الاستثمار في موقع حيوي ومطلوب. للتفاصيل والمعاينة سجل بياناتك دلوقتي. Call us: 01100111618',
+    type: 'apartment',
+    price: 8000000,
+    area: 180,
+    bedrooms: 3,
+    bathrooms: 2,
+    district: 'جولدن سكوير',
+    address: 'الجولدن سكوير، خطوات من شارع النوادي ودقائق من الفيو زون و600 متر من النادي الأهلي، قريب من محور بن زايد الجنوبي',
+    downPayment: 'مقدم مرن حسب الوحدة',
+    deliveryStatus: 'متاح للسكن أو الاستثمار',
+    finishingType: 'تشطيب مميز',
+    images: [
+      'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'شقة 3 غرف بقسط ثابت 23 ألف في R8 العاصمة الإدارية',
+    description: 'شقتك 3 غرف بقسط ثابت 23 ألف جنيه فقط في أفضل لوكيشن في R8 العاصمة الإدارية، مع أقوى مطور عقاري معروف بالتسليم قبل ميعاده. موقع مميز داخل العاصمة الإدارية وقريب من الخدمات والمحاور الرئيسية. لتفاصيل أكتر سجل بياناتك دلوقتي وهنكلمك. Call us: 01100111618',
+    type: 'apartment',
+    price: 4500000,
+    area: 145,
+    bedrooms: 3,
+    bathrooms: 2,
+    district: 'R8 العاصمة الإدارية',
+    address: 'أفضل لوكيشن في R8 العاصمة الإدارية الجديدة مع مطور عقاري قوي',
+    downPayment: 'قسط ثابت 23 ألف جنيه',
+    deliveryStatus: 'مطور بيسلم قبل ميعاده',
+    finishingType: 'نصف تشطيب',
+    images: [
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'استلام فوري في قلب التجمع الخامس بمقدم 50% شقة 3 غرف',
+    description: 'استلم فورًا في قلب التجمع الخامس بمقدم 50% شقة 3 غرف، أسعار تبدأ من 4 مليون جنيه. أفضل المواقع في النرجس الجديدة، النورث هاوس، بيت الوطن، وشمال الرحاب. فرصة مناسبة للسكن أو الاستثمار في مناطق عليها طلب عالي. لتفاصيل أكتر سجل بياناتك دلوقتي. Call us: 01100111618',
+    type: 'apartment',
+    price: 4000000,
+    area: 150,
+    bedrooms: 3,
+    bathrooms: 2,
+    district: 'التجمع الخامس',
+    address: 'النرجس الجديدة، النورث هاوس، بيت الوطن، شمال الرحاب',
+    downPayment: 'مقدم 50%',
+    deliveryStatus: 'استلام فوري',
+    finishingType: 'تشطيب حسب الوحدة',
+    images: [
+      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'وحدتك أقل من سعر السوق بـ 4 مليون في La Nolina مستقبل سيتي',
+    description: 'وحدتك أقل من سعر السوق بـ 4 مليون جنيه. فرصة حقيقية للسكن أو الاستثمار في آخر مرحلة من La Nolina مصر إيطاليا. شقة 3 غرف بمقدم 2.5 مليون وأقساط حتى 60 شهر، في قلب مستقبل سيتي وسط أكبر المطورين وبأقوى سابقة أعمال. لحجز معاينتك على أرض الواقع. Call us: 01100111618',
+    type: 'apartment',
+    price: 6500000,
+    area: 160,
+    bedrooms: 3,
+    bathrooms: 2,
+    district: 'مستقبل سيتي',
+    address: 'La Nolina مصر إيطاليا، قلب مستقبل سيتي وسط أكبر المطورين',
+    downPayment: 'مقدم 2.5 مليون وتقسيط حتى 60 شهر',
+    deliveryStatus: 'آخر مرحلة متاحة',
+    finishingType: 'تشطيب مميز',
+    images: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'أسعار لن تتكرر في التجمع السادس أمام كمبوند الكازار',
+    description: 'أسعار لن تتكرر في التجمع السادس أمام كمبوند الكازار. شقة غرفة بسعر 3 مليون وشقة غرفتين بسعر 4.5 مليون، بمقدم 300 ألف فقط. أفضل لوكيشن في التجمع السادس، 10 دقائق من الجامعة الأمريكية، و5 دقائق من طريق السويس والدائري الأوسطي. للتفاصيل: Call us 01100111618',
+    type: 'apartment',
+    price: 3000000,
+    area: 95,
+    bedrooms: 1,
+    bathrooms: 1,
+    district: 'التجمع السادس',
+    address: 'أمام كمبوند الكازار، 10 دقائق من الجامعة الأمريكية، 5 دقائق من طريق السويس والدائري الأوسطي',
+    downPayment: 'مقدم 300 ألف',
+    deliveryStatus: 'متاح للحجز',
+    finishingType: 'نصف تشطيب',
+    images: [
+      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1560448075-bb485b067938?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'استلام فوري في سراي مراحل S1 و S2 و Cavana',
+    description: 'استلام فوري في سراي مراحل S1 و S2 و Cavana. وحدات متنوعة تشمل فيلات مستقلة، فيلا S، تاون هاوس، وشقق غرفتين و3 غرف. سعر المتر تقريبًا 70,000 جنيه، مقدم 10% وتقسيط حتى 8 سنوات. خصم الكاش 35% والوحدات محدودة جدًا. للحجز والاستفسارات Call us: 01100111618',
+    type: 'villa',
+    price: 7000000,
+    area: 120,
+    bedrooms: 2,
+    bathrooms: 2,
+    district: 'سراي',
+    address: 'سراي، مراحل S1 و S2 و Cavana، وحدات متنوعة جاهزة للاستلام',
+    downPayment: 'مقدم 10% وتقسيط حتى 8 سنوات، خصم كاش 35%',
+    deliveryStatus: 'استلام فوري',
+    finishingType: 'تشطيب حسب نوع الوحدة',
+    images: [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=900&h=600&fit=crop'
+    ]
+  },
+  {
+    title: 'شقق وفيلات استلام فوري في قلب التجمع الخامس',
+    description: 'شقق وفيلات استلام فوري في قلب التجمع الخامس. مقدم 1.2 مليون لشقق الـ 3 غرف بمتوسط أسعار 12 مليون جنيه وتقسيط يصل إلى 10 سنين. المشروع يضم فيلات بمقدم 2 مليون جنيه ومتوسط أسعار 20 مليون جنيه. لوكيشن مميز دقائق من التسعين الجنوبي ومطار القاهرة. سجل بياناتك دلوقتي عشان تعاين وحدتك على الطبيعة وتعرف كل التفاصيل. Call us: 01100111618',
+    type: 'villa',
+    price: 12000000,
+    area: 180,
+    bedrooms: 3,
+    bathrooms: 2,
+    district: 'التجمع الخامس',
+    address: 'قلب التجمع الخامس، دقائق من التسعين الجنوبي ومطار القاهرة',
+    downPayment: 'مقدم 1.2 مليون للشقق و2 مليون للفيلات، تقسيط حتى 10 سنين',
+    deliveryStatus: 'استلام فوري',
+    finishingType: 'تشطيب مميز',
+    images: [
+      'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=900&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?w=900&h=600&fit=crop'
+    ]
+  }
+];
+
 async function seedProperties() {
-  console.log('Adding new properties...');
+  console.log('Adding requested featured properties...');
 
-  const adminRes = await query("SELECT id FROM users WHERE role='superadmin' LIMIT 1");
-  const adminId = adminRes.rows[0].id;
-
-  const properties = [
-    {
-      title: 'شقق 3 غرف متشطبة بالكامل على طريق السويس',
-      description: 'شقتك 3 غرف متشطبة بالكامل بمقدم 750 ألف في أقوى لوكيشن على طريق السويس مباشرة جنب أول جامعة ومستشفى بريطانية في مصر\nأسعار تبدأ من 3,200,000 جنيه\nمبنية بنسبة إنشاءات 40% على أرض الواقع\nللمعاينة والتفاصيل سجل بياناتك دلوقتي\nCall us: 01100111618',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 3200000,
-      area: 130,
-      bedrooms: 3,
-      bathrooms: 2,
-      district: 'طريق السويس',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&fit=crop',
-    },
-    {
-      title: 'فيلات وشقق استلام فوري - التجمع الخامس بمقدم 1.8 مليون',
-      description: 'فيلات وشقق استلام فوري في قلب التجمع الخامس بمقدم 1.8 مليون وأقساط تصل إلى 10 سنوات\nدقائق من التسعين الجنوبي ومطار القاهرة\nخطوات من النادي الأهلي\nقريب من أهم الخدمات والمحاور\nفخامة وخصوصية - تصميم عصري - واجهات مميزة - فيو مفتوح',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 1800000,
-      area: 180,
-      bedrooms: 3,
-      bathrooms: 2,
-      district: 'التجمع الخامس',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&fit=crop',
-    },
-    {
-      title: 'شقق 3 غرف في التجمع الخامس - مقدم 1.2 مليون - تقسيط 10 سنين',
-      description: 'شقق وفيلات استلام فوري في قلب التجمع الخامس\nمقدم 1.2 مليون لشقق الـ 3 غرف بمتوسط أسعار 12 مليون جنيه وتقسيط يصل لـ 10 سنين\nالمشروع يضم فيلات بمقدم 2 مليون جنيه ومتوسط أسعار 20 مليون جنيه\nفي لوكيشن مميز - دقائق من التسعين الجنوبي ومطار القاهرة',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 12000000,
-      area: 200,
-      bedrooms: 3,
-      bathrooms: 3,
-      district: 'التجمع الخامس',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&fit=crop',
-    },
-    {
-      title: 'فيلات التجمع الخامس - مقدم 2 مليون - متوسط 20 مليون',
-      description: 'فيلات فاخرة بمقدم 2 مليون جنيه ومتوسط أسعار 20 مليون جنيه\nاستلام فوري وخلال 6 شهور\nفي لوكيشن مميز دقائق من التسعين الجنوبي\nخطوات من النادي الأهلي\nقريب من أهم الخدمات والمحاور\nفخامة وخصوصية وتصميم عصري',
-      type: 'villa',
-      purpose: 'sale',
-      price: 20000000,
-      area: 400,
-      bedrooms: 5,
-      bathrooms: 4,
-      district: 'التجمع الخامس',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&fit=crop',
-    },
-    {
-      title: 'شقة 3 غرف ماستر في قلب التجمع الخامس - مقدم 1.8 مليون',
-      description: 'شقة 3 غرف ماستر في قلب التجمع الخامس\nفرصة سكن واستثمار في موقع لا يتكرر\nدقائق من التسعين الجنوبي\nخطوات من النادي الأهلي\nقريب من أهم الخدمات والمحاور\nفخامة وخصوصية - تصميم عصري - واجهات مميزة - فيو مفتوح\nاستلام فوري وخلال 6 شهور\nمقدم يبدأ من 1.8 مليون - تقسيط مريح على 5 سنوات\nكلمنا دلوقتي على رسائل الصفحة واعرف باقي التفاصيل قبل اكتمال الوحدات المتاحة',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 1800000,
-      area: 160,
-      bedrooms: 3,
-      bathrooms: 2,
-      district: 'التجمع الخامس',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&fit=crop',
-    },
-    {
-      title: 'فرصة لا تتعوض في الجولدن سكوير - استلام فوري بمقدم 50%',
-      description: 'فرصة مش هتتعوض في لوكيشن في قلب الجولدن سكوير\nقريب جداً من كل حاجة - الفيوزون وشارع النوادي\n600 متر للنادي الأهلي ومحور بن زايد الجنوبي\nاستلم فوراً في قلب التجمع الخامس بمقدم 50%\nشقة 3 غرف - أفضل المواقع في الجولدن سكوير',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 4000000,
-      area: 150,
-      bedrooms: 3,
-      bathrooms: 2,
-      district: 'جولدن سكوير',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&fit=crop',
-    },
-    {
-      title: 'شقق في النرجس الجديدة والنورث هاوس وبيت الوطن وشمال الرحاب - من 4 مليون',
-      description: 'أسعار تبدأ من 4 مليون في أفضل المواقع:\n- النرجس الجديدة\n- النورث هاوس\n- بيت الوطن\n- شمال الرحاب\nلتفاصيل أكتر سجل بياناتك دلوقتي',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 4000000,
-      area: 140,
-      bedrooms: 3,
-      bathrooms: 2,
-      district: 'التجمع الخامس',
-      is_featured: false,
-      img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&fit=crop',
-    },
-    {
-      title: 'فيلتك بسعر شقة في R8 العاصمة الإدارية - مقدم 10%',
-      description: 'فيلتك بسعر شقة في قلب الـ R8 بمقدم 10% وقسط شهري 60 ألف جنيه\nبخصم وسعر الطرح الأول مع أقوى مطور في العاصمة الإدارية\nللحجز والاستفادة بالخصم - أسعار لن تتكرر\nموقع استراتيجي في قلب العاصمة الإدارية',
-      type: 'villa',
-      purpose: 'sale',
-      price: 8000000,
-      area: 300,
-      bedrooms: 4,
-      bathrooms: 3,
-      district: 'العاصمة الإدارية',
-      is_featured: true,
-      img: 'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&fit=crop',
-    },
-    {
-      title: 'شقق التجمع السادس أمام كمبوند الكازار - من 3 مليون',
-      description: 'في التجمع السادس أمام كمبوند الكازار\nبسعر 3 مليون للشقة الغرفة\n4.5 مليون للشقة الغرفتين\nبمقدم 300 ألف فقط\nفي أفضل لوكيشن في التجمع السادس\n10 دقائق من الجامعة الأمريكية',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 3000000,
-      area: 80,
-      bedrooms: 1,
-      bathrooms: 1,
-      district: 'التجمع السادس',
-      is_featured: false,
-      img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&fit=crop',
-    },
-    {
-      title: 'شقة غرفتين في التجمع السادس - أمام الكازار - 4.5 مليون',
-      description: 'شقة الغرفتين في التجمع السادس أمام كمبوند الكازار\nبسعر 4.5 مليون جنيه - بمقدم 300 ألف فقط\nفي أفضل لوكيشن في التجمع السادس\n10 دقائق من الجامعة الأمريكية',
-      type: 'apartment',
-      purpose: 'sale',
-      price: 4500000,
-      area: 110,
-      bedrooms: 2,
-      bathrooms: 2,
-      district: 'التجمع السادس',
-      is_featured: false,
-      img: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&fit=crop',
-    },
-  ];
+  const adminRes = await query("SELECT id FROM users WHERE role='superadmin' ORDER BY id LIMIT 1");
+  const adminId = adminRes.rows[0]?.id;
+  if (!adminId) throw new Error('No superadmin user found');
 
   for (const prop of properties) {
-    const propRes = await query(
-      `INSERT INTO properties (owner_id, title, title_ar, description, description_ar, type, purpose, price, area, bedrooms, rooms, bathrooms, district, status, is_featured)
-       VALUES ($1,$2,$2,$3,$3,$4,$5,$6,$7,$8,$8,$9,$10,'approved',$11) RETURNING id`,
-      [adminId, prop.title, prop.description, prop.type, prop.purpose, prop.price, prop.area, prop.bedrooms, prop.bathrooms, prop.district, prop.is_featured]
-    );
-    await query(
-      'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,true,0)',
-      [propRes.rows[0].id, prop.img]
-    );
-    console.log(`✅ Added: ${prop.title}`);
+    const existing = await query('SELECT id FROM properties WHERE title_ar=$1 OR title=$1 LIMIT 1', [prop.title]);
+    let propertyId = existing.rows[0]?.id;
+
+    if (propertyId) {
+      await query(
+        `UPDATE properties SET
+          owner_id=$1, title=$2, title_ar=$2, description=$3, description_ar=$3,
+          type=$4, purpose='sale', price=$5, area=$6, rooms=$7, bedrooms=$7,
+          bathrooms=$8, district=$9, city='القاهرة', address=$10, contact_phone=$11,
+          down_payment=$12, delivery_status=$13, finishing_type=$14, status='approved',
+          is_featured=true, approved_by=$1, approved_at=COALESCE(approved_at, NOW()),
+          floor_plan_image=NULL, google_maps_url=NULL, updated_at=NOW()
+         WHERE id=$15`,
+        [
+          adminId, prop.title, prop.description, prop.type, prop.price, prop.area, prop.bedrooms,
+          prop.bathrooms, prop.district, prop.address, CONTACT_PHONE, prop.downPayment,
+          prop.deliveryStatus, prop.finishingType, propertyId
+        ]
+      );
+      await query('DELETE FROM property_images WHERE property_id=$1', [propertyId]);
+    } else {
+      const propRes = await query(
+        `INSERT INTO properties (
+          owner_id, title, title_ar, description, description_ar, type, purpose, price, area,
+          rooms, bedrooms, bathrooms, district, city, address, contact_phone, down_payment,
+          delivery_status, finishing_type, status, is_featured, approved_by, approved_at,
+          floor_plan_image, google_maps_url, updated_at
+        )
+        VALUES ($1,$2,$2,$3,$3,$4,'sale',$5,$6,$7,$7,$8,$9,'القاهرة',$10,$11,$12,$13,$14,'approved',true,$1,NOW(),NULL,NULL,NOW())
+        RETURNING id`,
+        [
+          adminId, prop.title, prop.description, prop.type, prop.price, prop.area, prop.bedrooms,
+          prop.bathrooms, prop.district, prop.address, CONTACT_PHONE, prop.downPayment,
+          prop.deliveryStatus, prop.finishingType
+        ]
+      );
+      propertyId = propRes.rows[0].id;
+    }
+
+    for (let i = 0; i < prop.images.length; i++) {
+      await query(
+        'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES ($1,$2,$3,$4)',
+        [propertyId, prop.images[i], i === 0, i]
+      );
+    }
+
+    console.log(`Added/updated: ${prop.title}`);
   }
 
-  console.log('\n🎉 All properties added!');
+  console.log('Requested featured properties are ready.');
   process.exit(0);
 }
 

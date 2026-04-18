@@ -1,6 +1,6 @@
 import { PROPERTIES } from '../data/mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -9,7 +9,7 @@ function getToken() {
 function getDeviceId(): string {
   let deviceId = localStorage.getItem('device_id');
   if (!deviceId) {
-    deviceId = crypto.randomUUID();
+    deviceId = crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     localStorage.setItem('device_id', deviceId);
   }
   return deviceId;
@@ -53,11 +53,11 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 export const api = {
-  login: async (emailOrPhone: string, password: string) => {
+  login: async (emailOrPhone: string, password: string, rememberMe?: boolean) => {
     const deviceId = getDeviceId();
     return request('/auth/login', { 
       method: 'POST', 
-      body: JSON.stringify({ emailOrPhone, password, deviceId }) 
+      body: JSON.stringify({ emailOrPhone, password, deviceId, rememberDevice: rememberMe }) 
     });
   },
 register: (data: { name: string; email: string; phone: string; password: string }) =>
@@ -76,7 +76,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
     });
   },
   resendLoginOTP: (email: string) =>
-    request('/auth/resend-login-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+    request('/auth/resend-login-otp', { method: 'POST', body: JSON.stringify({ email, deviceId: getDeviceId() }) }),
   sendForgotPassword: (email: string) =>
     request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyForgotPassword: (email: string, otp: string) =>
