@@ -4,6 +4,33 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required');
 
+let dbPool: any = null;
+let poolInit = false;
+
+async function getPool() {
+  if (dbPool) return dbPool;
+  
+  const dbConfig = {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT || '3306'),
+    waitForConnections: true,
+    connectionLimit: 2,
+    queueLimit: 0,
+    idleTimeout: 30000,
+    enableKeepAlive: true
+  };
+
+  if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
+    throw new Error('Database configuration missing');
+  }
+
+  dbPool = mysql.createPool(dbConfig);
+  return dbPool;
+}
+
 function verifyToken(token: string): any {
   try {
     return jwt.verify(token, JWT_SECRET);
@@ -32,6 +59,7 @@ async function runMigrations(pool: any) {
     { table: 'otp_codes', col: 'last_sent_at', sql: 'ALTER TABLE otp_codes ADD COLUMN last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
     { table: 'properties', col: 'description_ar', sql: 'ALTER TABLE properties ADD COLUMN description_ar TEXT' },
     { table: 'properties', col: 'title_ar', sql: 'ALTER TABLE properties ADD COLUMN title_ar VARCHAR(300)' },
+    { table: 'properties', col: 'show_on_home', sql: 'ALTER TABLE properties ADD COLUMN show_on_home BOOLEAN DEFAULT false' },
   ];
   
   for (const { table, col, sql } of columnsToAdd) {
@@ -699,32 +727,18 @@ export default async function handler(req: any, res: any) {
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   const user = token ? verifyToken(token) : null;
 
-  const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: parseInt(process.env.DB_PORT || '3306'),
-    waitForConnections: true,
-    connectionLimit: 1,
-    queueLimit: 0,
-    idleTimeout: 10000
-  };
-
-  if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
-    return res.status(500).json({ ok: false, error: 'Database configuration missing' });
-  }
-
   let pool;
   try {
-    pool = mysql.createPool(dbConfig);
-    await pool.query('SELECT 1');
+    pool = await getPool();
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
   }
 
-  // Run migrations on every request (lightweight check)
-  await runMigrations(pool);
+  // Run migrations once
+  if (!poolInit) {
+    poolInit = true;
+    await runMigrations(pool);
+  }
 
   // ========== AUTH ENDPOINTS ==========
 
@@ -1414,7 +1428,7 @@ export default async function handler(req: any, res: any) {
       const [rows]: any = await pool.query(`
         SELECT p.*,
           (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
-        FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
+        FROM properties p WHERE p.status = 'approved' AND p.show_on_home = true
         ORDER BY p.created_at DESC LIMIT 6
       `);
       
@@ -1530,9 +1544,9 @@ export default async function handler(req: any, res: any) {
   if (method === 'POST' && url?.includes('/api/properties')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
-      const {
+const {
         title, title_ar, description, type, purpose, price, area, rooms, bedrooms, bathrooms, floor,
-        address, district, contact_phone, down_payment, delivery_status, is_featured, images,
+        address, district, contact_phone, down_payment, delivery_status, is_featured, show_on_home, images,
         is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
         finishing_type, floor_plan_image, google_maps_url
       } = body;
@@ -1546,14 +1560,14 @@ export default async function handler(req: any, res: any) {
         INSERT INTO properties (
           title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms,
           bathrooms, floor, address, district, contact_phone, down_payment, delivery_status,
-          is_featured, is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
+          is_featured, show_on_home, is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
           finishing_type, floor_plan_image, google_maps_url, owner_id, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         displayTitle, displayTitle, description, description, type, purpose || 'sale', price, area,
         rooms || bedrooms, bedrooms || rooms, bathrooms, floor, address, district, finalPhone,
         down_payment || null, delivery_status || null,
-        Boolean(is_featured), Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
+        Boolean(is_featured), Boolean(show_on_home), Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
         Boolean(has_pool), Boolean(has_garden), Boolean(has_basement),
         finishing_type || null, floor_plan_image || null, google_maps_url || null,
         user.id, initialStatus
@@ -1750,12 +1764,13 @@ export default async function handler(req: any, res: any) {
           title=COALESCE(?, title), title_ar=COALESCE(?, title_ar),
           description=COALESCE(?, description), price=?, area=?, bedrooms=?, bathrooms=?,
           district=?, city=?, address=?, type=?, purpose=?, floor=?, contact_phone=?,
-          is_featured=?, updated_at=NOW()
+          is_featured=?, show_on_home=?, updated_at=NOW()
         WHERE id=?
       `, [
         title, title_ar, description, price, area, bedrooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
         typeof is_featured === 'boolean' ? is_featured : null,
+        typeof show_on_home === 'boolean' ? show_on_home : null,
         id
       ]);
 
@@ -1854,58 +1869,7 @@ export default async function handler(req: any, res: any) {
 
   // ========== NOTIFICATIONS ENDPOINTS ==========
 
-  // GET /api/notifications (user's notifications) - must check specific paths first
-  if (method === 'GET' && url?.startsWith('/api/notifications')) {
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-      // Skip if already handled by other notification routes
-      if (url?.includes('/unread-count') || url?.includes('/mark') || url?.includes('/admin')) {
-        return res.status(404).json({ error: 'Not found' });
-      }
-      const [rows]: any = await pool.query(
-        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
-        [user.id]
-      );
-      console.log('[notifications] user_id:', user.id, 'count:', rows.length);
-      return res.json(Array.isArray(rows) ? rows : []);
-    } catch (err: any) {
-      console.log('[notifications] Error:', err.message);
-      return res.status(500).json({ error: 'خطأ' });
-    }
-  }
-
-  // GET /api/notifications/mine (alias for user notifications)
-  if (method === 'GET' && url?.includes('/notifications/mine')) {
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-      const [rows]: any = await pool.query(
-        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
-        [user.id]
-      );
-      console.log('[notifications/mine] user_id:', user.id, 'count:', rows.length);
-      return res.json(Array.isArray(rows) ? rows : []);
-    } catch (err: any) {
-      console.log('[notifications/mine] Error:', err.message);
-      return res.status(500).json({ error: 'خطأ' });
-    }
-  }
-
-  // GET /api/notifications/admin (all notifications for admin)
-  if (method === 'GET' && url?.includes('/api/notifications/admin')) {
-    if (!user || !['admin', 'superadmin'].includes(user.role)) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-    try {
-      const [rows]: any = await pool.query(
-        'SELECT n.*, u.name as user_name, u.email as user_email FROM notifications n LEFT JOIN users u ON n.user_id = u.id ORDER BY n.created_at DESC LIMIT 100'
-      );
-      return res.json(Array.isArray(rows) ? rows : []);
-    } catch {
-      return res.status(500).json({ error: 'خطأ' });
-    }
-  }
-
-  // GET /api/notifications/unread-count
+  // GET /api/notifications/unread-count - MUST COME FIRST
   if (method === 'GET' && url?.includes('/api/notifications/unread-count')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
@@ -1922,7 +1886,22 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // PATCH /api/notifications/mark-all-read
+  // GET /api/notifications/admin - MUST COME FIRST
+  if (method === 'GET' && url?.includes('/api/notifications/admin')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT n.*, u.name as user_name, u.email as user_email FROM notifications n LEFT JOIN users u ON n.user_id = u.id ORDER BY n.created_at DESC LIMIT 100'
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/notifications/mark-all-read - MUST COME FIRST
   if (method === 'PATCH' && url?.includes('/api/notifications/mark-all-read')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
@@ -1933,7 +1912,7 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // PATCH /api/notifications/mark-read/:id
+  // PATCH /api/notifications/mark-read/:id - MUST COME FIRST
   if (method === 'PATCH' && url?.match(/\/api\/notifications\/mark-read\/\d+$/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
@@ -1943,6 +1922,38 @@ export default async function handler(req: any, res: any) {
       await pool.query('UPDATE notifications SET is_read = true WHERE id = ? AND user_id = ?', [id, user.id]);
       return res.json({ success: true });
     } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/mine - MUST COME FIRST
+  if (method === 'GET' && url?.includes('/notifications/mine')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
+      console.log('[notifications/mine] user_id:', user.id, 'count:', rows.length);
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[notifications/mine] Error:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications (user's notifications) - catch all, comes LAST
+  if (method === 'GET' && url?.startsWith('/api/notifications')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
+      console.log('[notifications] user_id:', user.id, 'count:', rows.length);
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[notifications] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }

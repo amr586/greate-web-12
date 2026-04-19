@@ -164,6 +164,11 @@ register: (data: { name: string; email: string; phone: string; password: string 
 
   getSiteSettings: () => request('/settings'),
   updateSiteSettings: (data: Record<string, string>) => request('/settings', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getNotifications: () => request('/notifications'),
+  getUnreadCount: () => request('/notifications/unread-count'),
+  markNotificationRead: (id: number) => request(`/notifications/mark-read/${id}`, { method: 'PATCH' }),
+  markAllNotificationsRead: () => request('/notifications/mark-all-read', { method: 'PATCH' }),
 };
 
 export async function streamChat(messages: any[], onChunk: (text: string) => void, onDone: () => void, onError?: (msg: string) => void) {
