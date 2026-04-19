@@ -1334,12 +1334,32 @@ export default async function handler(req: any, res: any) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const { name, phone, avatar_url } = body;
-      const [result]: any = await pool.query(
+      await pool.query(
         `UPDATE users SET name=?, phone=?, avatar_url=? WHERE id=?`,
         [name, phone, avatar_url || null, user.id]
       );
-      return res.json({ success: true });
-    } catch {
+      
+      // Get updated user data
+      const [rows]: any = await pool.query(
+        'SELECT id, name, email, phone, role, sub_role, avatar_url FROM users WHERE id=?',
+        [user.id]
+      );
+      
+      // Clear trusted devices to force re-login with new data
+      await pool.query('DELETE FROM trusted_devices WHERE user_id=?', [user.id]);
+      
+      // Generate new token with updated data
+      const newToken = generateToken({
+        id: rows[0].id,
+        role: rows[0].role,
+        sub_role: rows[0].sub_role,
+        email: rows[0].email,
+        deviceId: user.deviceId
+      });
+      
+      return res.json({ success: true, user: rows[0], token: newToken });
+    } catch (err: any) {
+      console.log('[ERROR] Profile:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1364,8 +1384,12 @@ export default async function handler(req: any, res: any) {
       const newHash = await bcrypt.hash(newPassword, 12);
       await pool.query('UPDATE users SET password_hash=? WHERE id=?', [newHash, user.id]);
 
-      return res.json({ success: true, message: 'تم تغيير كلمة المرور' });
-    } catch {
+      // Revoke all trusted devices on password change
+      await pool.query('DELETE FROM trusted_devices WHERE user_id=?', [user.id]);
+
+      return res.json({ success: true, message: 'تم تغيير كلمة المرور', devicesCleared: true });
+    } catch (err: any) {
+      console.log('[ERROR] Change password:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1719,7 +1743,8 @@ export default async function handler(req: any, res: any) {
       
       const {
         title, title_ar, description, price, area, bedrooms, bathrooms, district,
-        city, address, type, purpose, floor, contact_phone, is_featured
+        city, address, type, purpose, floor, contact_phone, is_featured,
+        images
       } = body;
 
       await pool.query(`
@@ -1736,8 +1761,40 @@ export default async function handler(req: any, res: any) {
         id
       ]);
 
+      // Handle images separately if provided
+      if (Array.isArray(images) && images.length > 0) {
+        // Get current images
+        const [currentImgs]: any = await pool.query(
+          'SELECT id, url FROM property_images WHERE property_id = ?',
+          [id]
+        );
+        
+        // Get URLs from current and new images
+        const currentUrls = currentImgs.map((i: any) => i.url);
+        const newUrls = images.map((i: any) => i.url || i).filter(Boolean);
+        
+        // Find images to delete (in current but not in new)
+        const toDelete = currentImgs.filter((i: any) => !newUrls.includes(i.url));
+        
+        // Delete removed images
+        for (const img of toDelete) {
+          await pool.query('DELETE FROM property_images WHERE id = ?', [img.id]);
+        }
+        
+        // Add new images
+        for (const imgUrl of newUrls) {
+          if (!currentUrls.includes(imgUrl)) {
+            await pool.query(
+              'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES (?, ?, ?, ?)',
+              [id, imgUrl, newUrls.indexOf(imgUrl) === 0, newUrls.indexOf(imgUrl)]
+            );
+          }
+        }
+      }
+
       return res.json({ success: true });
-    } catch {
+    } catch (err: any) {
+      console.log('[ERROR] Update property:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1910,7 +1967,7 @@ export default async function handler(req: any, res: any) {
   // ========== CONTACT ENDPOINTS ==========
 
   // POST /api/contact
-  if (method === 'POST' && url?.includes('/api/contact')) {
+  if (method === 'POST' && url?.startsWith('/api/contact')) {
     try {
       // Rate limit check
       const clientIP = headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
@@ -1935,10 +1992,19 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'بريد إلكتروني غير صحيح' });
       }
 
-      await pool.query(
+      const [result]: any = await pool.query(
         `INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)`,
         [sanitizedName, sanitizedEmail, sanitizedPhone, sanitizedSubject, sanitizedMessage]
       );
+
+      // Notify all admins about new contact message
+      const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('superadmin', 'admin')");
+      for (const admin of admins) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'contact', ?, ?, ?)`,
+          [admin.id, 'رسالة CONTACT جديدة', `${sanitizedName}: ${sanitizedSubject}`, '/admin/contact']
+        );
+      }
 
       return res.json({ success: true });
     } catch (err: any) {
@@ -1948,7 +2014,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // GET /api/contact (admin only)
-  if (method === 'GET' && url?.includes('/api/contact')) {
+  if (method === 'GET' && url?.startsWith('/api/contact')) {
     if (!user || !['admin', 'superadmin'].includes(user.role)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
