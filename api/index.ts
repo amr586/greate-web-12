@@ -1448,10 +1448,8 @@ export default async function handler(req: any, res: any) {
         }
       }
       
-      await pool.end();
       return res.json(rows);
     } catch {
-      await pool.end();
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -2252,7 +2250,7 @@ const {
       const [propsResult]: any = await pool.query('SELECT COUNT(*) as cnt FROM properties');
       const [approvedResult]: any = await pool.query("SELECT COUNT(*) as cnt FROM properties WHERE status='approved'");
       
-      await pool.end();
+      
       return res.json({ 
         ok: true, 
         service: 'Great Society API', 
@@ -2267,7 +2265,7 @@ const {
       });
     } catch (e: any) {
       dbStatus = "error: " + e.message;
-      await pool.end();
+      
       return res.json({ ok: true, service: 'Great Society API', db: dbStatus });
     }
   }
@@ -2276,10 +2274,10 @@ const {
   if (method === 'GET' && url?.includes('/api/debug-users')) {
     try {
       const [rows]: any = await pool.query('SELECT id, name, email, role, is_active FROM users LIMIT 10');
-      await pool.end();
+      
       return res.json({ users: rows });
     } catch (e: any) {
-      await pool.end();
+      
       return res.json({ error: e.message });
     }
   }
@@ -2334,10 +2332,10 @@ const {
   if (method === 'GET' && url?.includes('/api/settings')) {
     try {
       const [rows]: any = await pool.query('SELECT * FROM site_settings LIMIT 1');
-      await pool.end();
+      
       return res.json(rows[0] || { site_name: 'Great Society', contact_phone: '01100111618' });
     } catch (e: any) {
-      await pool.end();
+      
       return res.json({ site_name: 'Great Society', contact_phone: '01100111618' });
     }
   }
@@ -2435,7 +2433,7 @@ const {
   // PATCH /api/settings
   if (method === 'PATCH' && url?.includes('/api/settings')) {
     if (!user || user.role !== 'superadmin') {
-      await pool.end();
+      
       return res.status(403).json({ error: 'Unauthorized' });
     }
     try {
@@ -2449,10 +2447,10 @@ const {
           );
         }
       }
-      await pool.end();
+      
       return res.json({ success: true });
     } catch (e: any) {
-      await pool.end();
+      
       return res.status(500).json({ error: e.message });
     }
   }
@@ -2570,6 +2568,6 @@ const {
 
   // Default response
   console.log('[DEBUG] No route matched for:', method, url);
-  await pool.end();
+  
   return res.json({ ok: true, service: 'Great Society API' });
 }
