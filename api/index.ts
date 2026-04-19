@@ -2006,15 +2006,16 @@ const {
       // Notify all admins about new contact message
       const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('superadmin', 'admin')");
       for (const admin of admins) {
-        await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'contact', ?, ?, ?)`,
-          [admin.id, 'رسالة CONTACT جديدة', `${sanitizedName}: ${sanitizedSubject}`, '/admin/contact']
-        );
+        try {
+          await pool.query(
+            `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'contact', ?, ?, ?)`,
+            [admin.id, 'رسالة جديدة من ' + sanitizedName, sanitizedSubject, '/admin/contact']
+          );
+        } catch {}
       }
 
       return res.json({ success: true });
-    } catch (err: any) {
-      console.log('[ERROR] Contact:', err.message);
+    } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
   }
