@@ -1487,7 +1487,7 @@ export default async function handler(req: any, res: any) {
   // GET /api/properties - list all (catch-all at the end)
   if (method === 'GET' && url?.startsWith('/api/properties')) {
     try {
-      const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12 } = urlQuery;
+      const { type, purpose, district, minPrice, maxPrice, minArea, maxArea, rooms, search, page = 1, limit = 12 } = urlQuery;
       let conditions = ["p.status = 'approved'"];
       const params: any[] = [];
 
@@ -1496,6 +1496,8 @@ export default async function handler(req: any, res: any) {
       if (district) { conditions.push(`p.district LIKE ?`); params.push(`%${district}%`); }
       if (minPrice) { conditions.push(`p.price >= ?`); params.push(Number(minPrice)); }
       if (maxPrice) { conditions.push(`p.price <= ?`); params.push(Number(maxPrice)); }
+      if (minArea) { conditions.push(`p.area >= ?`); params.push(Number(minArea)); }
+      if (maxArea) { conditions.push(`p.area <= ?`); params.push(Number(maxArea)); }
       if (rooms) { conditions.push(`p.rooms >= ?`); params.push(Number(rooms)); }
       if (search) {
         conditions.push(`(p.title LIKE ? OR p.title_ar LIKE ? OR p.district LIKE ?)`);
