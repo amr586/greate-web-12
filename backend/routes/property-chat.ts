@@ -65,11 +65,11 @@ router.post('/:propertyId/messages', authenticate, async (req: AuthRequest, res:
     const propTitle = prop.rows[0].title_ar || prop.rows[0].title;
     const propLink = `/properties/${propertyId}`;
 
-    // Notify all admin/staff/subadmin when a user sends an inquiry
+    // Notify all admin/staff when a user sends an inquiry
     if (!isAdmin) {
       try {
         const staffRes = await query(
-          "SELECT id FROM users WHERE (role IN ('admin','superadmin') OR role='subadmin') AND is_active=true"
+          `SELECT id FROM users WHERE (role IN ('admin','superadmin') OR sub_role IN ('property_manager','data_entry','support')) AND is_active=true`
         );
         const chatLink = `/properties/${propertyId}?openChat=${req.user!.id}`;
         for (const staff of staffRes.rows) {

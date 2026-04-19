@@ -285,6 +285,20 @@ router.patch('/users/:id/reset-password', authenticate, requireSuperAdmin, async
   }
 });
 
+router.patch('/users/:id/update-email', authenticate, requireSuperAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { newEmail } = req.body;
+    if (!newEmail || !newEmail.trim()) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) return res.status(400).json({ error: 'بريد إلكتروني غير صحيح' });
+    const existing = await query('SELECT id FROM users WHERE email=$1 AND id!=$2', [newEmail.trim().toLowerCase(), req.params.id]);
+    if (existing.rows.length > 0) return res.status(409).json({ error: 'البريد الإلكتروني مستخدم بالفعل' });
+    await query('UPDATE users SET email=$1 WHERE id=$2', [newEmail.trim().toLowerCase(), req.params.id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'خطأ في تغيير البريد الإلكتروني' });
+  }
+});
+
 router.get('/analytics', authenticate, requireAdmin, async (_req: AuthRequest, res: Response) => {
   try {
     const [byType, byDistrict, byMonth, payments, monthlyRevenue, casesByMonth] = await Promise.all([

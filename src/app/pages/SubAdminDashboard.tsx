@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Building2, CheckCircle, XCircle, Clock, LogOut, Eye, BarChart3, MessageSquare,
@@ -44,6 +44,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: any; ic
 export default function SubAdminDashboard() {
   const { user, logout, isAdmin, isSuperAdmin, subRole, updateUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
@@ -55,6 +56,7 @@ export default function SubAdminDashboard() {
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
   const [replyMsg, setReplyMsg] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
@@ -71,8 +73,12 @@ export default function SubAdminDashboard() {
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (!isAdmin) { navigate('/dashboard'); return; }
 
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
     const role = user.sub_role;
-    if (role === 'data_entry') setActiveTab('listings');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    } else if (role === 'data_entry') setActiveTab('listings');
     else if (role === 'property_manager') setActiveTab('pending');
     else if (role === 'analytics') setActiveTab('analytics');
     else if (role === 'support') setActiveTab('tickets');
@@ -80,6 +86,12 @@ export default function SubAdminDashboard() {
 
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
 
   const loadData = async () => {
     setLoading(true);
@@ -90,12 +102,14 @@ export default function SubAdminDashboard() {
         api.getAnalytics(),
         api.getTickets(),
         api.getAdminPayments(),
+        api.getContactMessages(),
       ]);
       if (results[0].status === 'fulfilled') setProperties(results[0].value || []);
       if (results[1].status === 'fulfilled') setStats(results[1].value);
       if (results[2].status === 'fulfilled') setAnalytics(results[2].value);
       if (results[3].status === 'fulfilled') setTickets(results[3].value || []);
       if (results[4].status === 'fulfilled') setPurchases(results[4].value || []);
+      if (results[5].status === 'fulfilled') setContactMessages(Array.isArray(results[5].value) ? results[5].value : []);
     } catch {}
     finally { setLoading(false); }
   };
@@ -251,10 +265,20 @@ export default function SubAdminDashboard() {
 
   const pendingProps = filteredProps.filter(p => p.status === 'pending');
 
+  const unreadContact = contactMessages.filter(m => !m.is_read).length;
+
+  const markContactRead = async (id: number) => {
+    await api.markContactRead(id);
+    setContactMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m));
+  };
+
+  const CONTACT_TAB = { id: 'contact', label: `رسائل التواصل${unreadContact > 0 ? ` (${unreadContact})` : ''}`, icon: <FileText size={16} /> };
+
   const TABS: Record<string, { id: string; label: string; icon: React.ReactNode }[]> = {
     data_entry: [
       { id: 'listings', label: 'العقارات', icon: <Building2 size={16} /> },
       { id: 'add', label: 'إضافة عقار', icon: <PlusCircle size={16} /> },
+      CONTACT_TAB,
       { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
     ],
     property_manager: [
@@ -263,16 +287,19 @@ export default function SubAdminDashboard() {
       { id: 'purchases', label: 'طلبات الشراء', icon: <DollarSign size={16} /> },
       { id: 'sold', label: 'المباعة', icon: <TrendingUp size={16} /> },
       { id: 'add', label: 'إضافة عقار', icon: <PlusCircle size={16} /> },
+      CONTACT_TAB,
       { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
     ],
     analytics: [
       { id: 'analytics', label: 'الإحصائيات', icon: <BarChart3 size={16} /> },
       { id: 'overview', label: 'نظرة عامة', icon: <Activity size={16} /> },
+      CONTACT_TAB,
       { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
     ],
     support: [
       { id: 'tickets', label: 'التذاكر المفتوحة', icon: <MessageSquare size={16} /> },
       { id: 'closed', label: 'المغلقة', icon: <CheckCircle size={16} /> },
+      CONTACT_TAB,
       { id: 'profile', label: 'بروفايلي', icon: <User size={16} /> },
     ],
   };
@@ -792,6 +819,51 @@ export default function SubAdminDashboard() {
                     )}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === 'contact' && (
+              <motion.div key="contact" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900">رسائل التواصل ({contactMessages.length})</h3>
+                    {unreadContact > 0 && <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">{unreadContact} غير مقروء</span>}
+                  </div>
+                  {contactMessages.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-8">لا توجد رسائل</p>
+                  ) : (
+                    <div className="divide-y divide-gray-50">
+                      {contactMessages.map((m: any) => (
+                        <div key={m.id} className={`p-5 hover:bg-gray-50 transition-colors ${!m.is_read ? 'bg-blue-50/50' : ''}`}>
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-gradient-to-br from-[#005a7d] to-[#007a9a] rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">
+                              {m.name?.charAt(0) || '?'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="font-bold text-gray-900 text-sm">{m.name}</span>
+                                {!m.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+                                <span className="text-gray-400 text-xs">{new Date(m.created_at).toLocaleDateString('ar-EG')}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-x-3 text-xs text-gray-500 mb-2" dir="ltr">
+                                <span>{m.email}</span>
+                                {m.phone && <span>· {m.phone}</span>}
+                              </div>
+                              <div className="font-semibold text-gray-700 text-sm mb-1">{m.subject}</div>
+                              <div className="text-gray-600 text-sm leading-relaxed">{m.message}</div>
+                            </div>
+                            {!m.is_read && (
+                              <button onClick={() => markContactRead(m.id)}
+                                className="flex-shrink-0 px-3 py-1.5 bg-[#005a7d] text-white text-xs font-bold rounded-lg hover:bg-[#004a68] transition-colors">
+                                تمييز كمقروء
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
 

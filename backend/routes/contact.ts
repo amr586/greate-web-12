@@ -73,14 +73,23 @@ router.post('/', async (req: Request, res: Response) => {
        VALUES ($1,$2,$3,$4,$5,$6)`,
       [name.trim(), email.trim().toLowerCase(), phone?.trim() || null, subject.trim(), message.trim(), clientIP]
     );
-    // Notify all admins and support staff
+    // Notify all admins, superadmins, and staff (property_manager, data_entry, support)
     try {
-      const adminsRes = await query("SELECT id FROM users WHERE role IN ('admin','superadmin') AND is_active=true");
-      for (const admin of adminsRes.rows) {
+      const staffRes = await query(
+        `SELECT id, role, sub_role FROM users
+         WHERE (role IN ('admin','superadmin') OR sub_role IN ('property_manager','data_entry','support'))
+         AND is_active=true`
+      );
+      for (const staff of staffRes.rows) {
+        const dashLink = staff.role === 'superadmin'
+          ? '/superadmin?tab=contact'
+          : staff.role === 'admin'
+            ? '/admin?tab=contact'
+            : '/sub-admin?tab=contact';
         await query(
-          `INSERT INTO notifications (user_id, type, title, message)
-           VALUES ($1,'contact_message','رسالة تواصل جديدة',$2)`,
-          [admin.id, `من: ${name.trim()} (${phone?.trim() || email.trim()}) - الموضوع: ${subject.trim()}`]
+          `INSERT INTO notifications (user_id, type, title, message, link)
+           VALUES ($1,'contact_message','رسالة تواصل جديدة',$2,$3)`,
+          [staff.id, `من: ${name.trim()} (${phone?.trim() || email.trim()}) - الموضوع: ${subject.trim()}`, dashLink]
         );
       }
     } catch (notifyErr) {
@@ -93,7 +102,15 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/', authenticate, requireAdmin, async (_req: AuthRequest, res: Response) => {
+function isStaffOrAdmin(user: AuthRequest['user']): boolean {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'superadmin') return true;
+  if (['property_manager', 'data_entry', 'support'].includes(user.sub_role || '')) return true;
+  return false;
+}
+
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!isStaffOrAdmin(req.user)) return res.status(403).json({ error: 'غير مسموح' });
   try {
     const result = await query(
       'SELECT * FROM contact_messages ORDER BY created_at DESC'
@@ -104,7 +121,8 @@ router.get('/', authenticate, requireAdmin, async (_req: AuthRequest, res: Respo
   }
 });
 
-router.patch('/:id/read', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+router.patch('/:id/read', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!isStaffOrAdmin(req.user)) return res.status(403).json({ error: 'غير مسموح' });
   try {
     await query('UPDATE contact_messages SET is_read=true WHERE id=$1', [req.params.id]);
     res.json({ success: true });

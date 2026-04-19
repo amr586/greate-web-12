@@ -1,6 +1,6 @@
 import { PROPERTIES } from '../data/mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://greate-web-12.vercel.app/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -126,6 +126,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
   updateRole: (id: number, role: string, sub_role?: string) => request(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role, sub_role }) }),
   toggleUser: (id: number) => request(`/admin/users/${id}/toggle`, { method: 'PATCH' }),
   resetUserPassword: (id: number, newPassword: string) => request(`/admin/users/${id}/reset-password`, { method: 'PATCH', body: JSON.stringify({ newPassword }) }),
+  updateUserEmail: (id: number, newEmail: string) => request(`/admin/users/${id}/update-email`, { method: 'PATCH', body: JSON.stringify({ newEmail }) }),
   getAnalytics: () => request('/admin/analytics'),
   getAdminPayments: () => request('/admin/payments'),
   approvePayment: (id: number) => request(`/admin/payments/${id}/approve`, { method: 'PATCH' }),

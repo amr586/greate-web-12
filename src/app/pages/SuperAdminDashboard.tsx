@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { LayoutDashboard, Building2, Users, CreditCard, CheckCircle, XCircle, Clock, LogOut, Eye, ShieldCheck, MessageSquare, Phone, Mail, Lock, X, EyeOff, User, Plus, Edit3, Trash2, PlusCircle, Loader2, Settings, Globe, MapPin, MessageCircle, Image, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +23,7 @@ export default function SuperAdminDashboard() {
   const { user, logout, isSuperAdmin, updateUser } = useAuth();
   const { settings, refreshSettings } = useSiteSettings();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
@@ -36,6 +37,10 @@ export default function SuperAdminDashboard() {
   const [showNewPass, setShowNewPass] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetMsg, setResetMsg] = useState('');
+  const [emailModal, setEmailModal] = useState<{ userId: number; userName: string; currentEmail: string } | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailMsg, setEmailMsg] = useState('');
   const [editProperty, setEditProperty] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [editLoading, setEditLoading] = useState(false);
@@ -59,6 +64,12 @@ export default function SuperAdminDashboard() {
     if (!isSuperAdmin) { navigate('/dashboard'); return; }
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
 
   useEffect(() => {
     setSiteForm({ ...settings });
@@ -273,6 +284,22 @@ export default function SuperAdminDashboard() {
       setResetMsg('❌ ' + (err.message || 'خطأ في تغيير كلمة المرور'));
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!emailModal || !newEmail.trim()) return;
+    setEmailLoading(true);
+    setEmailMsg('');
+    try {
+      await api.updateUserEmail(emailModal.userId, newEmail);
+      setUsers(prev => prev.map(u => u.id === emailModal.userId ? { ...u, email: newEmail.trim().toLowerCase() } : u));
+      setEmailMsg('✅ تم تغيير البريد الإلكتروني بنجاح');
+      setTimeout(() => { setEmailModal(null); setNewEmail(''); setEmailMsg(''); }, 1500);
+    } catch (err: any) {
+      setEmailMsg('❌ ' + (err.message || 'خطأ في تغيير البريد الإلكتروني'));
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -564,6 +591,13 @@ export default function SuperAdminDashboard() {
                             >
                               <Lock size={11} />تغيير الباسورد
                             </button>
+                            <button
+                              onClick={() => { setEmailModal({ userId: u.id, userName: u.name, currentEmail: u.email }); setNewEmail(''); setEmailMsg(''); }}
+                              disabled={u.id === user?.id}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+                            >
+                              <Mail size={11} />تغيير الإيميل
+                            </button>
                             <button onClick={() => toggleUser(u.id)} disabled={u.id === user?.id}
                               className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 ${u.is_active ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'}`}
                             >
@@ -619,6 +653,46 @@ export default function SuperAdminDashboard() {
                       className="w-full bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-[#004a68] disabled:opacity-50 transition-colors"
                     >
                       {resetLoading ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Email Update Modal */}
+            <AnimatePresence>
+              {emailModal && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                  onClick={e => { if (e.target === e.currentTarget) { setEmailModal(null); setNewEmail(''); setEmailMsg(''); } }}
+                >
+                  <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                    className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" dir="rtl"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-gray-900 text-base">تغيير البريد الإلكتروني</h3>
+                      <button onClick={() => { setEmailModal(null); setNewEmail(''); setEmailMsg(''); }}
+                        className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200"
+                      ><X size={15} /></button>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-1">تغيير إيميل: <strong className="text-gray-800">{emailModal.userName}</strong></p>
+                    <p className="text-xs text-gray-400 mb-4" dir="ltr">الحالي: {emailModal.currentEmail}</p>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleUpdateEmail()}
+                      placeholder="البريد الإلكتروني الجديد"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#005a7d] mb-4"
+                      dir="ltr"
+                    />
+                    {emailMsg && (
+                      <p className={`text-xs mb-3 text-center font-medium ${emailMsg.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{emailMsg}</p>
+                    )}
+                    <button onClick={handleUpdateEmail} disabled={emailLoading || !newEmail.trim()}
+                      className="w-full bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-[#004a68] disabled:opacity-50 transition-colors"
+                    >
+                      {emailLoading ? 'جاري الحفظ...' : 'حفظ البريد الإلكتروني'}
                     </button>
                   </motion.div>
                 </motion.div>
