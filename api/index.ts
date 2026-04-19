@@ -395,10 +395,11 @@ async function runMigrations(pool: any) {
 
   // Seed default accounts
   const seedAccounts = [
-    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01034517293', password: 'Admin@2026', role: 'superadmin', sub_role: null },
-    { name: 'مدخل بيانات', email: 'moam2808@gmail.com', phone: '01034517293', password: 'Data@2026', role: 'admin', sub_role: 'data_entry' },
-    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01034517293', password: 'Prop@2026', role: 'admin', sub_role: 'property_manager' },
-    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01034517293', password: 'Support@2026', role: 'admin', sub_role: 'support' },
+    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01034517293', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
+    { name: 'سوبر أدمن 2', email: 'superadmin878@gmail.com', phone: '01034517293', password: 'Admin@GreatSociety1', role: 'superadmin', sub_role: null },
+    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01034517293', password: 'PropMgr@123', role: 'admin', sub_role: 'property_manager' },
+    { name: 'داتا انتري', email: 'moam2808@gmail.com', phone: '01034517293', password: 'DataEntry@123', role: 'admin', sub_role: 'data_entry' },
+    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01034517293', password: 'Support@123', role: 'admin', sub_role: 'support' },
   ];
 
   for (const acc of seedAccounts) {
@@ -409,10 +410,7 @@ async function runMigrations(pool: any) {
         `INSERT IGNORE INTO users (name, email, phone, password_hash, role, sub_role) VALUES (?, ?, ?, ?, ?, ?)`,
         [acc.name, acc.email, acc.phone, hash, acc.role, acc.sub_role]
       );
-      console.log('[SEED] Account created:', acc.email);
-    } catch (e: any) {
-      console.log('[SEED] Skipped:', e.message);
-    }
+    } catch {}
   }
 }
 
