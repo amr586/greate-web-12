@@ -68,11 +68,12 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'الرسالة طويلة جداً' });
     }
 
-    await query(
+    const insertRes = await query(
       `INSERT INTO contact_messages (name, email, phone, subject, message, ip_address)
-       VALUES ($1,$2,$3,$4,$5,$6)`,
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
       [name.trim(), email.trim().toLowerCase(), phone?.trim() || null, subject.trim(), message.trim(), clientIP]
     );
+    const msgId = insertRes.rows[0]?.id;
     // Notify all admins, superadmins, and staff (property_manager, data_entry, support)
     try {
       const staffRes = await query(
@@ -81,11 +82,12 @@ router.post('/', async (req: Request, res: Response) => {
          AND is_active=true`
       );
       for (const staff of staffRes.rows) {
-        const dashLink = staff.role === 'superadmin'
-          ? '/superadmin?tab=contact'
+        const base = staff.role === 'superadmin'
+          ? '/superadmin'
           : staff.role === 'admin'
-            ? '/admin?tab=contact'
-            : '/sub-admin?tab=contact';
+            ? '/admin'
+            : '/sub-admin';
+        const dashLink = `${base}?tab=contact&msgId=${msgId}`;
         await query(
           `INSERT INTO notifications (user_id, type, title, message, link)
            VALUES ($1,'contact_message','رسالة تواصل جديدة',$2,$3)`,

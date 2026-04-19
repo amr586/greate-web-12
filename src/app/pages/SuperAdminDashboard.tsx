@@ -30,6 +30,7 @@ export default function SuperAdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
+  const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
   const [resetModal, setResetModal] = useState<{ userId: number; userName: string } | null>(null);
@@ -68,7 +69,16 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
+    const msgId = params.get('msgId');
     if (tab) setActiveTab(tab);
+    if (msgId) {
+      const id = Number(msgId);
+      setHighlightMsgId(id);
+      setTimeout(() => {
+        const el = document.getElementById(`contact-msg-${id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 400);
+    }
   }, [location.search]);
 
   useEffect(() => {
@@ -710,7 +720,8 @@ export default function SuperAdminDashboard() {
                 ) : (
                   <div className="divide-y divide-gray-50">
                     {contactMessages.map(m => (
-                      <div key={m.id} className={`p-5 hover:bg-gray-50 transition-colors ${!m.is_read ? 'bg-blue-50/50' : ''}`}>
+                      <div key={m.id} id={`contact-msg-${m.id}`}
+                        className={`p-5 transition-colors ${highlightMsgId === m.id ? 'bg-yellow-50 ring-2 ring-yellow-300 ring-inset' : !m.is_read ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-gray-50'}`}>
                         <div className="flex items-start gap-4">
                           <div className="w-10 h-10 bg-gradient-to-br from-[#005a7d] to-[#007a9a] rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">
                             {m.name?.charAt(0) || '?'}
@@ -718,7 +729,8 @@ export default function SuperAdminDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <span className="font-bold text-gray-900 text-sm">{m.name}</span>
-                              {!m.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+                              {highlightMsgId === m.id && <span className="text-[10px] bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full font-bold">جديد</span>}
+                              {!m.is_read && highlightMsgId !== m.id && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
                               <span className="text-gray-400 text-xs">{new Date(m.created_at).toLocaleDateString('ar-EG')}</span>
                             </div>
                             <div className="flex flex-wrap gap-x-3 text-xs text-gray-500 mb-2" dir="ltr">
@@ -729,7 +741,7 @@ export default function SuperAdminDashboard() {
                             <div className="text-gray-600 text-sm leading-relaxed">{m.message}</div>
                           </div>
                           {!m.is_read && (
-                            <button onClick={() => markContactRead(m.id)}
+                            <button onClick={() => { markContactRead(m.id); if (highlightMsgId === m.id) setHighlightMsgId(null); }}
                               className="flex-shrink-0 px-3 py-1.5 bg-[#005a7d] text-white text-xs font-bold rounded-lg hover:bg-[#004a68] transition-colors">
                               تمييز كمقروء
                             </button>
