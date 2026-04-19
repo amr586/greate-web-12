@@ -2457,34 +2457,90 @@ const {
 
   // ========== UPLOAD (Base64 to DB) ==========
 
-  // POST /api/upload (base64 JSON)
+  // POST /api/upload (base64 JSON or multipart)
   if (method === 'POST' && url?.includes('/api/upload')) {
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     try {
-      const { image, filename } = body;
-      if (!image) {
-        return res.status(400).json({ error: 'No image data' });
-      }
+      const contentType = headers['content-type'] || '';
+      
+      // Handle JSON with base64 image
+      if (contentType.includes('application/json')) {
+        const { image, filename } = body;
+        if (!image) {
+          return res.status(400).json({ error: 'No image data' });
+        }
 
-      const base64Data = image.replace(/^data:[^;]+;base64,/, '');
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      const ext = filename?.split('.').pop()?.toLowerCase() || 'jpg';
-      const mimeTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
-      const mimeType = mimeTypes[ext] || 'image/jpeg';
-      
-      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-        return res.status(400).json({ error: 'Invalid file type' });
-      }
+        const base64Data = image.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        const ext = filename?.split('.').pop()?.toLowerCase() || 'jpg';
+        
+        if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+          return res.status(400).json({ error: 'Invalid file type' });
+        }
 
-      const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const dataUrl = `data:${mimeType};base64,${base64Data}`;
+        const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const dataUrl = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${base64Data}`;
+        
+        return res.json({ success: true, url: dataUrl, filename: safeFileName });
+      }
       
-      return res.json({ success: true, url: dataUrl, filename: safeFileName });
-    } catch (err: any) {
-      console.log('[UPLOAD] Error:', err.message);
+      // Handle multipart FormData - use legacy handler
+      if (contentType.includes('multipart/form-data')) {
+        const boundary = contentType.split('boundary=')[1];
+        if (!boundary) {
+          return res.status(400).json({ error: 'No boundary' });
+        }
+
+        const chunks = [];
+        for await (const chunk of req) {
+          chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        
+        const parts = buffer.toString('utf-8').split(`--${boundary}`);
+        let fileBuffer: Buffer | null = null;
+        let fileName = 'upload';
+        
+        for (const part of parts) {
+          if (part.includes('filename=')) {
+            const fileNameMatch = part.match(/filename="([^"]+)"/);
+            if (fileNameMatch) fileName = fileNameMatch[1];
+            
+            const headerEnd = part.indexOf('\r\n\r\n');
+            if (headerEnd > 0) {
+              const base64Part = part.slice(headerEnd + 4, -2);
+              fileBuffer = Buffer.from(base64Part, 'binary');
+            }
+            break;
+          }
+        }
+
+        if (!fileBuffer) {
+          return res.status(400).json({ error: 'No file provided' });
+        }
+
+        if (fileBuffer.length > 10 * 1024 * 1024) {
+          return res.status(400).json({ error: 'File too large (max 10MB)' });
+        }
+
+        const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+        const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (!allowedExts.includes(ext)) {
+          return res.status(400).json({ error: 'Invalid file type' });
+        }
+
+        const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const base64 = fileBuffer.toString('base64');
+        const dataUrl = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${base64}`;
+        
+        return res.json({ success: true, url: dataUrl, filename: safeFileName });
+      }
+      
+      return res.status(400).json({ error: 'Invalid content type' });
+    } catch {
       return res.status(500).json({ error: 'Upload failed: ' + err.message });
     }
   }
@@ -2567,7 +2623,5 @@ const {
   }
 
   // Default response
-  console.log('[DEBUG] No route matched for:', method, url);
-  
   return res.json({ ok: true, service: 'Great Society API' });
 }
