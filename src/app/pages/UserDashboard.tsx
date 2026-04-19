@@ -58,14 +58,14 @@ function EmptyState({ icon, title, desc, link, linkLabel }: { icon: React.ReactN
 
 
 export default function UserDashboard() {
-  const { user, logout, isAdmin, isSuperAdmin, updateUser, loading } = useAuth();
+  const { user, logout, isAdmin, isSuperAdmin, updateUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('properties');
   const [myProperties, setMyProperties] = useState<any[]>([]);
   const [savedProperties, setSavedProperties] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string } | null>(null);
   const [activeTicket, setActiveTicket] = useState<any>(null);
   const [ticketMessages, setTicketMessages] = useState<any[]>([]);
@@ -78,7 +78,7 @@ export default function UserDashboard() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (!user) { navigate('/login'); return; }
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (isAdmin) { navigate('/admin'); return; }
@@ -90,7 +90,7 @@ export default function UserDashboard() {
   }, [ticketMessages]);
 
   const loadData = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const [propertiesData, savedData, paymentsData, ticketsData] = await Promise.allSettled([
         api.getProperties({ user_id: user?.id }),
@@ -103,7 +103,7 @@ export default function UserDashboard() {
       if (paymentsData.status === 'fulfilled') setPayments((paymentsData.value as any) || []);
       if (ticketsData.status === 'fulfilled') setTickets((ticketsData.value as any) || []);
     } catch {}
-    finally { setLoading(false); }
+    finally { setIsLoading(false); }
   };
 
   const openTicket = async (ticket: any) => {
@@ -194,7 +194,7 @@ export default function UserDashboard() {
           <ProfileTab user={user} updateUser={updateUser} />
         )}
 
-        {loading && activeTab !== 'profile' ? (
+        {isLoading && activeTab !== 'profile' ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-10 h-10 border-4 border-[#99c8db] border-t-[#005a7d] rounded-full animate-spin" />
           </div>
