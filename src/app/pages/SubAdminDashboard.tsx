@@ -12,6 +12,7 @@ import PropertyDetailModal from '../components/PropertyDetailModal';
 import PropertyChat from '../components/PropertyChat';
 import ProfileTab from '../components/ProfileTab';
 import PropertyImageManager from '../components/PropertyImageManager';
+import { getContactEmailUrl, getContactWhatsAppUrl } from '../lib/contactActions';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RPieChart, Pie, Cell, Legend } from 'recharts';
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=120&fit=crop';
@@ -870,6 +871,23 @@ export default function SubAdminDashboard() {
                               </div>
                               <div className="font-semibold text-gray-700 text-sm mb-1">{m.subject}</div>
                               <div className="text-gray-600 text-sm leading-relaxed">{m.message}</div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {getContactWhatsAppUrl(m) && (
+                                  <a href={getContactWhatsAppUrl(m)} target="_blank" rel="noopener noreferrer"
+                                    className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-lg hover:bg-green-200 transition-colors">
+                                    فتح الشات والرد
+                                  </a>
+                                )}
+                                {getContactEmailUrl(m) && (
+                                  <a href={getContactEmailUrl(m)}
+                                    className="px-3 py-1.5 bg-[#e6f2f5] text-[#005a7d] text-xs font-bold rounded-lg hover:bg-[#ccdfed] transition-colors">
+                                    رد بالإيميل
+                                  </a>
+                                )}
+                                <span className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">
+                                  البروفايل: {m.registered_user_id ? `${m.registered_name || m.name} · ${m.registered_role}${m.registered_sub_role ? `/${m.registered_sub_role}` : ''}` : 'زائر غير مسجل'}
+                                </span>
+                              </div>
                             </div>
                             {!m.is_read && (
                               <button onClick={() => { markContactRead(m.id); if (highlightMsgId === m.id) setHighlightMsgId(null); }}
@@ -984,19 +1002,14 @@ export default function SubAdminDashboard() {
                     <option value="rent">للإيجار</option>
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <label
-                    className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all select-none ${editForm.is_featured ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-gray-50 hover:border-yellow-200 hover:bg-yellow-50/40'}`}
-                    onClick={() => setEditForm((p: any) => ({ ...p, is_featured: !p.is_featured }))}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">إضافة العقار في صفحة الهوم</label>
+                  <select value={editForm.is_featured ? 'home' : 'properties'} onChange={e => setEditForm((p: any) => ({ ...p, is_featured: e.target.value === 'home' }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
                   >
-                    <div className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${editForm.is_featured ? 'bg-yellow-400' : 'bg-gray-300'}`}>
-                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${editForm.is_featured ? 'right-0.5' : 'left-0.5'}`} />
-                    </div>
-                    <div>
-                      <p className={`font-bold text-xs ${editForm.is_featured ? 'text-yellow-800' : 'text-gray-700'}`}>⭐ إضافة في الصفحة الرئيسية (الهوم)</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">يظهر العقار في قسم المميزات في الهوم</p>
-                    </div>
-                  </label>
+                    <option value="properties">صفحة العقارات فقط</option>
+                    <option value="home">صفحة العقارات + الهوم</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">حالة العقار</label>

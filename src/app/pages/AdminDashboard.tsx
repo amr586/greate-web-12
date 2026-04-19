@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import PropertyDetailModal from '../components/PropertyDetailModal';
 import ProfileTab from '../components/ProfileTab';
 import PropertyChat from '../components/PropertyChat';
+import { getContactEmailUrl, getContactWhatsAppUrl } from '../lib/contactActions';
 
 function DeadlineBadge({ createdAt }: { createdAt: string }) {
   const hoursElapsed = (Date.now() - new Date(createdAt).getTime()) / 3600000;
@@ -341,6 +342,23 @@ export default function AdminDashboard() {
                             </div>
                             <div className="font-semibold text-gray-700 text-sm mb-1">{m.subject}</div>
                             <div className="text-gray-600 text-sm leading-relaxed">{m.message}</div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {getContactWhatsAppUrl(m) && (
+                                <a href={getContactWhatsAppUrl(m)} target="_blank" rel="noopener noreferrer"
+                                  className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-lg hover:bg-green-200 transition-colors">
+                                  فتح الشات والرد
+                                </a>
+                              )}
+                              {getContactEmailUrl(m) && (
+                                <a href={getContactEmailUrl(m)}
+                                  className="px-3 py-1.5 bg-[#e6f2f5] text-[#005a7d] text-xs font-bold rounded-lg hover:bg-[#ccdfed] transition-colors">
+                                  رد بالإيميل
+                                </a>
+                              )}
+                              <span className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">
+                                البروفايل: {m.registered_user_id ? `${m.registered_name || m.name} · ${m.registered_role}${m.registered_sub_role ? `/${m.registered_sub_role}` : ''}` : 'زائر غير مسجل'}
+                              </span>
+                            </div>
                           </div>
                           {!m.is_read && (
                             <button onClick={() => { markContactRead(m.id); if (highlightMsgId === m.id) setHighlightMsgId(null); }}

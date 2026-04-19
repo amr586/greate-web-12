@@ -12,7 +12,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function UserAddProperty() {
   const { user, isAdmin, isSuperAdmin, subRole } = useAuth();
-  const canSetFeatured = isAdmin || isSuperAdmin || subRole === 'property_manager' || subRole === 'data_entry';
+  const canSetFeatured = isSuperAdmin || (isAdmin && (!subRole || subRole === 'property_manager' || subRole === 'data_entry'));
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const planInputRef = useRef<HTMLInputElement>(null);
@@ -216,11 +216,11 @@ export default function UserAddProperty() {
               </div>
               {canSetFeatured && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">⭐ حالة العقار</label>
-                  <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">⭐ حالة العقار / إضافة في صفحة الهوم</label>
+                  <select value={form.is_featured ? 'home' : 'properties'} onChange={e => update('is_featured', e.target.value === 'home')}
                     className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:border-[#005a7d] font-bold ${form.is_featured ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-700'}`}>
-                    <option value="normal">عادي</option>
-                    <option value="featured">⭐ مميز</option>
+                    <option value="properties">صفحة العقارات فقط</option>
+                    <option value="home">صفحة العقارات + الهوم</option>
                   </select>
                 </div>
               )}

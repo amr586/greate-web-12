@@ -22,3 +22,5 @@
 - Updated the frontend API base URL to use the local `/api` route by default so the app connects to its own backend in development and deployment.
 - Seeded the requested seven featured property offers with full Arabic descriptions, locations, payment/delivery details, contact phone, no 2D floor-plan images, and six photos per property.
 - Updated the home page featured properties API to show approved properties marked `is_featured`, so staff/admin "show on home" toggles control the homepage dynamically.
+- Contact form submissions now create header-bell notifications with role-aware dashboard links, and contact message cards include quick WhatsApp/email reply actions plus matched registered-user profile info when available.
+- Property add/edit forms now present `is_featured` as "صفحة العقارات فقط" vs "صفحة العقارات + الهوم" for superadmin, regular admin, property_manager, and data_entry roles.

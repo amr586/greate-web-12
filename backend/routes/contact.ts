@@ -84,13 +84,13 @@ router.post('/', async (req: Request, res: Response) => {
       for (const staff of staffRes.rows) {
         const base = staff.role === 'superadmin'
           ? '/superadmin'
-          : staff.role === 'admin'
-            ? '/admin'
-            : '/sub-admin';
+          : ['property_manager', 'data_entry', 'support'].includes(staff.sub_role || '')
+            ? '/sub-admin'
+            : '/admin';
         const dashLink = `${base}?tab=contact&msgId=${msgId}`;
         await query(
           `INSERT INTO notifications (user_id, type, title, message, link)
-           VALUES ($1,'contact_message','رسالة تواصل جديدة',$2,$3)`,
+           VALUES ($1,'contact_message','طلب تواصل جديد',$2,$3)`,
           [staff.id, `من: ${name.trim()} (${phone?.trim() || email.trim()}) - الموضوع: ${subject.trim()}`, dashLink]
         );
       }
@@ -114,9 +114,17 @@ function isStaffOrAdmin(user: AuthRequest['user']): boolean {
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   if (!isStaffOrAdmin(req.user)) return res.status(403).json({ error: 'غير مسموح' });
   try {
-    const result = await query(
-      'SELECT * FROM contact_messages ORDER BY created_at DESC'
-    );
+    const result = await query(`
+      SELECT cm.*,
+        u.id AS registered_user_id,
+        u.name AS registered_name,
+        u.phone AS registered_phone,
+        u.role AS registered_role,
+        u.sub_role AS registered_sub_role
+      FROM contact_messages cm
+      LEFT JOIN users u ON lower(u.email) = lower(cm.email)
+      ORDER BY cm.created_at DESC
+    `);
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'خطأ' });
