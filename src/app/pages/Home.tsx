@@ -144,7 +144,7 @@ export default function Home() {
                 <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}
                   className="text-xs text-[#005a7d] hover:underline font-medium"
                 >
-                  {showAdvanced ? 'إخفاء' : '+ فلتر السعر والمساحة'}
+                  {showAdvanced ? 'إخفاء' : 'السعر والمساحة'}
                 </button>
               </div>
 
