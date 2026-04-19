@@ -367,10 +367,10 @@ async function runMigrations(pool: any) {
 
   // Seed default accounts
   const seedAccounts = [
-    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01100111618', password: 'Admin@2026', role: 'superadmin', sub_role: null },
-    { name: 'مدخل بيانات', email: 'moam2808@gmail.com', phone: '01100111619', password: 'Data@2026', role: 'admin', sub_role: 'data_entry' },
-    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01100111620', password: 'Prop@2026', role: 'admin', sub_role: 'property_manager' },
-    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01100111621', password: 'Support@2026', role: 'admin', sub_role: 'support' },
+    { name: 'سوبر أدمن', email: 'amrw4634@gmail.com', phone: '01034517293', password: 'Admin@2026', role: 'superadmin', sub_role: null },
+    { name: 'مدخل بيانات', email: 'moam2808@gmail.com', phone: '01034517293', password: 'Data@2026', role: 'admin', sub_role: 'data_entry' },
+    { name: 'مدير عقارات', email: 'egypt7279@gmail.com', phone: '01034517293', password: 'Prop@2026', role: 'admin', sub_role: 'property_manager' },
+    { name: 'دعم فني', email: 'acpchimit@gmail.com', phone: '01034517293', password: 'Support@2026', role: 'admin', sub_role: 'support' },
   ];
 
   for (const acc of seedAccounts) {
@@ -482,6 +482,75 @@ async function sendOTPEmail(to: string, otp: string, name: string, context: 'log
     console.error('[EMAIL] ❌ Failed:', err?.message || err);
     return false;
   }
+}
+
+async function sendNotificationEmail(to: string, type: string, data: any): Promise<boolean> {
+  if (!SMTP_USER || !SMTP_PASS) return false;
+  
+  const nodemailer = await import('nodemailer');
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    tls: { rejectUnauthorized: true, minVersion: 'TLSv1.2' }
+  });
+
+  const templates: Record<string, { subject: string; title: string; message: string }> = {
+    property_approved: {
+      subject: '✅ تم الموافقة على عقارك - Great Society',
+      title: 'تم الموافقة على عقارك',
+      message: `تم الموافقة على عقارك "${data.title}" وسيتم نشره على الموقع.`
+    },
+    property_rejected: {
+      subject: '❌ تم رفض عقارك - Great Society',
+      title: 'تم رفض عقارك',
+      message: `تم رفض عقارك "${data.title}". يرجى التواصل للدعم الفني.`
+    },
+    new_inquiry: {
+      subject: '💬 استفسار جديد على عقارك - Great Society',
+      title: 'لديك استفسار جديد',
+      message: `هناك استفسار جديد على عقارك "${data.title}".`
+    },
+    payment_received: {
+      subject: '💰 دفع جديد - Great Society',
+      title: 'تم استلام دفعة',
+      message: `تم استلام دفعة بقيمة ${data.amount} جنيه للعقار "${data.title}".`
+    },
+    support_reply: {
+      subject: '💬 رد على تذكرتك - Great Society',
+      title: 'تم الرد على تذكرتك',
+      message: `تم الرد على تذكرتك "${data.subject}".`
+    }
+  };
+
+  const tmpl = templates[type];
+  if (!tmpl) return false;
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#005a7d,#007a9a);padding:30px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:20px;">${tmpl.title}</h1>
+        </tr>
+        <tr><td style="padding:30px;text-align:center;">
+          <p style="margin:0 0 20px;color:#374151;font-size:16px;">${tmpl.message}</p>
+          <a href="https://greatsociety-eg.com" style="display:inline-block;background:#005a7d;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;">تصفح الموقع</a>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({ from: `"Great Society إسكنك" <${SMTP_USER}>`, to, subject: tmpl.subject, html });
+    return true;
+  } catch { return false; }
 }
 
 // ========== SECURITY HELPERS ==========
@@ -641,8 +710,9 @@ export default async function handler(req: any, res: any) {
     database: process.env.DB_NAME,
     port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
-    connectionLimit: 2,
-    queueLimit: 0
+    connectionLimit: 1,
+    queueLimit: 0,
+    idleTimeout: 10000
   };
 
   if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
@@ -652,6 +722,7 @@ export default async function handler(req: any, res: any) {
   let pool;
   try {
     pool = mysql.createPool(dbConfig);
+    await pool.query('SELECT 1');
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: 'Pool creation failed: ' + e.message });
   }
@@ -714,7 +785,9 @@ export default async function handler(req: any, res: any) {
         [userData.id, clientDeviceId]
       );
 
-      if (trusted.length > 0) {
+      const trustedArray = Array.isArray(trusted) ? trusted : (trusted ? [trusted] : []);
+      
+      if (trustedArray.length > 0) {
         // Trusted device - direct login
         await pool.query('UPDATE trusted_devices SET last_used=NOW() WHERE user_id=? AND device_id=?', [userData.id, clientDeviceId]);
         
@@ -753,8 +826,12 @@ export default async function handler(req: any, res: any) {
         [userData.email, otp, JSON.stringify({ userId: userData.id }), clientDeviceId, expiresAt]
       );
 
-      // Send email
-      sendOTPEmail(userData.email, otp, userData.name, 'login').catch((e) => console.log('[EMAIL] Send failed:', e.message));
+      // Send email synchronously
+      try {
+        await sendOTPEmail(userData.email, otp, userData.name, 'login');
+      } catch (e) {
+        console.log('[EMAIL] Send failed:', e.message);
+      }
 
       return res.json({ 
         requiresOTP: true, 
@@ -852,7 +929,9 @@ export default async function handler(req: any, res: any) {
         [email, otp, JSON.stringify({ userId: user.id }), clientDeviceId, expiresAt]
       );
 
-      sendOTPEmail(email, otp, user.name, 'login').catch(() => {});
+      try {
+        await sendOTPEmail(email, otp, user.name, 'login');
+      } catch { }
 
       return res.json({ success: true, message: `تم إرسال رمز التحقق إلى ${email}` });
     } catch (err: any) {
@@ -1194,7 +1273,9 @@ export default async function handler(req: any, res: any) {
       );
 
       // Send email
-      sendOTPEmail(email, otp, user.name, 'forgot-password').catch(() => {});
+      try {
+        await sendOTPEmail(email, otp, user.name, 'forgot-password');
+      } catch { }
 
       return res.json({ success: true, message: 'تم إرسال رمز التحقق' });
     } catch (err: any) {
@@ -1240,8 +1321,10 @@ export default async function handler(req: any, res: any) {
         'SELECT id, name, email, phone, role, sub_role, avatar_url, email_verified, email_verified_at, created_at FROM users WHERE id=?',
         [user.id]
       );
-      return res.json(rows[0] || { error: 'Not found' });
-    } catch {
+      const userData = Array.isArray(rows) ? rows[0] : rows;
+      return res.json(userData || { error: 'Not found' });
+    } catch (err: any) {
+      console.log('[AUTH/ME] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1582,12 +1665,13 @@ export default async function handler(req: any, res: any) {
         [user.id, id]
       );
 
-      const [propRows]: any = await pool.query('SELECT owner_id FROM properties WHERE id=?', [id]);
-      if (propRows[0]?.owner_id) {
+      const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
+      if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
         await pool.query(
           `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_approved', 'تمت الموافقة على عقارك', 'تمت الموافقة على عقارك')`,
           [propRows[0].owner_id]
         );
+        sendNotificationEmail(propRows[0].owner_email, 'property_approved', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
       }
 
       return res.json({ success: true });
@@ -1607,6 +1691,16 @@ export default async function handler(req: any, res: any) {
       if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
       
       await pool.query("UPDATE properties SET status='rejected' WHERE id=?", [id]);
+      
+      const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
+      if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_rejected', 'تم رفض عقارك', 'تم رفض عقارك')`,
+          [propRows[0].owner_id]
+        );
+        sendNotificationEmail(propRows[0].owner_email, 'property_rejected', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
+      }
+      
       return res.json({ success: true });
     } catch {
       return res.status(500).json({ error: 'خطأ' });
@@ -1705,15 +1799,52 @@ export default async function handler(req: any, res: any) {
 
   // ========== NOTIFICATIONS ENDPOINTS ==========
 
-  // GET /api/notifications
-  if (method === 'GET' && url?.includes('/api/notifications')) {
+  // GET /api/notifications (user's notifications) - must check specific paths first
+  if (method === 'GET' && url?.startsWith('/api/notifications')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      // Skip if already handled by other notification routes
+      if (url?.includes('/unread-count') || url?.includes('/mark') || url?.includes('/admin')) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      const [rows]: any = await pool.query(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+        [user.id]
+      );
+      console.log('[notifications] user_id:', user.id, 'count:', rows.length);
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[notifications] Error:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/mine (alias for user notifications)
+  if (method === 'GET' && url?.includes('/notifications/mine')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const [rows]: any = await pool.query(
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
         [user.id]
       );
-      return res.json(rows);
+      console.log('[notifications/mine] user_id:', user.id, 'count:', rows.length);
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[notifications/mine] Error:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/notifications/admin (all notifications for admin)
+  if (method === 'GET' && url?.includes('/api/notifications/admin')) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT n.*, u.name as user_name, u.email as user_email FROM notifications n LEFT JOIN users u ON n.user_id = u.id ORDER BY n.created_at DESC LIMIT 100'
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
@@ -1723,12 +1854,15 @@ export default async function handler(req: any, res: any) {
   if (method === 'GET' && url?.includes('/api/notifications/unread-count')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
+      console.log('[unread-count] user_id:', user.id);
       const [[row]]: any = await pool.query(
         'SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = false',
         [user.id]
       );
+      console.log('[unread-count] count:', row?.cnt);
       return res.json({ count: row?.cnt || 0 });
-    } catch {
+    } catch (err: any) {
+      console.log('[unread-count] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -1738,6 +1872,35 @@ export default async function handler(req: any, res: any) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       await pool.query('UPDATE notifications SET is_read = true WHERE user_id = ?', [user.id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/notifications/mark-read/:id
+  if (method === 'PATCH' && url?.match(/\/api\/notifications\/mark-read\/\d+$/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const idStr = url.match(/\/api\/notifications\/mark-read\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      await pool.query('UPDATE notifications SET is_read = true WHERE id = ? AND user_id = ?', [id, user.id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/notifications (create notification)
+  if (method === 'POST' && url?.includes('/api/notifications')) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const { user_id, type, title, message, link } = body;
+      await pool.query(
+        'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)',
+        [user_id, type || 'info', title, message, link || null]
+      );
       return res.json({ success: true });
     } catch {
       return res.status(500).json({ error: 'خطأ' });
@@ -1896,28 +2059,45 @@ export default async function handler(req: any, res: any) {
   // ========== PROPERTY CHAT ENDPOINTS ==========
 
   // GET /api/property-chat/:propertyId/messages
-  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/messages/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
       const propertyId = validateId(propertyIdStr);
       if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
+      console.log('[CHAT] Getting messages for property:', propertyId);
       
       const [rows]: any = await pool.query(`
-        SELECT m.*, u.name as sender_name, u.role as sender_role
-        FROM property_chat_messages m
-        JOIN users u ON u.id = m.sender_id
-        WHERE m.property_id = ?
-        ORDER BY m.created_at ASC
+        SELECT id, property_id, sender_id, content, is_admin, created_at
+        FROM property_chat_messages
+        WHERE property_id = ?
+        ORDER BY created_at ASC
       `, [propertyId]);
-      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
-    } catch {
+      console.log('[CHAT] Found messages:', rows.length);
+      // Get user names separately
+      const senderIds = [...new Set(rows.map((r: any) => r.sender_id))];
+      if (senderIds.length > 0) {
+        const [users]: any = await pool.query(
+          'SELECT id, name, role FROM users WHERE id IN (?)',
+          [senderIds]
+        );
+        const userMap: Record<number, any> = {};
+        for (const u of users) userMap[u.id] = u;
+        for (const row of rows) {
+          const u = userMap[row.sender_id];
+          row.sender_name = u?.name || 'مستخدم';
+          row.sender_role = u?.role || 'user';
+        }
+      }
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[CHAT] Error:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
 
   // GET /api/property-chat/:propertyId/users
-  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/users$/)) {
+  if (method === 'GET' && url?.match(/\/api\/property-chat\/\d+\/users/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/users/)?.[1];
@@ -1925,19 +2105,24 @@ export default async function handler(req: any, res: any) {
       if (!propertyId) return res.status(400).json({ error: 'معرف غير صالح' });
       
       const [rows]: any = await pool.query(`
-        SELECT DISTINCT u.id, u.name, u.role, u.email, u.phone
+        SELECT u.id, u.name, u.role, u.email, u.phone,
+          COUNT(m.id) as msg_count,
+          MAX(m.created_at) as last_msg_at
         FROM property_chat_messages m
         JOIN users u ON u.id = m.sender_id
         WHERE m.property_id = ?
+        GROUP BY u.id, u.name, u.role, u.email, u.phone
+        ORDER BY last_msg_at DESC
       `, [propertyId]);
-      return res.json(Array.isArray(rows) ? rows : [rows].filter(Boolean));
-    } catch {
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[ERROR] Chat users:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
 
   // POST /api/property-chat/:propertyId/messages
-  if (method === 'POST' && url?.match(/\/api\/property-chat\/\d+\/messages$/)) {
+  if (method === 'POST' && url?.match(/\/api\/property-chat\/\d+\/messages/)) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
       const propertyIdStr = url.match(/\/api\/property-chat\/(\d+)\/messages/)?.[1];
@@ -2082,6 +2267,96 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  // ========== ADMIN PROPERTY IMAGES ==========
+
+  // GET /api/admin/properties/:id/images
+  if (method === 'GET' && url?.match(/\/api\/admin\/properties\/\d+\/images$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/images/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows]: any = await pool.query(
+        'SELECT id, property_id, url, is_primary, order_index FROM property_images WHERE property_id = ? ORDER BY is_primary DESC, order_index ASC',
+        [id]
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch (err: any) {
+      console.log('[ERROR] Get property images:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/admin/properties/:id/images
+  if (method === 'POST' && url?.match(/\/api\/admin\/properties\/\d+\/images$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)\/images/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const { url: imgUrl, is_primary } = body;
+      if (!imgUrl) return res.status(400).json({ error: 'رابط الصورة مطلوب' });
+      
+      const [result]: any = await pool.query(
+        'INSERT INTO property_images (property_id, url, is_primary, order_index) VALUES (?, ?, ?, ?)',
+        [id, imgUrl, Boolean(is_primary), 0]
+      );
+      
+      return res.status(201).json({ id: result.insertId, url: imgUrl, is_primary: Boolean(is_primary) });
+    } catch (err: any) {
+      console.log('[ERROR] Add property image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // DELETE /api/admin/properties/:propertyId/images/:imageId
+  if (method === 'DELETE' && url?.match(/\/api\/admin\/properties\/\d+\/images\/\d+$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const match = url.match(/\/api\/admin\/properties\/(\d+)\/images\/(\d+)/);
+      const propertyId = validateId(match?.[1]);
+      const imageId = validateId(match?.[2]);
+      if (!propertyId || !imageId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('DELETE FROM property_images WHERE id = ? AND property_id = ?', [imageId, propertyId]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Delete property image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:propertyId/images/:imageId/primary
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/images\/\d+\/primary$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const match = url.match(/\/api\/admin\/properties\/(\d+)\/images\/(\d+)\/primary/);
+      const propertyId = validateId(match?.[1]);
+      const imageId = validateId(match?.[2]);
+      if (!propertyId || !imageId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      await pool.query('UPDATE property_images SET is_primary = false WHERE property_id = ?', [propertyId]);
+      await pool.query('UPDATE property_images SET is_primary = true WHERE id = ?', [imageId]);
+      
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Set primary image:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // ========== SETTINGS ==========
+
   // PATCH /api/settings
   if (method === 'PATCH' && url?.includes('/api/settings')) {
     if (!user || user.role !== 'superadmin') {
@@ -2107,10 +2382,42 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  // ========== UPLOAD (File to Hostinger) ==========
+  // ========== UPLOAD (Base64 to DB) ==========
 
-  // POST /api/upload
+  // POST /api/upload (base64 JSON)
   if (method === 'POST' && url?.includes('/api/upload')) {
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const { image, filename } = body;
+      if (!image) {
+        return res.status(400).json({ error: 'No image data' });
+      }
+
+      const base64Data = image.replace(/^data:[^;]+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      const ext = filename?.split('.').pop()?.toLowerCase() || 'jpg';
+      const mimeTypes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+      const mimeType = mimeTypes[ext] || 'image/jpeg';
+      
+      if (!['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type' });
+      }
+
+      const safeFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const dataUrl = `data:${mimeType};base64,${base64Data}`;
+      
+      return res.json({ success: true, url: dataUrl, filename: safeFileName });
+    } catch (err: any) {
+      console.log('[UPLOAD] Error:', err.message);
+      return res.status(500).json({ error: 'Upload failed: ' + err.message });
+    }
+  }
+
+  // POST /api/upload-legacy (multipart to Hostinger)
+  if (method === 'POST' && url?.includes('/api/upload-legacy')) {
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

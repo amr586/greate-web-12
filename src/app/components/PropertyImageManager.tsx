@@ -14,7 +14,7 @@ interface Props {
   propertyId: number;
 }
 
-const API_BASE = '';
+const API_BASE = 'https://greate-web-12.vercel.app';
 
 export default function PropertyImageManager({ propertyId }: Props) {
   const [images, setImages] = useState<PropertyImage[]>([]);
@@ -55,12 +55,15 @@ export default function PropertyImageManager({ propertyId }: Props) {
       const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
       await Promise.all(Array.from(files).map(async (file, idx) => {
         const compressed = await compressImage(file);
-        const formData = new FormData();
-        formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(compressed);
+        });
         const resp = await fetch(`${API_BASE}/api/upload`, {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ image: base64, filename: file.name }),
         });
         const result = await resp.json();
         if (result.url) {
@@ -109,7 +112,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           {images.map(img => (
             <div key={img.id} className="relative rounded-xl overflow-hidden border-2 border-gray-100 group aspect-video">
               <img
-                src={img.url.startsWith('http') ? img.url : `${API_BASE}${img.url}`}
+                src={img.url?.startsWith('http') ? img.url : `${API_BASE}${img.url}`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=150&fit=crop'; }}

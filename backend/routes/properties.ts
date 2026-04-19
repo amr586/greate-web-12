@@ -57,13 +57,22 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/featured', async (_req: Request, res: Response) => {
   try {
+    const homeFeaturedTitles = [
+      'شقة 3 غرف بقسط ثابت 23 ألف في R8 العاصمة الإدارية',
+      'استلام فوري في قلب التجمع الخامس بمقدم 50% شقة 3 غرف'
+    ];
     const result = await query(`
       SELECT p.*, 
         (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
         (SELECT json_agg(json_build_object('id', pi2.id, 'url', pi2.url, 'is_primary', pi2.is_primary) ORDER BY pi2.order_index) FROM property_images pi2 WHERE pi2.property_id = p.id) as images
-      FROM properties p WHERE p.status = 'approved' AND p.is_featured = true
-      ORDER BY p.created_at DESC LIMIT 6
-    `);
+      FROM properties p
+      WHERE p.status = 'approved' AND p.title_ar = ANY($1)
+      ORDER BY CASE
+        WHEN p.title_ar = $2 THEN 1
+        WHEN p.title_ar = $3 THEN 2
+        ELSE 3
+      END
+    `, [homeFeaturedTitles, homeFeaturedTitles[0], homeFeaturedTitles[1]]);
     res.json(result.rows);
   } catch {
     res.status(500).json({ error: 'خطأ' });

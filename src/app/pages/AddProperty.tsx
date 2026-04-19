@@ -68,13 +68,17 @@ export default function AddProperty() {
   const uploadSingle = async (file: File, idx: number, startIdx: number) => {
     try {
       const compressed = await compressImage(file);
-      const formData = new FormData();
-      formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(compressed);
+      });
+      const base64 = await base64Promise;
       const token = localStorage.getItem('token');
       const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ image: base64, filename: file.name }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل الرفع');

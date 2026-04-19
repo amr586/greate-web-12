@@ -17,3 +17,8 @@
 - Added "إعدادات الموقع" tab in SuperAdminDashboard to edit all site settings with live preview.
 - Navbar, Footer, Contact page, and WhatsApp floating button now all read from SiteSettingsContext (dynamic settings).
 - Property chat: data_entry and property_manager sub-roles now have admin-level chat access (can see and reply to all user chats).
+- Fixed login "remember me" so OTP resend and verification keep the same device ID, allowing trusted devices to skip OTP on later logins.
+- Renamed the super admin dropdown entry from "لوحة CRM" to "لوحة تحكم الموقع".
+- Updated the frontend API base URL to use the local `/api` route by default so the app connects to its own backend in development and deployment.
+- Seeded the requested seven featured property offers with full Arabic descriptions, locations, payment/delivery details, contact phone, no 2D floor-plan images, and six photos per property.
+- Limited the home page featured properties API to only the R8 New Capital property and the Fifth Settlement apartment, while keeping the remaining seeded properties available on the properties listing page.

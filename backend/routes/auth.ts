@@ -198,7 +198,7 @@ async function removeTrustedDevice(userId: number, deviceId: string) {
 
 router.post('/resend-login-otp', async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    const { email, deviceId } = req.body;
     if (!email) return res.status(400).json({ error: 'البريد الإلكتروني مطلوب' });
 
     const rateCheck = await checkOTPRateLimit(email, 'login');
@@ -214,7 +214,7 @@ router.post('/resend-login-otp', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'الحساب غير موجود' });
     }
 
-    const otp = await issueOTP(email, 'login', { userId: userRes.rows[0].id });
+    const otp = await issueOTP(email, 'login', { userId: userRes.rows[0].id }, deviceId);
     const sent = await sendOTPEmail(email, otp, userRes.rows[0].name, 'login');
 
     res.json({
@@ -551,7 +551,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
 router.post('/verify-login-otp', async (req: Request, res: Response) => {
   try {
-    const { email, otp, rememberDevice, deviceName } = req.body;
+    const { email, otp, rememberDevice, deviceName, deviceId: clientDeviceId } = req.body;
     console.log('[verify-login-otp] Request:', { email, otpProvided: !!otp, rememberDevice });
 
     if (!email || !otp) {
@@ -570,7 +570,7 @@ router.post('/verify-login-otp', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'الحساب غير موجود' });
     }
     const user = userRes.rows[0];
-    const deviceId = result.deviceId || generateDeviceId(req);
+    const deviceId = result.deviceId || clientDeviceId || generateDeviceId(req);
 
     console.log('[verify-login-otp] Creating token for user:', user.email);
 

@@ -92,7 +92,7 @@ export default function Navbar() {
                     >
                       {isSuperAdmin && (
                         <Link to="/crm" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[#e6f2f5] text-[#005a7d] font-semibold transition-colors">
-                          <ShieldCheck size={16} />لوحة CRM
+                          <ShieldCheck size={16} />لوحة تحكم الموقع
                         </Link>
                       )}
                       {isAdmin && (
@@ -151,7 +151,7 @@ export default function Navbar() {
                       <div className="w-8 h-8 bg-gradient-to-br from-[#005a7d] to-[#004a68] rounded-lg flex items-center justify-center text-white text-xs font-bold">{user.name?.charAt(0) || '؟'}</div>
                       <span className="text-sm font-medium">{user.name}</span>
                     </div>
-                    {isSuperAdmin && <Link to="/crm" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-[#005a7d] hover:bg-[#e6f2f5]"><ShieldCheck size={16} />لوحة CRM</Link>}
+                    {isSuperAdmin && <Link to="/crm" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-[#005a7d] hover:bg-[#e6f2f5]"><ShieldCheck size={16} />لوحة تحكم الموقع</Link>}
                     {isAdmin && <Link to={subRole ? '/sub-admin' : '/admin'} className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm hover:bg-[#e6f2f5]"><LayoutDashboard size={16} className="text-[#005a7d]" />لوحة الإدارة</Link>}
                     <Link to="/dashboard" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm hover:bg-[#e6f2f5]"><User size={16} className="text-[#005a7d]" />حسابي</Link>
                     <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50"><LogOut size={16} />تسجيل الخروج</button>

@@ -35,7 +35,7 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const data = await api.login(form.email, form.password);
+      const data = await api.login(form.email, form.password, form.rememberMe);
       
       if (data.requiresOTP) {
         setEmail(data.email);
@@ -47,9 +47,11 @@ export default function Login() {
       if (form.rememberMe) {
         localStorage.setItem('remembered_email', form.email);
         localStorage.setItem('remember_expiry', (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
+        localStorage.setItem('remembered_token', data.token);
       } else {
         localStorage.removeItem('remembered_email');
         localStorage.removeItem('remember_expiry');
+        localStorage.removeItem('remembered_token');
       }
       localStorage.setItem('token', data.token);
       window.location.href = data.user?.role === 'superadmin' ? '/crm' : '/';
@@ -70,6 +72,15 @@ export default function Login() {
     try {
       const data = await api.verifyLoginOTP(email, otp, form.rememberMe);
       localStorage.setItem('token', data.token);
+      if (form.rememberMe) {
+        localStorage.setItem('remembered_email', email);
+        localStorage.setItem('remembered_token', data.token);
+        localStorage.setItem('remember_expiry', (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
+      } else {
+        localStorage.removeItem('remembered_email');
+        localStorage.removeItem('remembered_token');
+        localStorage.removeItem('remember_expiry');
+      }
       setStep('success');
       setTimeout(() => {
         window.location.href = data.user?.role === 'superadmin' ? '/crm' : '/';
