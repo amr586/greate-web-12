@@ -1,6 +1,18 @@
 import { PROPERTIES } from '../data/mockData';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
+function getApiBaseUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // If running on greatsociety-eg.com, use Vercel backend
+  if (typeof window !== 'undefined' && window.location?.hostname === 'greatsociety-eg.com') {
+    return 'https://greate-web-12.vercel.app';
+  }
+  // Default to relative API calls (works for local dev and Vercel)
+  return '/api';
+}
+
+const BASE_URL = getApiBaseUrl();
 
 function getToken() {
   return localStorage.getItem('token');
