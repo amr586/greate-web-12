@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, SlidersHorizontal, X, Building2, Phone, MapPin, Star, ChevronLeft, BedDouble, Bath, Maximize2, Loader2 } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Building2, Phone, MapPin, Star, ChevronLeft, BedDouble, Bath, Maximize2, Loader2, Car, Layers, Waves, Trees, Sofa, Warehouse } from 'lucide-react';
 import { api } from '../lib/api';
 import { DISTRICTS_FILTER, CAIRO_DISTRICTS } from '../lib/districts';
 
@@ -402,6 +402,47 @@ export default function Properties() {
                         <span className="font-semibold text-green-700">{p.delivery_status}</span>
                       ) : null}
                     </div>
+
+                    {/* Amenities */}
+                    {(p.has_parking || p.has_elevator || p.has_pool || p.has_garden || p.is_furnished || p.has_basement || p.finishing_type) && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {p.is_furnished && (
+                          <span className="flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-amber-100">
+                            <Sofa size={9} />مفروش
+                          </span>
+                        )}
+                        {p.has_parking && (
+                          <span className="flex items-center gap-1 bg-blue-50 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-blue-100">
+                            <Car size={9} />موقف
+                          </span>
+                        )}
+                        {p.has_elevator && (
+                          <span className="flex items-center gap-1 bg-purple-50 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-purple-100">
+                            <Layers size={9} />مصعد
+                          </span>
+                        )}
+                        {p.has_pool && (
+                          <span className="flex items-center gap-1 bg-cyan-50 text-cyan-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-cyan-100">
+                            <Waves size={9} />حمام سباحة
+                          </span>
+                        )}
+                        {p.has_garden && (
+                          <span className="flex items-center gap-1 bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-green-100">
+                            <Trees size={9} />حديقة
+                          </span>
+                        )}
+                        {p.has_basement && (
+                          <span className="flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-gray-200">
+                            <Warehouse size={9} />بيزمنت
+                          </span>
+                        )}
+                        {p.finishing_type && (
+                          <span className="flex items-center gap-1 bg-[#bca056]/10 text-[#8a6f30] text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-[#bca056]/20">
+                            ✨ {p.finishing_type}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   </Link>
 
