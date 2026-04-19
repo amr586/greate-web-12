@@ -27,7 +27,7 @@ export function SavedProperties() {
       const data = await api.getSaved();
       setSavedProperties(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.log('[Saved] Error:', err);
+      
     } finally {
       setLoading(false);
     }
@@ -40,7 +40,7 @@ export function SavedProperties() {
       await api.unsaveProperty(propertyId);
       setSavedProperties(prev => prev.filter(p => p.id !== propertyId));
     } catch (err) {
-      console.log('[Unsave] Error:', err);
+      
     }
   };
 

@@ -48,7 +48,7 @@ export default function AdminNotifications() {
         setNotifications(data);
       }
     } catch (error) {
-      console.error('[v0] Failed to load notifications:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function AdminNotifications() {
         );
       }
     } catch (error) {
-      console.error('[v0] Failed to mark notification as read:', error);
+      
     }
   };
 

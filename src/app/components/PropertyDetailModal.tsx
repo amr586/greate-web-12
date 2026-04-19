@@ -36,7 +36,7 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
         down_payment: data.down_payment || '',
         delivery_status: data.delivery_status || '',
       });
-    }).catch(console.error).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [propertyId]);
 
   const toggleFeatured = async () => {
@@ -50,7 +50,7 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
         onFeaturedChange(newFeaturedStatus);
       }
     } catch (err) {
-      console.error('Error toggling featured:', err);
+      
       alert('خطأ في تحديث حالة المميز');
     } finally {
       setUpdatingFeatured(false);
