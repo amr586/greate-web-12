@@ -8,10 +8,11 @@ import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 export default function UserAddProperty() {
   const { user, isAdmin, isSuperAdmin, subRole } = useAuth();
-  const canSetFeatured = isAdmin || isSuperAdmin || subRole === 'propmanager' || subRole === 'dataentry';
+  const canSetFeatured = isAdmin || isSuperAdmin || subRole === 'property_manager' || subRole === 'data_entry';
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const planInputRef = useRef<HTMLInputElement>(null);
@@ -84,15 +85,12 @@ export default function UserAddProperty() {
     const token = localStorage.getItem('token');
     try {
       const compressed = await compressImage(file);
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(compressed);
-      });
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const formData = new FormData();
+      formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
+      const res = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ image: base64, filename: file.name }),
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل رفع الصورة');
@@ -124,7 +122,7 @@ export default function UserAddProperty() {
         images: uploadedImages,
         floor_plan_image: floorPlanImage || null,
       };
-      const res = await fetch('https://greate-web-12.vercel.app/api/properties', {
+      const res = await fetch(`${API_BASE}/properties`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

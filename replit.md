@@ -21,4 +21,4 @@
 - Renamed the super admin dropdown entry from "لوحة CRM" to "لوحة تحكم الموقع".
 - Updated the frontend API base URL to use the local `/api` route by default so the app connects to its own backend in development and deployment.
 - Seeded the requested seven featured property offers with full Arabic descriptions, locations, payment/delivery details, contact phone, no 2D floor-plan images, and six photos per property.
-- Limited the home page featured properties API to only the R8 New Capital property and the Fifth Settlement apartment, while keeping the remaining seeded properties available on the properties listing page.
+- Updated the home page featured properties API to show approved properties marked `is_featured`, so staff/admin "show on home" toggles control the homepage dynamically.

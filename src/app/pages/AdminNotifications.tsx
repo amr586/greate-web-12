@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, X, CheckCircle, AlertCircle, Building2, User, Phone, Mail, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../lib/api';
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 interface Notification {
   id: number;
@@ -35,9 +36,9 @@ export default function AdminNotifications() {
 
   const loadNotifications = async () => {
     try {
-      const response = await fetch('https://greate-web-12.vercel.app/api/notifications/admin', {
-        headers: { 'Cache-Control': 'no-cache' },
+      const response = await fetch(`${API_BASE}/notifications/admin`, {
         headers: {
+          'Cache-Control': 'no-cache',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
@@ -55,7 +56,7 @@ export default function AdminNotifications() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      const response = await fetch(`https://greate-web-12.vercel.app/api/notifications/mark-read/${notificationId}`, {
+      const response = await fetch(`${API_BASE}/notifications/mark-read/${notificationId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
