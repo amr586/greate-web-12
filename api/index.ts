@@ -672,7 +672,7 @@ async function consumeOTP(identifier: string, code: string, type: string, pool: 
 }
 
 // Allowed origins from env (comma-separated)
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://greatsociety-eg.com,https://greate-web-12.vercel.app').split(',');
+const ALLOWED_ORIGINS = ['https://greatsociety-eg.com', 'https://greate-web-12.vercel.app', 'http://localhost:5173', 'http://localhost:3000'];
 
 export default async function handler(req: any, res: any) {
   // Security headers
@@ -681,17 +681,13 @@ export default async function handler(req: any, res: any) {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' https: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
   res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   
-  // CORS - specific origins only
-  const origin = req.headers.origin;
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : (ALLOWED_ORIGINS[0] || '*');
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  // CORS - allow all origins for now
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
     return res.status(204).end();

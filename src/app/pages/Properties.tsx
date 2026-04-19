@@ -29,6 +29,8 @@ export default function Properties() {
   const [purpose, setPurpose] = useState('الكل');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [minArea, setMinArea] = useState('');
+  const [maxArea, setMaxArea] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('الكل');
   const [showFilters, setShowFilters] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
@@ -81,16 +83,18 @@ export default function Properties() {
     const matchDistrict = !activeDistrict || activeDistrict === 'الكل' || (p.district || '').includes(activeDistrict);
     const matchType = type === 'الكل' || (p.type || '').includes(type);
     const matchPurpose = purpose === 'الكل' || (p.purpose || '') === purposeMap[purpose];
-    const matchMin = !minPrice || Number(p.price) >= Number(minPrice);
-    const matchMax = !maxPrice || Number(p.price) <= Number(maxPrice);
+    const matchMinPrice = !minPrice || Number(p.price) >= Number(minPrice);
+    const matchMaxPrice = !maxPrice || Number(p.price) <= Number(maxPrice);
+    const matchMinArea = !minArea || Number(p.area) >= Number(minArea);
+    const matchMaxArea = !maxArea || Number(p.area) <= Number(maxArea);
     const matchFeatured = featuredFilter === 'الكل' || (featuredFilter === 'مميز' ? Boolean(p.is_featured) : !p.is_featured);
-    return matchSearch && matchDistrict && matchType && matchPurpose && matchMin && matchMax && matchFeatured;
+    return matchSearch && matchDistrict && matchType && matchPurpose && matchMinPrice && matchMaxPrice && matchMinArea && matchMaxArea && matchFeatured;
   });
 
   const filteredDbNormal = filteredDb;
 
-  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setFeaturedFilter('الكل'); };
-  const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice, featuredFilter !== 'الكل' ? featuredFilter : ''].filter(Boolean).length;
+  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setMinArea(''); setMaxArea(''); setFeaturedFilter('الكل'); };
+  const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice, minArea, maxArea, featuredFilter !== 'الكل' ? featuredFilter : ''].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20" dir="rtl">
@@ -200,6 +204,20 @@ export default function Properties() {
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">السعر الأقصى (ج)</label>
                     <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+                      placeholder="غير محدد"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">المساحة الأدنى (م²)</label>
+                    <input type="number" value={minArea} onChange={e => setMinArea(e.target.value)}
+                      placeholder="0"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">المساحة الأقصى (م²)</label>
+                    <input type="number" value={maxArea} onChange={e => setMaxArea(e.target.value)}
                       placeholder="غير محدد"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
                     />
