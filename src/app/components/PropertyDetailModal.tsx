@@ -10,14 +10,16 @@ interface Props {
   onClose: () => void;
   onApprove?: (data?: any) => void;
   onReject?: () => void;
+  onFeaturedChange?: (isFeatured: boolean) => void;
 }
 
 const typeLabel: Record<string, string> = { apartment: 'شقة', villa: 'فيلا', office: 'مكتب', shop: 'محل', land: 'أرض', chalet: 'شاليه' };
 const purposeLabel: Record<string, string> = { sale: 'للبيع', rent: 'للإيجار' };
 
-export default function PropertyDetailModal({ propertyId, onClose, onApprove, onReject }: Props) {
+export default function PropertyDetailModal({ propertyId, onClose, onApprove, onReject, onFeaturedChange }: Props) {
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingFeatured, setUpdatingFeatured] = useState(false);
   const [reviewForm, setReviewForm] = useState<any>({
     contact_phone: '',
     is_featured: false,
@@ -36,6 +38,24 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
       });
     }).catch(console.error).finally(() => setLoading(false));
   }, [propertyId]);
+
+  const toggleFeatured = async () => {
+    if (!property || updatingFeatured) return;
+    try {
+      setUpdatingFeatured(true);
+      const newFeaturedStatus = !property.is_featured;
+      await api.setPropertyFeatured(propertyId, newFeaturedStatus);
+      setProperty((p: any) => ({ ...p, is_featured: newFeaturedStatus }));
+      if (onFeaturedChange) {
+        onFeaturedChange(newFeaturedStatus);
+      }
+    } catch (err) {
+      console.error('Error toggling featured:', err);
+      alert('خطأ في تحديث حالة المميز');
+    } finally {
+      setUpdatingFeatured(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl">
@@ -192,6 +212,27 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
               <Calendar size={12} />
               <span>تاريخ الإضافة: {new Date(property.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
+
+            {property.status === 'approved' && (
+              <div className="border-t border-gray-100 pt-5">
+                <h4 className="font-bold text-gray-900 mb-3">إعدادات العقار</h4>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">تعيين كعقار مميز</p>
+                    <p className="text-xs text-gray-500 mt-1">سيظهر العقار في الصفحة الرئيسية</p>
+                  </div>
+                  <button
+                    onClick={toggleFeatured}
+                    disabled={updatingFeatured}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      property.is_featured ? 'bg-[#7C3AED]' : 'bg-gray-300'
+                    } ${updatingFeatured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${property.is_featured ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {property.status === 'pending' && onApprove && onReject && (
               <div className="border-t border-gray-100 pt-5 space-y-4">
