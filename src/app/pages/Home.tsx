@@ -32,6 +32,11 @@ export default function Home() {
   const [heroSlide, setHeroSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('all');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minArea, setMinArea] = useState('');
+  const [maxArea, setMaxArea] = useState('');
   const [featuredProps, setFeaturedProps] = useState<any[]>([]);
   const [propSlide, setPropSlide] = useState<Record<number, number>>({});
   const [showFloor, setShowFloor] = useState<Record<number, boolean>>({});
@@ -62,6 +67,10 @@ export default function Home() {
     const p = new URLSearchParams();
     if (searchQuery) p.set('search', searchQuery);
     if (searchType !== 'all') p.set('purpose', searchType);
+    if (minPrice) p.set('minPrice', minPrice);
+    if (maxPrice) p.set('maxPrice', maxPrice);
+    if (minArea) p.set('minArea', minArea);
+    if (maxArea) p.set('maxArea', maxArea);
     navigate('/properties?' + p.toString());
   };
 
@@ -112,22 +121,65 @@ export default function Home() {
 
             <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
               onSubmit={handleSearch}
-              className="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl flex flex-col sm:flex-row gap-2"
+              className="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-2xl flex flex-col gap-2"
             >
-              <select value={searchType} onChange={e => setSearchType(e.target.value)}
-                className="border-0 outline-none bg-[#e6f2f5] rounded-xl px-3 py-2.5 text-sm text-gray-800 min-w-[110px]"
-              >
-                <option value="all">الكل</option>
-                <option value="sale">للبيع</option>
-                <option value="rent">للإيجار</option>
-              </select>
-              <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="ابحث بالموقع أو نوع العقار أو بالسعر..."
-                className="flex-1 border-0 outline-none text-sm px-3 py-2.5 text-gray-800 bg-transparent placeholder:text-gray-400"
-              />
-              <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-[#005a7d]/30 transition-shadow">
-                <Search size={16} />بحث
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select value={searchType} onChange={e => setSearchType(e.target.value)}
+                  className="border-0 outline-none bg-[#e6f2f5] rounded-xl px-3 py-2.5 text-sm text-gray-800 min-w-[110px]"
+                >
+                  <option value="all">الكل</option>
+                  <option value="sale">للبيع</option>
+                  <option value="rent">للإيجار</option>
+                </select>
+                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="ابحث بالموقع أو نوع العقار..."
+                  className="flex-1 border-0 outline-none text-sm px-3 py-2.5 text-gray-800 bg-transparent placeholder:text-gray-400"
+                />
+                <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:shadow-[#005a7d]/30 transition-shadow">
+                  <Search size={16} />بحث
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="text-xs text-[#005a7d] hover:underline font-medium"
+                >
+                  {showAdvanced ? 'إخفاء' : '+ فلتر السعر والمساحة'}
+                </button>
+              </div>
+
+              {showAdvanced && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">السعر الأدنى</label>
+                    <input type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)}
+                      placeholder="من"
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">السعر الأقصى</label>
+                    <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+                      placeholder="إلى"
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">المساحة (م²)</label>
+                    <input type="number" value={minArea} onChange={e => setMinArea(e.target.value)}
+                      placeholder="من"
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">المساحة (م²)</label>
+                    <input type="number" value={maxArea} onChange={e => setMaxArea(e.target.value)}
+                      placeholder="إلى"
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
             </motion.form>
 
             <div className="flex flex-wrap gap-2 mt-4">
