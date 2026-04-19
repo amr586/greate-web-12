@@ -205,13 +205,19 @@ export default function AdminAddProperty() {
                   <option value="resale">ريسيل</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">⭐ حالة العقار</label>
-                <select value={form.is_featured ? 'featured' : 'normal'} onChange={e => update('is_featured', e.target.value === 'featured')}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:border-[#bca056] font-bold ${form.is_featured ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-700'}`}>
-                  <option value="normal">عادي</option>
-                  <option value="featured">⭐ مميز</option>
-                </select>
+              <div className="md:col-span-2">
+                <label
+                  className={`flex items-center gap-4 cursor-pointer p-4 rounded-2xl border-2 transition-all select-none ${form.is_featured ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-gray-50 hover:border-yellow-200 hover:bg-yellow-50/40'}`}
+                  onClick={() => update('is_featured', !form.is_featured)}
+                >
+                  <div className={`w-12 h-6 rounded-full transition-colors flex-shrink-0 relative ${form.is_featured ? 'bg-yellow-400' : 'bg-gray-300'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${form.is_featured ? 'right-1' : 'left-1'}`} />
+                  </div>
+                  <div>
+                    <p className={`font-bold text-sm ${form.is_featured ? 'text-yellow-800' : 'text-gray-700'}`}>⭐ إضافة في الصفحة الرئيسية (الهوم)</p>
+                    <p className="text-xs text-gray-500 mt-0.5">تفعيل هذا الخيار يجعل العقار يظهر في قسم "عقارات مميزة" في الهوم بالإضافة لصفحة العقارات</p>
+                  </div>
+                </label>
               </div>
             </div>
             <div className="mt-4">
