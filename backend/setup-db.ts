@@ -187,6 +187,7 @@ async function setup() {
   await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS finishing_type VARCHAR(100)`);
   await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_image TEXT`);
   await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS google_maps_url TEXT`);
+  await query(`ALTER TABLE properties ADD COLUMN IF NOT EXISTS show_on_home BOOLEAN DEFAULT false`);
   await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT`);
   await query(`ALTER TABLE property_chat_messages ADD COLUMN IF NOT EXISTS recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
   await query(`ALTER TABLE properties DROP CONSTRAINT IF EXISTS properties_purpose_check`);

@@ -46,6 +46,7 @@ export default function AdminAddProperty() {
     finishing_type: '',
     google_maps_url: '',
     is_featured: false,
+    show_on_home: false,
     down_payment: '',
     delivery_status: '',
   });
@@ -210,11 +211,29 @@ export default function AdminAddProperty() {
               {canSetFeatured && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">⭐ حالة العقار / إضافة في صفحة الهوم</label>
-                  <select value={form.is_featured ? 'home' : 'properties'} onChange={e => update('is_featured', e.target.value === 'home')}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:border-[#bca056] font-bold ${form.is_featured ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-700'}`}>
-                    <option value="properties">صفحة العقارات فقط</option>
-                    <option value="home">صفحة العقارات + الهوم</option>
+                  <select
+                    value={form.show_on_home ? 'home' : form.is_featured ? 'featured' : 'properties'}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === 'home') { update('is_featured', true); update('show_on_home', true); }
+                      else if (v === 'featured') { update('is_featured', true); update('show_on_home', false); }
+                      else { update('is_featured', false); update('show_on_home', false); }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:border-[#bca056] font-bold ${
+                      form.show_on_home ? 'border-yellow-400 bg-yellow-50 text-yellow-700'
+                      : form.is_featured ? 'border-orange-400 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <option value="properties">صفحة العقارات فقط (غير مميز)</option>
+                    <option value="featured">⭐ مميز في صفحة العقارات فقط</option>
+                    <option value="home">⭐ صفحة العقارات + الهوم</option>
                   </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {form.show_on_home ? 'سيظهر في صفحة الهوم وصفحة العقارات كعقار مميز' 
+                    : form.is_featured ? 'سيظهر كمميز في صفحة العقارات فقط'
+                    : 'سيظهر في صفحة العقارات العادية فقط'}
+                  </p>
                 </div>
               )}
             </div>

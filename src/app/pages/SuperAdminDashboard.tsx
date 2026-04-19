@@ -254,6 +254,7 @@ export default function SuperAdminDashboard() {
       purpose: prop.purpose || '',
       contact_phone: prop.contact_phone || prop.owner_phone || '',
       is_featured: Boolean(prop.is_featured),
+      show_on_home: Boolean(prop.show_on_home),
       down_payment: prop.down_payment || '',
       delivery_status: prop.delivery_status || '',
       google_maps_url: prop.google_maps_url || '',
@@ -1233,11 +1234,19 @@ export default function SuperAdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">إضافة العقار في صفحة الهوم</label>
-                    <select value={editForm.is_featured ? 'home' : 'properties'} onChange={e => setEditForm((p: any) => ({ ...p, is_featured: e.target.value === 'home' }))}
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">⭐ حالة العقار / صفحة الهوم</label>
+                    <select
+                      value={editForm.show_on_home ? 'home' : editForm.is_featured ? 'featured' : 'properties'}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === 'home') setEditForm((p: any) => ({ ...p, is_featured: true, show_on_home: true }));
+                        else if (v === 'featured') setEditForm((p: any) => ({ ...p, is_featured: true, show_on_home: false }));
+                        else setEditForm((p: any) => ({ ...p, is_featured: false, show_on_home: false }));
+                      }}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#005a7d]">
-                      <option value="properties">صفحة العقارات فقط</option>
-                      <option value="home">صفحة العقارات + الهوم</option>
+                      <option value="properties">صفحة العقارات فقط (غير مميز)</option>
+                      <option value="featured">⭐ مميز في صفحة العقارات فقط</option>
+                      <option value="home">⭐ صفحة العقارات + الهوم</option>
                     </select>
                   </div>
                   <div>

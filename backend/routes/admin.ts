@@ -63,7 +63,7 @@ router.patch('/properties/:id/approve', authenticate, requireAdmin, async (req: 
     if (sub && sub !== 'property_manager' && req.user!.role !== 'superadmin') {
       return res.status(403).json({ error: 'صلاحية مدير العقارات فقط' });
     }
-    const { contact_phone, is_featured, down_payment, delivery_status } = req.body || {};
+    const { contact_phone, is_featured, show_on_home, down_payment, delivery_status } = req.body || {};
     await query(
       `UPDATE properties SET
         status='approved',
@@ -71,11 +71,12 @@ router.patch('/properties/:id/approve', authenticate, requireAdmin, async (req: 
         approved_at=NOW(),
         contact_phone=COALESCE($2, contact_phone),
         is_featured=COALESCE($3, is_featured),
-        down_payment=COALESCE($4, down_payment),
-        delivery_status=COALESCE($5, delivery_status),
+        show_on_home=COALESCE($4, show_on_home),
+        down_payment=COALESCE($5, down_payment),
+        delivery_status=COALESCE($6, delivery_status),
         updated_at=NOW()
-      WHERE id=$6`,
-      [req.user!.id, contact_phone || null, typeof is_featured === 'boolean' ? is_featured : null, down_payment || null, delivery_status || null, req.params.id]
+      WHERE id=$7`,
+      [req.user!.id, contact_phone || null, typeof is_featured === 'boolean' ? is_featured : null, typeof show_on_home === 'boolean' ? show_on_home : null, down_payment || null, delivery_status || null, req.params.id]
     );
     // Notify property owner
     try {
@@ -118,7 +119,7 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
   try {
     const {
       title, title_ar, description, description_ar, price, area, rooms, bedrooms, bathrooms, district,
-      city, address, type, purpose, floor, contact_phone, is_featured, down_payment, delivery_status,
+      city, address, type, purpose, floor, contact_phone, is_featured, show_on_home, down_payment, delivery_status,
       google_maps_url, floor_plan_image, is_furnished, has_parking, has_elevator, has_pool, has_garden,
       has_basement, finishing_type, status
     } = req.body;
@@ -132,21 +133,24 @@ router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequ
         bedrooms=COALESCE($8,bedrooms), bathrooms=COALESCE($9,bathrooms), district=COALESCE($10,district),
         city=COALESCE($11,city), address=COALESCE($12,address), type=COALESCE($13,type),
         purpose=COALESCE($14,purpose), floor=COALESCE($15,floor), contact_phone=COALESCE($16,contact_phone),
-        is_featured=COALESCE($17,is_featured), down_payment=COALESCE($18,down_payment),
-        delivery_status=COALESCE($19,delivery_status),
-        google_maps_url=COALESCE($20,google_maps_url),
-        floor_plan_image=COALESCE($21,floor_plan_image),
-        is_furnished=COALESCE($22,is_furnished), has_parking=COALESCE($23,has_parking),
-        has_elevator=COALESCE($24,has_elevator), has_pool=COALESCE($25,has_pool),
-        has_garden=COALESCE($26,has_garden), has_basement=COALESCE($27,has_basement),
-        finishing_type=COALESCE($28,finishing_type),
-        status=COALESCE($29,status),
+        is_featured=COALESCE($17,is_featured), show_on_home=COALESCE($18,show_on_home),
+        down_payment=COALESCE($19,down_payment),
+        delivery_status=COALESCE($20,delivery_status),
+        google_maps_url=COALESCE($21,google_maps_url),
+        floor_plan_image=COALESCE($22,floor_plan_image),
+        is_furnished=COALESCE($23,is_furnished), has_parking=COALESCE($24,has_parking),
+        has_elevator=COALESCE($25,has_elevator), has_pool=COALESCE($26,has_pool),
+        has_garden=COALESCE($27,has_garden), has_basement=COALESCE($28,has_basement),
+        finishing_type=COALESCE($29,finishing_type),
+        status=COALESCE($30,status),
         updated_at=NOW()
-      WHERE id=$30`,
+      WHERE id=$31`,
       [
         title, title_ar, description, description_ar, price, area, rooms, bedrooms || rooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
-        typeof is_featured === 'boolean' ? is_featured : null, down_payment, delivery_status,
+        typeof is_featured === 'boolean' ? is_featured : null,
+        typeof show_on_home === 'boolean' ? show_on_home : null,
+        down_payment, delivery_status,
         google_maps_url || null, floor_plan_image || null,
         typeof is_furnished === 'boolean' ? is_furnished : null,
         typeof has_parking === 'boolean' ? has_parking : null,

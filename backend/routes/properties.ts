@@ -62,7 +62,7 @@ router.get('/featured', async (_req: Request, res: Response) => {
         (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
         (SELECT json_agg(json_build_object('id', pi2.id, 'url', pi2.url, 'is_primary', pi2.is_primary) ORDER BY pi2.order_index) FROM property_images pi2 WHERE pi2.property_id = p.id) as images
       FROM properties p
-      WHERE p.status = 'approved' AND p.is_featured = true
+      WHERE p.status = 'approved' AND p.show_on_home = true
       ORDER BY p.updated_at DESC, p.created_at DESC
       LIMIT 12
     `);
@@ -92,7 +92,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const {
       title, title_ar, description, type, purpose, price, area, rooms, bedrooms, bathrooms, floor,
-      address, district, contact_phone, down_payment, delivery_status, is_featured, images,
+      address, district, contact_phone, down_payment, delivery_status, is_featured, show_on_home, images,
       is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
       finishing_type, floor_plan_image, google_maps_url
     } = req.body;
@@ -103,18 +103,20 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     const COMPANY_PHONE = '01100111618';
     const finalPhone = isStaff ? (contact_phone || COMPANY_PHONE) : (contact_phone || user.phone || COMPANY_PHONE);
     const validPurpose = ['sale','rent','resale'].includes(purpose) ? purpose : 'sale';
+    const finalIsFeatured = isStaff ? Boolean(is_featured) : false;
+    const finalShowOnHome = isStaff ? Boolean(show_on_home) : false;
     const result = await query(
       `INSERT INTO properties (
         title, title_ar, description, description_ar, type, purpose, price, area, rooms, bedrooms,
         bathrooms, floor, address, district, contact_phone, down_payment, delivery_status,
-        is_featured, is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
+        is_featured, show_on_home, is_furnished, has_parking, has_elevator, has_pool, has_garden, has_basement,
         finishing_type, floor_plan_image, google_maps_url, owner_id, status
       )
-       VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
+       VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
       [
         displayTitle, displayTitle, description, type, validPurpose, price, area, rooms || bedrooms, bedrooms || rooms,
         bathrooms, floor, address, district, finalPhone, down_payment || null, delivery_status || null,
-        isStaff ? Boolean(is_featured) : false, Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
+        finalIsFeatured, finalShowOnHome, Boolean(is_furnished), Boolean(has_parking), Boolean(has_elevator),
         Boolean(has_pool), Boolean(has_garden), Boolean(has_basement),
         finishing_type || null, floor_plan_image || null, google_maps_url || null,
         user.id, initialStatus
