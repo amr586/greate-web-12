@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 import PropertyDetailModal from '../components/PropertyDetailModal';
 import PropertyChat from '../components/PropertyChat';
 import ProfileTab from '../components/ProfileTab';
@@ -71,6 +72,7 @@ export default function SubAdminDashboard() {
   const planInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { navigate('/login'); return; }
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (!isAdmin) { navigate('/dashboard'); return; }
@@ -231,7 +233,7 @@ export default function SubAdminDashboard() {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

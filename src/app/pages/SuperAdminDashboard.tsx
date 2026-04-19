@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LayoutDashboard, Building2, Users, CreditCard, CheckCircle, XCircle, Clock, LogOut, Eye, ShieldCheck, MessageSquare, Phone, Mail, Lock, X, EyeOff, User, Plus, Edit3, Trash2, PlusCircle, Loader2, Settings, Globe, MapPin, MessageCircle, Image, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 import PropertyChat from '../components/PropertyChat';
 import ProfileTab from '../components/ProfileTab';
 import PropertyImageManager from '../components/PropertyImageManager';
@@ -21,12 +22,13 @@ const SUB_ROLES = [
 ];
 
 export default function SuperAdminDashboard() {
-  const { user, logout, isSuperAdmin, updateUser } = useAuth();
+  const { user, logout, isSuperAdmin, updateUser, loading } = useAuth();
   const { settings, refreshSettings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<any>(null);
+  const [initialLoadRan, setInitialLoadRan] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -62,10 +64,13 @@ export default function SuperAdminDashboard() {
   const [faqEditA, setFaqEditA] = useState('');
 
   useEffect(() => {
+    if (loading) return;
+    if (initialLoadRan) return;
     if (!user) { navigate('/login'); return; }
+    setInitialLoadRan(true);
     if (!isSuperAdmin) { navigate('/dashboard'); return; }
     loadData();
-  }, [user]);
+  }, [user, loading]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -112,7 +117,7 @@ export default function SuperAdminDashboard() {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),
@@ -227,7 +232,7 @@ export default function SuperAdminDashboard() {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

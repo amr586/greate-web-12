@@ -4,12 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Phone, CheckCircle, AlertCircle, Copy, ArrowRight, Shield, Clock, Upload, ImageIcon, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
 export default function PaymentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { settings } = useSiteSettings();
   const instapayLabel = settings.payment_instapay_label || 'InstaPay';
   const vodafoneLabel = settings.payment_vodafone_label || 'Vodafone Cash';
@@ -27,6 +28,7 @@ export default function PaymentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { navigate('/login'); return; }
     if (!id) return;
     api.getProperty(Number(id))
@@ -82,7 +84,7 @@ export default function PaymentPage() {
         reader.readAsDataURL(screenshotFile);
       });
       const token = localStorage.getItem('token');
-      const uploadRes = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const uploadRes = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: screenshotFile.name }),

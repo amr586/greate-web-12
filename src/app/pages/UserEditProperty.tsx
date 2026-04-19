@@ -5,6 +5,7 @@ import { Building2, CheckCircle, X, Loader2, Map, AlertTriangle } from 'lucide-r
 import { useAuth } from '../context/AuthContext';
 import { compressAndUploadMultiple, compressImage } from '../lib/imageUtils';
 import { CAIRO_DISTRICTS } from '../lib/districts';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
@@ -144,7 +145,7 @@ export default function UserEditProperty() {
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(compressed);
       });
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

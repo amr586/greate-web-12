@@ -36,7 +36,7 @@ function DeadlineBadge({ createdAt }: { createdAt: string }) {
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=120&fit=crop';
 
 export default function AdminDashboard() {
-  const { user, logout, isAdmin, isSuperAdmin, subRole, updateUser } = useAuth();
+  const { user, logout, isAdmin, isSuperAdmin, subRole, updateUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
@@ -45,19 +45,20 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
 
   useEffect(() => {
+    if (!user && authLoading) return;
     if (!user) { navigate('/login'); return; }
+    if (!isAdmin) { navigate('/dashboard'); return; }
     if (!isAdmin) { navigate('/dashboard'); return; }
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (subRole && ['data_entry', 'property_manager', 'analytics', 'support'].includes(subRole)) {
       navigate('/sub-admin'); return;
     }
     loadData();
-  }, [user]);
+  }, [user, loading]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

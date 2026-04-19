@@ -88,8 +88,15 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
             {purposeLabel(property.purpose)}
           </div>
 
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 text-[#005a7d]">
-            {property.type}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            <div className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white/90 text-[#005a7d]">
+              {property.type}
+            </div>
+            {property.status === 'sold' && (
+              <div className="px-2.5 py-1 rounded-lg text-xs font-bold bg-red-500 text-white">
+                تم البيع
+              </div>
+            )}
           </div>
 
           {user && (

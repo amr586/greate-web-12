@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Star, Upload, Loader2, ImagePlus } from 'lucide-react';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 import { compressImage } from '../lib/imageUtils';
 
 interface PropertyImage {
@@ -13,8 +14,6 @@ interface PropertyImage {
 interface Props {
   propertyId: number;
 }
-
-const API_BASE = 'https://greate-web-12.vercel.app';
 
 export default function PropertyImageManager({ propertyId }: Props) {
   const [images, setImages] = useState<PropertyImage[]>([]);
@@ -60,7 +59,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(compressed);
         });
-        const resp = await fetch(`${API_BASE}/api/upload`, {
+        const resp = await fetch(`${getApiBaseUrl()}/api/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ image: base64, filename: file.name }),

@@ -5,6 +5,7 @@ import { Building2, MapPin, DollarSign, Home, CheckCircle, Info, Upload, X, Imag
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { CAIRO_DISTRICTS } from '../lib/districts';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 
 const TYPES = ['شقة', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض', 'دوبلكس', 'بنتهاوس'];
 const DISTRICTS = CAIRO_DISTRICTS;
@@ -75,7 +76,7 @@ export default function AddProperty() {
       });
       const base64 = await base64Promise;
       const token = localStorage.getItem('token');
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

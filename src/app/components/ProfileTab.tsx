@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { User, Lock, Camera, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 
 interface ProfileTabProps {
   user: any;
@@ -37,7 +38,7 @@ export default function ProfileTab({ user, updateUser }: ProfileTabProps) {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch('https://greate-web-12.vercel.app/api/upload', {
+      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

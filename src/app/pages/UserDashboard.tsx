@@ -58,7 +58,7 @@ function EmptyState({ icon, title, desc, link, linkLabel }: { icon: React.ReactN
 
 
 export default function UserDashboard() {
-  const { user, logout, isAdmin, isSuperAdmin, updateUser } = useAuth();
+  const { user, logout, isAdmin, isSuperAdmin, updateUser, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('properties');
   const [myProperties, setMyProperties] = useState<any[]>([]);
@@ -78,6 +78,7 @@ export default function UserDashboard() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) { navigate('/login'); return; }
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (isAdmin) { navigate('/admin'); return; }

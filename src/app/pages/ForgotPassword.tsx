@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Building2, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle } from 'lucide-react';
 import { api } from '../lib/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 
 type Step = 'email' | 'otp' | 'newPassword' | 'success';
 
@@ -25,7 +26,7 @@ export default function ForgotPassword() {
     if (!email.trim()) return setError('البريد الإلكتروني مطلوب');
     setLoading(true);
     try {
-      const response = await fetch('https://greate-web-12.vercel.app/api/auth/forgot-password-check', {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password-check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -47,7 +48,7 @@ export default function ForgotPassword() {
     setError('');
     setLoading(true);
     try {
-      const response = await fetch('https://greate-web-12.vercel.app/api/auth/forgot-password', {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -70,7 +71,7 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      const response = await fetch('https://greate-web-12.vercel.app/api/auth/verify-forgot-password', {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/verify-forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
