@@ -131,6 +131,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
   getAdminPayments: () => request('/admin/payments'),
   approvePayment: (id: number) => request(`/admin/payments/${id}/approve`, { method: 'PATCH' }),
   editProperty: (id: number, data: any) => request(`/admin/properties/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  setPropertyFeatured: (id: number, is_featured: boolean) => request(`/admin/properties/${id}/set-featured`, { method: 'PATCH', body: JSON.stringify({ is_featured }) }),
   deleteProperty: (id: number) => request(`/admin/properties/${id}`, { method: 'DELETE' }),
   getAdminPurchaseRequests: () => request('/admin/payments'),
   getPropertyImages: (id: number) => request(`/admin/properties/${id}/images`),

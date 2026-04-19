@@ -115,6 +115,23 @@ router.patch('/properties/:id/reject', authenticate, requireAdmin, async (req: A
   }
 });
 
+router.patch('/properties/:id/set-featured', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
+  try {
+    const { is_featured } = req.body;
+    if (typeof is_featured !== 'boolean') {
+      return res.status(400).json({ error: 'قيمة غير صحيحة' });
+    }
+    await query(
+      `UPDATE properties SET is_featured=$1, updated_at=NOW() WHERE id=$2`,
+      [is_featured, req.params.id]
+    );
+    res.json({ success: true, is_featured });
+  } catch (err: any) {
+    console.error('Featured endpoint error:', err);
+    res.status(500).json({ error: 'خطأ في تعديل حالة المميز' });
+  }
+});
+
 router.patch('/properties/:id', authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const {
