@@ -18,17 +18,18 @@ interface Notification {
 }
 
 export default function AdminNotifications() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (!user) { navigate('/login'); return; }
     if (!isAdmin) { navigate('/dashboard'); return; }
     loadNotifications();
+    setIsLoading(false);
 
     // Refresh notifications every 30 seconds
     const interval = setInterval(loadNotifications, 30000);
@@ -51,7 +52,7 @@ export default function AdminNotifications() {
     } catch (error) {
       
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -157,7 +158,7 @@ export default function AdminNotifications() {
 
         {/* Notifications List */}
         <div className="space-y-4">
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <p className="text-gray-600">جاري التحميل...</p>
             </div>
