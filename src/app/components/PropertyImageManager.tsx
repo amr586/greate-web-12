@@ -20,7 +20,8 @@ export default function PropertyImageManager({ propertyId }: Props) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [apiUrl, setApiUrl] = useState<string>(() => getApiBaseUrl() || 'https://greate-web-12.vercel.app/api');
+  const [apiUrl] = useState<string>(() => getApiBaseUrl() || 'https://greate-web-12.vercel.app/api');
+  const { user } = useAuth();
 
   const loadImages = async () => {
     try {
@@ -58,13 +59,12 @@ export default function PropertyImageManager({ propertyId }: Props) {
     for (let idx = 0; idx < files.length; idx++) {
       const file = files[idx];
       try {
-        console.log('[PropertyImageManager]Compressing:', file.name);
-        const compressed = await compressImage(file);
+        console.log('[PropertyImageManager] Reading directly:', file.name);
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(compressed);
+          reader.readAsDataURL(file);
         });
         
         console.log('[PropertyImageManager] Uploading to:', `${currentApiUrl}/upload`);

@@ -11,7 +11,7 @@ const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', '�
 import { getApiBaseUrl } from '../lib/getApiUrl';
 
 export default function UserAddProperty() {
-  const { user, isAdmin, isSuperAdmin, subRole } = useAuth();
+  const { user, isAdmin, isSuperAdmin, subRole, loading: authLoading } = useAuth();
   const canSetFeatured = isSuperAdmin || (isAdmin && (!subRole || subRole === 'property_manager' || subRole === 'data_entry'));
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,10 +56,14 @@ export default function UserAddProperty() {
   }, [user?.phone]);
 
   useEffect(() => {
-    if (!user) navigate('/login');
-  }, [user, navigate]);
+    if (!authLoading && !user) navigate('/login');
+  }, [user, navigate, authLoading]);
 
-  if (!user) return null;
+  if (authLoading || !user) return (
+    <div className="min-h-screen bg-gray-50 pt-24 flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-[#99c8db] border-t-[#005a7d] rounded-full animate-spin" />
+    </div>
+  );
 
   const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
