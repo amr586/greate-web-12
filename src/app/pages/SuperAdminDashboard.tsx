@@ -70,7 +70,7 @@ export default function SuperAdminDashboard() {
     setInitialLoadRan(true);
     if (!isSuperAdmin) { navigate('/dashboard'); return; }
     loadData();
-  }, [user, authLoading, isLoading]);
+  }, [user, authLoading, isSuperAdmin, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -1067,7 +1067,7 @@ export default function SuperAdminDashboard() {
                         <input
                           value={faqNewQ}
                           onChange={e => setFaqNewQ(e.target.value)}
-                          placeholder="السؤال (مثال: ما هو أرخص عقار؟)"
+                          placeholder="السؤال (مث��ل: ما هو أرخص عقار؟)"
                           className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-xs outline-none focus:border-[#bca056] transition-all bg-white"
                         />
                         <textarea

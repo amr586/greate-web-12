@@ -47,6 +47,7 @@ export default function AdminDashboard() {
   const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user && authLoading) return;
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
       navigate('/sub-admin'); return;
     }
     loadData();
-  }, [user, loading]);
+  }, [user, authLoading, navigate, isAdmin, isSuperAdmin, subRole]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
