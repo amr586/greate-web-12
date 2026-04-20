@@ -312,10 +312,11 @@ export default function PaymentPage() {
                       <p className="text-amber-700 text-xs">سيتم مراجعة طلبك وتأكيد الدفع خلال 24 ساعة. للاستفسار تواصل عبر واتساب على الرقم: {contactPhone}</p>
                     </div>
 
-                    <motion.button
+<motion.button
                       type="submit"
-disabled={isSubmitting || !screenshotFile}
+                      disabled={isSubmitting || !screenshotFile}
                       whileHover={{ scale: isSubmitting || !screenshotFile ? 1 : 1.01 }}
+                    >
 
                       {isSubmitting ? (
                         <span className="flex items-center justify-center gap-2">

@@ -22,7 +22,7 @@ const SUB_ROLES = [
 ];
 
 export default function SuperAdminDashboard() {
-  const { user, logout, isSuperAdmin, updateUser, loading } = useAuth();
+  const { user, logout, isSuperAdmin, updateUser, loading: authLoading } = useAuth();
   const { settings, refreshSettings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,12 +34,12 @@ export default function SuperAdminDashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
   const [resetModal, setResetModal] = useState<{ userId: number; userName: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showNewPass, setShowNewPass] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
+  const [resetIsLoading, setResetIsLoading] = useState(false);
   const [resetMsg, setResetMsg] = useState('');
   const [emailModal, setEmailModal] = useState<{ userId: number; userName: string; currentEmail: string } | null>(null);
   const [newEmail, setNewEmail] = useState('');
@@ -64,7 +64,7 @@ export default function SuperAdminDashboard() {
   const [faqEditA, setFaqEditA] = useState('');
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (initialLoadRan) return;
     if (!user) { navigate('/login'); return; }
     setInitialLoadRan(true);
@@ -173,7 +173,7 @@ export default function SuperAdminDashboard() {
   };
 
   const loadData = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const [statsData, propData, usersData, paymentsData, contactData] = await Promise.allSettled([
         api.getStats(),
@@ -188,7 +188,7 @@ export default function SuperAdminDashboard() {
       if (paymentsData.status === 'fulfilled') setPayments(Array.isArray(paymentsData.value) ? paymentsData.value : []);
       if (contactData.status === 'fulfilled') setContactMessages(Array.isArray(contactData.value) ? contactData.value : []);
     } catch {}
-    finally { setLoading(false); }
+    finally { setIsLoading(false); }
   };
 
   const markContactRead = async (id: number) => {
@@ -301,7 +301,7 @@ export default function SuperAdminDashboard() {
 
   const handleResetPassword = async () => {
     if (!resetModal || !newPassword.trim()) return;
-    setResetLoading(true);
+    setResetIsLoading(true);
     setResetMsg('');
     try {
       await api.resetUserPassword(resetModal.userId, newPassword);
@@ -310,7 +310,7 @@ export default function SuperAdminDashboard() {
     } catch (err: any) {
       setResetMsg('❌ ' + (err.message || 'خطأ في تغيير كلمة المرور'));
     } finally {
-      setResetLoading(false);
+      setResetIsLoading(false);
     }
   };
 
@@ -417,7 +417,7 @@ export default function SuperAdminDashboard() {
           ))}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-10 h-10 border-4 border-[#99c8db] border-t-[#005a7d] rounded-full animate-spin" />
           </div>
@@ -676,10 +676,10 @@ export default function SuperAdminDashboard() {
                     {resetMsg && (
                       <p className={`text-xs mb-3 text-center font-medium ${resetMsg?.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{resetMsg}</p>
                     )}
-                    <button onClick={handleResetPassword} disabled={resetLoading || !newPassword.trim()}
+                    <button onClick={handleResetPassword} disabled={resetIsLoading || !newPassword.trim()}
                       className="w-full bg-[#005a7d] text-white py-2.5 rounded-xl text-sm font-bold hover:bg-[#004a68] disabled:opacity-50 transition-colors"
                     >
-                      {resetLoading ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}
+                      {resetIsLoading ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}
                     </button>
                   </motion.div>
                 </motion.div>
