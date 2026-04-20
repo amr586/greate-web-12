@@ -1945,6 +1945,26 @@ const {
     }
   }
 
+  // GET /api/admin/payments
+  if (method === 'GET' && url?.includes('/api/admin/payments')) {
+    if (!user || !['admin', 'superadmin', 'subadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const [rows]: any = await pool.query(`
+        SELECT pr.*, p.title as property_title, p.address as property_address,
+               u.name as buyer_name, u.email as buyer_email, u.phone as buyer_phone
+        FROM payment_requests pr
+        LEFT JOIN properties p ON pr.property_id = p.id
+        LEFT JOIN users u ON pr.buyer_id = u.id
+        ORDER BY pr.created_at DESC
+      `);
+      return res.json(rows || []);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
   // ========== NOTIFICATIONS ENDPOINTS ==========
 
   // GET /api/notifications/unread-count - MUST COME FIRST
