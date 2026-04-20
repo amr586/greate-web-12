@@ -1404,20 +1404,33 @@ export default async function handler(req: any, res: any) {
 
   // ========== PROPERTIES ENDPOINTS ==========
 
-  // GET /api/properties/user/saved - specific endpoint first
+// GET /api/properties/user/saved - specific endpoint first
   if (method === 'GET' && url?.startsWith('/api/properties/user/saved')) {
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     try {
-      const [rows]: any = await pool.query(`
-        SELECT p.*, (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
-        FROM saved_properties sp JOIN properties p ON p.id = sp.property_id WHERE sp.user_id = ?
-      `, [user.id]);
-      console.log('[SAVED] Rows:', rows.length, 'user_id:', user.id);
-      return res.json(Array.isArray(rows) ? rows : [rows]);
-    } catch (err: any) {
-      console.log('[SAVED] Error:', err.message);
+      const [rows]: any = await pool.query(
+        'SELECT p.*, u.name as owner_name FROM saved_properties sp JOIN properties p ON p.id = sp.property_id JOIN users u ON u.id = p.owner_id WHERE sp.user_id = ? ORDER BY sp.created_at DESC',
+        [user.id]
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
+  }
+
+  // GET /api/properties/user - user's own properties (NEW)
+  if (method === 'GET' && url === '/api/properties/user') {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const [rows]: any = await pool.query(
+        'SELECT p.*, u.name as owner_name FROM properties p LEFT JOIN users u ON u.id = p.owner_id WHERE p.user_id = ? OR p.owner_id = ? ORDER BY p.created_at DESC',
+        [user.id, user.id]
+      );
+      return res.json(Array.isArray(rows) ? rows : []);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
   }
 
   // GET /api/properties/featured - must check exact path
@@ -1714,8 +1727,8 @@ const {
       const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
       if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
         await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_approved', 'تمت الموافقة على عقارك', 'تمت الموافقة على عقارك')`,
-          [propRows[0].owner_id]
+          `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'property_approved', 'تمت الموافقة على عقارك', 'عقارك został موافق عليه', ?)`,
+          [propRows[0].owner_id, `/properties/${id}`]
         );
         sendNotificationEmail(propRows[0].owner_email, 'property_approved', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
       }
@@ -1741,8 +1754,8 @@ const {
       const [propRows]: any = await pool.query('SELECT p.*, u.email as owner_email FROM properties p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id=?', [id]);
       if (propRows[0]?.owner_id && propRows[0]?.owner_email) {
         await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message) VALUES (?, 'property_rejected', 'تم رفض عقارك', 'تم رفض عقارك')`,
-          [propRows[0].owner_id]
+          `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'property_rejected', 'تم رفض عقارك', 'تم رفض عقارك', ?)`,
+          [propRows[0].owner_id, `/properties/${id}`]
         );
         sendNotificationEmail(propRows[0].owner_email, 'property_rejected', { title: propRows[0].title_ar || propRows[0].title || 'عقار' });
       }
@@ -2209,6 +2222,46 @@ const {
         [rows] = await pool.query('SELECT * FROM support_tickets WHERE user_id=? ORDER BY created_at DESC', [user.id]);
       }
       return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // GET /api/support/tickets/:id/messages
+  if (method === 'GET' && url?.match(/\/api\/support\/tickets\/\d+\/messages/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const ticketIdStr = url.match(/\/api\/support\/tickets\/(\d+)\/messages/)?.[1];
+      const ticketId = validateId(ticketIdStr);
+      if (!ticketId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const [rows] = await pool.query(
+        'SELECT sm.*, u.name as sender_name FROM support_messages sm JOIN users u ON u.id = sm.sender_id WHERE sm.ticket_id = ? ORDER BY sm.created_at ASC',
+        [ticketId]
+      );
+      return res.json(rows);
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // POST /api/support/tickets/:id/messages
+  if (method === 'POST' && url?.match(/\/api\/support\/tickets\/\d+\/messages/)) {
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const ticketIdStr = url.match(/\/api\/support\/tickets\/(\d+)\/messages/)?.[1];
+      const ticketId = validateId(ticketIdStr);
+      if (!ticketId) return res.status(400).json({ error: 'معرف غير صالح' });
+      
+      const { message } = body;
+      if (!message?.trim()) return res.status(400).json({ error: 'الرسالة مطلوبة' });
+      
+      const isAdminMsg = ['admin', 'superadmin'].includes(user.role) || user.sub_role === 'support';
+      const [result]: any = await pool.query(
+        'INSERT INTO support_messages (ticket_id, sender_id, message, is_admin) VALUES (?, ?, ?, ?)',
+        [ticketId, user.id, message.trim(), isAdminMsg]
+      );
+      return res.status(201).json({ id: result.insertId });
     } catch {
       return res.status(500).json({ error: 'خطأ' });
     }
