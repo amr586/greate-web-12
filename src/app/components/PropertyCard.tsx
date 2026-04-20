@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
 import { Bed, Bath, Maximize, MapPin, Heart, Eye, Tag } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
@@ -38,6 +38,19 @@ const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00
 export default function PropertyCard({ property, index = 0, onSaved }: Props) {
   const { user } = useAuth();
   const [saved, setSaved] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!user || !property?.id) { setChecking(false); return; }
+    setChecking(true);
+    api.getSaved()
+      .then((savedList: any[]) => {
+        const isSaved = savedList.some((p: any) => p.id === property.id);
+        setSaved(isSaved);
+      })
+      .catch(() => setSaved(false))
+      .finally(() => setChecking(false));
+  }, [user, property?.id]);
 
   const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,11 +113,13 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
           </div>
 
           {user && (
-            <button onClick={handleSave}
-              className={`absolute bottom-3 left-3 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${saved ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-500 hover:text-red-500'}`}
-            >
-              <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
-            </button>
+            {!checking && (
+              <button onClick={handleSave}
+                className={`absolute bottom-3 left-3 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${saved ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-500 hover:text-red-500'}`}
+              >
+                <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
+              </button>
+            )}
           )}
 
           <div className="absolute bottom-3 right-3">

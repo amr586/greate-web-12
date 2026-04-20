@@ -2082,6 +2082,24 @@ const {
     }
   }
 
+  // PATCH /api/contact/:id/read
+  if (method === 'PATCH' && url?.match(/\/api\/contact\/\d+\/read$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/contact\/(\d+)\/read/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+
+      await pool.query('UPDATE contact_messages SET is_read = true WHERE id = ?', [id]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Mark contact read:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
   // ========== PAYMENTS ENDPOINTS ==========
 
   // POST /api/payments

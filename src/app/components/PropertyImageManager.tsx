@@ -4,6 +4,8 @@ import { api } from '../lib/api';
 import { getApiBaseUrl } from '../lib/getApiUrl';
 import { compressImage } from '../lib/imageUtils';
 
+const API_BASE = getApiBaseUrl();
+
 interface PropertyImage {
   id: number;
   url: string;
