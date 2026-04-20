@@ -47,6 +47,7 @@ export default function AdminDashboard() {
   const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [chatProperty, setChatProperty] = useState<{ id: number; title: string; ownerName?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user && authLoading) return;
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
     if (subRole && ['data_entry', 'property_manager', 'analytics', 'support'].includes(subRole)) {
       navigate('/sub-admin'); return;
     }
+    setLoading(true);
     loadData();
   }, [user, authLoading]);
 
@@ -76,7 +78,6 @@ export default function AdminDashboard() {
   }, [location.search]);
 
   const loadData = async () => {
-    setLoading(true);
     try {
       const [statsData, propData, paymentsData, contactData] = await Promise.allSettled([
         api.getStats(),
@@ -89,7 +90,7 @@ export default function AdminDashboard() {
       if (paymentsData.status === 'fulfilled') setPayments(paymentsData.value || []);
       if (contactData.status === 'fulfilled') setContactMessages(contactData.value || []);
     } catch {}
-    finally { setLoading(false); }
+    setLoading(false);
   };
 
   const markContactRead = async (id: number) => {
