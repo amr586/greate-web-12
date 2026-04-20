@@ -15,7 +15,7 @@ function isStaffUser(user: AuthRequest['user']): boolean {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { type, purpose, district, minPrice, maxPrice, rooms, search, page = 1, limit = 12, user_id } = req.query;
-    let conditions = user_id ? [`p.owner_id = $1`] : ["p.status = 'approved'"];
+    let conditions = user_id ? [`p.owner_id = $1`, `p.status = 'approved'`] : ["p.status = 'approved'"];
     const params: any[] = user_id ? [Number(user_id)] : [];
     let idx = user_id ? 2 : 1;
 

@@ -83,7 +83,7 @@ export default function UserDashboard() {
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (isAdmin) { navigate('/admin'); return; }
     loadData();
-  }, [user]);
+  }, [user, authLoading, navigate, isSuperAdmin, isAdmin]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
