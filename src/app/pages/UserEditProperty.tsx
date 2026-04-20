@@ -23,6 +23,11 @@ export default function UserEditProperty() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [floorPlanImage, setFloorPlanImage] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [apiUrl, setApiUrl] = useState<string>('');
+
+  useEffect(() => {
+    setApiUrl(getApiBaseUrl() || 'https://greate-web-12.vercel.app/api');
+  }, []);
 
   const [form, setForm] = useState({
     title: '',
@@ -60,7 +65,7 @@ export default function UserEditProperty() {
       setFetching(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`${getApiBaseUrl()}/properties/${id}`, {
+        const res = await fetch(`${apiUrl}/properties/${id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const data = await res.json();
@@ -145,7 +150,7 @@ export default function UserEditProperty() {
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(compressed);
       });
-      const res = await fetch(`${getApiBaseUrl()}/upload`, {
+      const res = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),
@@ -180,7 +185,7 @@ export default function UserEditProperty() {
         images: uploadedImages,
         floor_plan_image: floorPlanImage || null,
       };
-      const res = await fetch(`${getApiBaseUrl()}/properties/${id}/user-edit`, {
+      const res = await fetch(`${apiUrl}/properties/${id}/user-edit`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

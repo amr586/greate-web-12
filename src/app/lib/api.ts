@@ -1,5 +1,6 @@
 import { PROPERTIES } from '../data/mockData';
-import { getApiBaseUrl } from './getApiUrl';
+
+const API_BASE = 'https://greate-web-12.vercel.app/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -28,7 +29,7 @@ async function request(path: string, options: RequestInit = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     
-    const res = await fetch(getApiBaseUrl() + url, { ...options, headers, signal: controller.signal });
+    const res = await fetch(API_BASE + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
     const data = await res.json();
@@ -173,7 +174,7 @@ export async function streamChat(messages: any[], onChunk: (text: string) => voi
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     
-    const res = await fetch(getApiBaseUrl() + '/ai/chat', {
+    const res = await fetch(API_BASE + '/ai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
