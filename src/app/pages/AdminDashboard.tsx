@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       navigate('/sub-admin'); return;
     }
     loadData();
-  }, [user, loading]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
