@@ -72,7 +72,6 @@ export default function SubAdminDashboard() {
   const planInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (loading) return;
     if (!user) { navigate('/login'); return; }
     if (isSuperAdmin) { navigate('/superadmin'); return; }
     if (!isAdmin) { navigate('/dashboard'); return; }
@@ -89,7 +88,7 @@ export default function SubAdminDashboard() {
     else navigate('/admin');
 
     loadData();
-  }, [user]);
+  }, [user, navigate, isAdmin, isSuperAdmin]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
