@@ -62,7 +62,7 @@ router.get('/featured', async (_req: Request, res: Response) => {
         (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image,
         (SELECT json_agg(json_build_object('id', pi2.id, 'url', pi2.url, 'is_primary', pi2.is_primary) ORDER BY pi2.order_index) FROM property_images pi2 WHERE pi2.property_id = p.id) as images
       FROM properties p
-      WHERE p.status = 'approved' AND p.show_on_home = true
+      WHERE p.status = 'approved' AND p.is_featured = true
       ORDER BY p.updated_at DESC, p.created_at DESC
       LIMIT 12
     `);
