@@ -63,10 +63,14 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
   };
 
   const image = property.primary_image || DEFAULT_IMAGE;
+  const validPrice = Number(property.price) > 0 ? Number(property.price).toLocaleString() : 'اتصل بنا';
   const price = property.purpose === 'rent'
-    ? `${property.price.toLocaleString()} ج/شهر`
-    : `${property.price.toLocaleString()} جنيه`;
-  const downPayment = property.down_payment ? Number(property.down_payment).toLocaleString() : null;
+    ? `${validPrice} ج/شهر`
+    : `${validPrice} جنيه`;
+  const downPaymentVal = Number(property.down_payment);
+  const downPayment = (downPaymentVal > 0) ? downPaymentVal.toLocaleString() : null;
+  const areaVal = Number(property.area);
+  const area = (areaVal > 0) ? areaVal : null;
 
   return (
     <motion.div
@@ -146,7 +150,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
                 <span>{property.rooms} غرف</span>
               </div>
             )}
-            {property.bathrooms && (
+            {Number(property.bathrooms) > 0 && (
               <div className="flex items-center gap-1">
                 <Bath size={13} className="text-[#005a7d]" />
                 <span>{property.bathrooms}</span>
@@ -154,7 +158,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
             )}
             <div className="flex items-center gap-1">
               <Maximize size={13} className="text-[#005a7d]" />
-              <span>{Number(property.area)}م²</span>
+              <span>{area ? `${area}م²` : '-'}</span>
             </div>
             <div className="flex-1 flex justify-end">
               <span className="flex items-center gap-1 text-[#005a7d] font-medium">
