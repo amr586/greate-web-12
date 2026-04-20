@@ -10,14 +10,14 @@ import { useSiteSettings } from '../context/SiteSettingsContext';
 export default function PaymentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { settings } = useSiteSettings();
   const instapayLabel = settings.payment_instapay_label || 'InstaPay';
   const vodafoneLabel = settings.payment_vodafone_label || 'Vodafone Cash';
   const [property, setProperty] = useState<any>(null);
   const [method, setMethod] = useState<'instapay' | 'vodafone'>('instapay');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingProp, setLoadingProp] = useState(true);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ export default function PaymentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (!user) { navigate('/login'); return; }
     if (!id) return;
     api.getProperty(Number(id))
@@ -73,7 +73,7 @@ export default function PaymentPage() {
       setError('يرجى رفع صورة إيصال التحويل أولاً');
       return;
     }
-    setLoading(true);
+    setIsSubmitting(true);
     setError('');
     try {
       let screenshotUrl = '';
@@ -106,7 +106,7 @@ export default function PaymentPage() {
       setError(err.message || 'حدث خطأ. يرجى المحاولة مرة أخرى.');
       setUploadingScreenshot(false);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -314,12 +314,10 @@ export default function PaymentPage() {
 
                     <motion.button
                       type="submit"
-                      disabled={loading || !screenshotFile}
-                      whileHover={{ scale: loading || !screenshotFile ? 1 : 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      className="w-full bg-gradient-to-r from-[#005a7d] to-[#007a9a] text-white py-4 rounded-2xl text-base font-black shadow-xl shadow-[#005a7d]/20 hover:shadow-[#005a7d]/30 transition-all disabled:opacity-50"
-                    >
-                      {loading ? (
+disabled={isSubmitting || !screenshotFile}
+                      whileHover={{ scale: isSubmitting || !screenshotFile ? 1 : 1.01 }}
+
+                      {isSubmitting ? (
                         <span className="flex items-center justify-center gap-2">
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           {uploadingScreenshot ? 'جاري رفع الصورة...' : 'جاري الإرسال...'}
