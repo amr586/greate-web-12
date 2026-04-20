@@ -2378,7 +2378,7 @@ const {
           try {
 await pool.query(
               'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?)',
-              [propOwner[0].user_id, 'property_inquiry', 'استفسار جديد على عقارك', `/properties/${propertyId}?view=messages`]
+              [propOwner[0].user_id, 'property_inquiry', 'استفسار جديد على عقارك', `/properties/${propertyId}?openChat=true`]
             );
           } catch {}
         }
