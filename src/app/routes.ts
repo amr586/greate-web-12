@@ -19,6 +19,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import Terms from './pages/Terms';
 import UserEditProperty from './pages/UserEditProperty';
 import CRMEntry from './pages/CRMEntry';
+import NotFound from './pages/NotFound';
 
 export const router = createBrowserRouter([
   { path: '/crm', Component: CRMEntry },
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
       { path: 'privacy', Component: PrivacyPolicy },
       { path: 'terms', Component: PrivacyPolicy },
       { path: 'edit-property/:id', Component: UserEditProperty },
+      { path: '*', Component: NotFound },
     ],
   },
 ]);
