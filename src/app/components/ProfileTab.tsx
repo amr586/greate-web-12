@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, Lock, Camera, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { getApiBaseUrl } from '../lib/getApiUrl';
@@ -17,6 +17,11 @@ export default function ProfileTab({ user, updateUser }: ProfileTabProps) {
   const [saveMsg, setSaveMsg] = useState('');
   const [saveErr, setSaveErr] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const [apiUrl, setApiUrl] = useState<string>('');
+
+  useEffect(() => {
+    setApiUrl(getApiBaseUrl() || '/api');
+  }, []);
 
   const [curPass, setCurPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -38,7 +43,7 @@ export default function ProfileTab({ user, updateUser }: ProfileTabProps) {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch(`${getApiBaseUrl()}/upload`, {
+      const res = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

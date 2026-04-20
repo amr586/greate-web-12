@@ -15,7 +15,10 @@ const PURPOSE_FILTER = ['الكل', 'بيع', 'إيجار', 'ريسيل'];
 
 function formatPrice(price: number) {
   if (!price) return 'تواصل للسعر';
-  if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(price % 1_000_000 === 0 ? 0 : 1)} مليون ج`;
+  if (price >= 1_000_000) {
+    const millions = price / 1_000_000;
+    return price % 1_000_000 === 0 ? `${millions.toFixed(0)} مليون ج` : `${millions.toFixed(1)} مليون ج`;
+  }
   if (price >= 1000) return `${(price / 1000).toFixed(0)} ألف ج`;
   return `${price.toLocaleString()} ج`;
 }
@@ -410,11 +413,11 @@ export default function Properties() {
                       {p.area ? (
                         <span className="flex items-center gap-1">
                           <Maximize2 size={12} className="text-[#005a7d]" />
-                          {p.area} م²
+                          {Number(p.area)} م²
                         </span>
                       ) : null}
                       {p.down_payment ? (
-                        <span className="font-semibold text-[#bca056]">مقدم: {p.down_payment}</span>
+                        <span className="font-semibold text-[#bca056]">مقدم: {Number(p.down_payment).toLocaleString()} ج</span>
                       ) : null}
                       {p.delivery_status ? (
                         <span className="font-semibold text-green-700">{p.delivery_status}</span>

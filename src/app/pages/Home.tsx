@@ -298,7 +298,7 @@ export default function Home() {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-4 flex-wrap">
                         {prop.bedrooms > 0 && <span className="flex items-center gap-1"><Bed size={14} className="text-[#005a7d]" />{prop.bedrooms} غرف</span>}
                         {prop.bathrooms > 0 && <span className="flex items-center gap-1"><Bath size={14} className="text-[#005a7d]" />{prop.bathrooms} حمام</span>}
-                        {prop.area > 0 && <span className="flex items-center gap-1"><Maximize2 size={14} className="text-[#005a7d]" />{prop.area} م²</span>}
+                        {prop.area > 0 && <span className="flex items-center gap-1"><Maximize2 size={14} className="text-[#005a7d]" />{Number(prop.area)} م²</span>}
                         {prop.finishing_type && <span className="bg-[#e6f2f5] text-[#005a7d] px-2 py-0.5 rounded-lg text-xs font-medium">{prop.finishing_type}</span>}
                       </div>
                       {/* Price */}

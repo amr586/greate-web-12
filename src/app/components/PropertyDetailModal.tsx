@@ -133,7 +133,7 @@ export default function PropertyDetailModal({ propertyId, onClose, onApprove, on
                 {property.down_payment && (
                   <div className="bg-white/70 rounded-lg px-3 py-2">
                     <span className="text-gray-400 text-xs block">المقدم</span>
-                    <span className="font-bold text-gray-800">{property.down_payment}</span>
+                    <span className="font-bold text-gray-800">{Number(property.down_payment).toLocaleString()} ج</span>
                   </div>
                 )}
                 {property.delivery_status && (

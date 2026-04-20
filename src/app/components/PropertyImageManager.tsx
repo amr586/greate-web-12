@@ -20,6 +20,11 @@ export default function PropertyImageManager({ propertyId }: Props) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [apiUrl, setApiUrl] = useState<string>('');
+
+  useEffect(() => {
+    setApiUrl(getApiBaseUrl() || '/api');
+  }, []);
 
   const loadImages = async () => {
     try {
@@ -59,7 +64,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(compressed);
         });
-        const resp = await fetch(`${getApiBaseUrl()}/upload`, {
+        const resp = await fetch(`${apiUrl}/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ image: base64, filename: file.name }),
@@ -111,7 +116,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           {images.map(img => (
             <div key={img.id} className="relative rounded-xl overflow-hidden border-2 border-gray-100 group aspect-video">
               <img
-                src={img.url?.startsWith('http') ? img.url : `${getApiBaseUrl()}${img.url}`}
+                src={img.url?.startsWith('http') ? img.url : `${apiUrl}${img.url}`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=150&fit=crop'; }}

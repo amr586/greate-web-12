@@ -66,6 +66,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
   const price = property.purpose === 'rent'
     ? `${property.price.toLocaleString()} ج/شهر`
     : `${property.price.toLocaleString()} جنيه`;
+  const downPayment = property.down_payment ? Number(property.down_payment).toLocaleString() : null;
 
   return (
     <motion.div
@@ -83,7 +84,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
       )}
       {!property.is_featured && property.down_payment && (
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1.5 flex items-center justify-center gap-1.5">
-          💰 {property.down_payment}
+          💰 {downPayment}ج
         </div>
       )}
 
@@ -153,7 +154,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
             )}
             <div className="flex items-center gap-1">
               <Maximize size={13} className="text-[#005a7d]" />
-              <span>{property.area}م²</span>
+              <span>{Number(property.area)}م²</span>
             </div>
             <div className="flex-1 flex justify-end">
               <span className="flex items-center gap-1 text-[#005a7d] font-medium">

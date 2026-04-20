@@ -444,7 +444,7 @@ export function PropertyDetailEnhanced() {
                 {property.down_payment && (
                   <div className="bg-amber-50 rounded-xl p-3 text-center">
                     <CreditCard size={18} className="text-[#bca056] mx-auto mb-1" />
-                    <div className="font-bold text-gray-900 text-sm">{property.down_payment}</div>
+                    <div className="font-bold text-gray-900 text-sm">{Number(property.down_payment).toLocaleString()} ج</div>
                     <div className="text-gray-500 text-xs">المقدم</div>
                   </div>
                 )}

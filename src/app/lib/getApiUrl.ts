@@ -11,5 +11,5 @@ export function getApiBaseUrl() {
       return 'https://greate-web-12.vercel.app/api';
     }
   }
-  return '/api';
+  return 'https://greate-web-12.vercel.app/api';
 }
