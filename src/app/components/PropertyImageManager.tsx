@@ -52,34 +52,56 @@ export default function PropertyImageManager({ propertyId }: Props) {
     if (!files || files.length === 0) return;
     setUploading(true);
     const currentApiUrl = apiUrl || 'https://greate-web-12.vercel.app/api';
-    try {
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
-      await Promise.all(Array.from(files).map(async (file, idx) => {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token') || '';
+    console.log('[PropertyImageManager] Starting upload, apiUrl:', currentApiUrl, 'token exists:', !!token);
+    
+    for (let idx = 0; idx < files.length; idx++) {
+      const file = files[idx];
+      try {
+        console.log('[PropertyImageManager]Compressing:', file.name);
         const compressed = await compressImage(file);
         const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve) => {
+        const base64 = await new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(reader.error);
           reader.readAsDataURL(compressed);
         });
+        
+        console.log('[PropertyImageManager] Uploading to:', `${currentApiUrl}/upload`);
         const resp = await fetch(`${currentApiUrl}/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ image: base64, filename: file.name }),
         });
-        const result = await resp.json();
-        console.log('[PropertyImageManager] upload result:', result);
-        if (result.url) {
-          const newImg = await api.addPropertyImage(propertyId, result.url, images.length === 0 && idx === 0);
-          if (newImg) setImages(prev => [...prev, newImg as PropertyImage]);
-        } else {
-          console.error('[PropertyImageManager] upload failed:', result);
-          alert('فشل رفع الصورة: ' + (result.error || 'خطأ غير معروف'));
+        
+        if (!resp.ok) {
+          console.error('[PropertyImageManager] HTTP error:', resp.status, resp.statusText);
+          alert('خطأ في الرفع: ' + resp.status);
+          continue;
         }
-      }));
-    } catch (err) { 
-      console.error('[PropertyImageManager] upload error:', err);
-      alert('خطأ في رفع الصور'); 
+        
+        const result = await resp.json();
+        console.log('[PropertyImageManager] Upload result:', result);
+        
+        if (!result.url) {
+          console.error('[PropertyImageManager] No URL in result:', result);
+          alert('فشل رفع الصورة: ' + (result.error || 'لا توجد رابط'));
+          continue;
+        }
+        
+        console.log('[PropertyImageManager] Adding image to property:', propertyId, result.url);
+        const newImg = await api.addPropertyImage(propertyId, result.url, images.length === 0 && idx === 0);
+        console.log('[PropertyImageManager] Image added:', newImg);
+        
+        if (newImg) {
+          setImages(prev => [...prev, newImg as PropertyImage]);
+        }
+      } catch (err) {
+        console.error('[PropertyImageManager] Error:', err);
+        alert('خطأ في رفع الصور: ' + (err as Error).message);
+      }
     }
+    
     setUploading(false);
     if (fileRef.current) fileRef.current.value = '';
   };

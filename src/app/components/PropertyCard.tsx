@@ -86,7 +86,7 @@ export default function PropertyCard({ property, index = 0, onSaved }: Props) {
           ⭐ عقار مميز
         </div>
       )}
-      {!property.is_featured && property.down_payment && (
+      {!property.is_featured && downPayment && (
         <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1.5 flex items-center justify-center gap-1.5">
           💰 {downPayment}ج
         </div>
