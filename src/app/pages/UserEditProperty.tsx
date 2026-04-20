@@ -60,7 +60,7 @@ export default function UserEditProperty() {
       setFetching(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`/api/properties/${id}`, {
+        const res = await fetch(`${getApiBaseUrl()}/properties/${id}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const data = await res.json();
@@ -180,7 +180,7 @@ export default function UserEditProperty() {
         images: uploadedImages,
         floor_plan_image: floorPlanImage || null,
       };
-      const res = await fetch(`/api/properties/${id}/user-edit`, {
+      const res = await fetch(`${getApiBaseUrl()}/properties/${id}/user-edit`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
