@@ -712,10 +712,12 @@ export default async function handler(req: any, res: any) {
   // CORS - allow all origins for now
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'false');
   res.setHeader('Access-Control-Max-Age', '86400');
   
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(204).end();
   }
 
@@ -1431,10 +1433,9 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: 'خطأ' });
     }
   }
-  }
 
-  // GET /api/properties/featured - must check exact path
-  if (method === 'GET' && url?.startsWith('/api/properties/featured')) {
+  // GET /api/properties/featured - must check exact path (must be BEFORE /api/properties)
+  if (method === 'GET' && (url === '/api/properties/featured' || url?.startsWith('/api/properties/featured?'))) {
     try {
       const [rows]: any = await pool.query(`
         SELECT p.*,
@@ -2479,8 +2480,8 @@ const {
 
   // ========== SETTINGS ==========
 
-  // GET /api/settings
-  if (method === 'GET' && url?.includes('/api/settings')) {
+  // GET /api/settings (specific path, not /settings/something)
+  if (method === 'GET' && (url === '/api/settings' || url === '/settings')) {
     try {
       const [rows]: any = await pool.query('SELECT * FROM site_settings LIMIT 1');
       
