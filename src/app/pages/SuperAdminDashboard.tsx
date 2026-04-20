@@ -74,10 +74,13 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const tab = params.get('tab');
+    const tab = params.get('tab') || params.get('view');
     const msgId = params.get('msgId');
-    if (tab) setActiveTab(tab);
+    if (tab && ['overview', 'properties', 'users', 'payments', 'contact', 'site_settings', 'profile'].includes(tab)) {
+      setActiveTab(tab);
+    }
     if (msgId) {
+      setActiveTab('contact');
       const id = Number(msgId);
       setHighlightMsgId(id);
       setTimeout(() => {
