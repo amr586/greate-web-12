@@ -84,7 +84,7 @@ export default function PaymentPage() {
         reader.readAsDataURL(screenshotFile);
       });
       const token = localStorage.getItem('token');
-      const uploadRes = await fetch(`${getApiBaseUrl()}/api/upload`, {
+      const uploadRes = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: screenshotFile.name }),

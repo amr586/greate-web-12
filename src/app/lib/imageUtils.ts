@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from './getApiUrl';
+
 export async function compressImage(file: File, maxW = 1024, quality = 0.75): Promise<Blob> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -38,7 +40,7 @@ export async function compressAndUploadMultiple(
         const compressed = await compressImage(file);
         const formData = new FormData();
         formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
-        const res = await fetch('/api/upload', {
+        const res = await fetch(`${getApiBaseUrl()}/upload`, {
           method: 'POST',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           body: formData,

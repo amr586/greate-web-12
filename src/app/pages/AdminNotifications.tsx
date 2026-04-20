@@ -5,7 +5,6 @@ import { Bell, X, CheckCircle, AlertCircle, Building2, User, Phone, Mail, MapPin
 import { useAuth } from '../context/AuthContext';
 
 import { getApiBaseUrl } from '../lib/getApiUrl';
-const API_BASE = getApiBaseUrl();
 
 interface Notification {
   id: number;
@@ -39,7 +38,7 @@ export default function AdminNotifications() {
 
   const loadNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE}/notifications/admin`, {
+      const response = await fetch(`${getApiBaseUrl()}/notifications/admin`, {
         headers: {
           'Cache-Control': 'no-cache',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -59,7 +58,7 @@ export default function AdminNotifications() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      const response = await fetch(`${API_BASE}/notifications/mark-read/${notificationId}`, {
+      const response = await fetch(`${getApiBaseUrl()}/notifications/mark-read/${notificationId}`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,

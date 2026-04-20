@@ -1,18 +1,5 @@
 import { PROPERTIES } from '../data/mockData';
-
-function getApiBaseUrl() {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // If running on greatsociety-eg.com, use Vercel backend
-  if (typeof window !== 'undefined' && window.location?.hostname === 'greatsociety-eg.com') {
-    return 'https://greate-web-12.vercel.app';
-  }
-  // Default to relative API calls (works for local dev and Vercel)
-  return '/api';
-}
-
-const BASE_URL = getApiBaseUrl();
+import { getApiBaseUrl } from './getApiUrl';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -41,7 +28,7 @@ async function request(path: string, options: RequestInit = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     
-    const res = await fetch(BASE_URL + url, { ...options, headers, signal: controller.signal });
+    const res = await fetch(getApiBaseUrl() + url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeout);
     
     const data = await res.json();
@@ -185,7 +172,7 @@ export async function streamChat(messages: any[], onChunk: (text: string) => voi
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     
-    const res = await fetch(BASE_URL + '/ai/chat', {
+    const res = await fetch(getApiBaseUrl() + '/ai/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

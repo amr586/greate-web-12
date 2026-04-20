@@ -145,7 +145,7 @@ export default function UserEditProperty() {
         reader.onload = () => resolve(reader.result as string);
         reader.readAsDataURL(compressed);
       });
-      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

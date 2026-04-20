@@ -117,7 +117,7 @@ export default function SuperAdminDashboard() {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),
@@ -232,7 +232,7 @@ export default function SuperAdminDashboard() {
         reader.readAsDataURL(file);
       });
       const token = localStorage.getItem('token');
-      const res = await fetch(`${getApiBaseUrl()}/api/upload`, {
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ image: base64, filename: file.name }),

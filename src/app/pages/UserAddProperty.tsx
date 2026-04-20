@@ -9,7 +9,6 @@ import { CAIRO_DISTRICTS } from '../lib/districts';
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
 import { getApiBaseUrl } from '../lib/getApiUrl';
-const API_BASE = getApiBaseUrl();
 
 export default function UserAddProperty() {
   const { user, isAdmin, isSuperAdmin, subRole } = useAuth();
@@ -89,7 +88,7 @@ export default function UserAddProperty() {
       const compressed = await compressImage(file);
       const formData = new FormData();
       formData.append('image', compressed, file.name.replace(/\.[^.]+$/, '.jpg'));
-      const res = await fetch(`${API_BASE}/upload`, {
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -124,7 +123,7 @@ export default function UserAddProperty() {
         images: uploadedImages,
         floor_plan_image: floorPlanImage || null,
       };
-      const res = await fetch(`${API_BASE}/properties`, {
+      const res = await fetch(`${getApiBaseUrl()}/properties`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

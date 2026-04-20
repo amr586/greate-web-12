@@ -4,8 +4,6 @@ import { api } from '../lib/api';
 import { getApiBaseUrl } from '../lib/getApiUrl';
 import { compressImage } from '../lib/imageUtils';
 
-const API_BASE = getApiBaseUrl();
-
 interface PropertyImage {
   id: number;
   url: string;
@@ -61,7 +59,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(compressed);
         });
-        const resp = await fetch(`${getApiBaseUrl()}/api/upload`, {
+        const resp = await fetch(`${getApiBaseUrl()}/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ image: base64, filename: file.name }),
@@ -113,7 +111,7 @@ export default function PropertyImageManager({ propertyId }: Props) {
           {images.map(img => (
             <div key={img.id} className="relative rounded-xl overflow-hidden border-2 border-gray-100 group aspect-video">
               <img
-                src={img.url?.startsWith('http') ? img.url : `${API_BASE}${img.url}`}
+                src={img.url?.startsWith('http') ? img.url : `${getApiBaseUrl()}${img.url}`}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&h=150&fit=crop'; }}
