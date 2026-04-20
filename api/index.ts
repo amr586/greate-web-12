@@ -1581,6 +1581,19 @@ const {
         }
       }
 
+      // Notify admins about new property
+      if (initialStatus === 'pending') {
+        const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('superadmin', 'admin')");
+        for (const admin of admins) {
+          try {
+            await pool.query(
+              "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'property_added', ?, ?, ?)",
+              [admin.id, 'عقار جديد بانتظار المراجعة', 'عقار بانتظار المراجعة', '/admin/properties?tab=pending']
+            );
+          } catch {}
+        }
+      }
+
       return res.status(201).json({ id: propertyId, status: initialStatus, message: initialStatus === 'pending' ? 'تم إرسال العقار للمراجعة' : 'تم إضافة العقار' });
     } catch (err: any) {
       console.log('[ERROR] Create property:', err.message);
@@ -1805,6 +1818,42 @@ const {
       return res.json({ success: true });
     } catch (err: any) {
       console.log('[ERROR] Update property:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:id/sold
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/sold$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+
+      await pool.query("UPDATE properties SET status='sold', updated_at=NOW() WHERE id=?", [id]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Mark sold:', err.message);
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // PATCH /api/admin/properties/:id/available
+  if (method === 'PATCH' && url?.match(/\/api\/admin\/properties\/\d+\/available$/)) {
+    if (!user || !['admin', 'superadmin'].includes(user.role)) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/properties\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+
+      await pool.query("UPDATE properties SET status='approved', updated_at=NOW() WHERE id=?", [id]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.log('[ERROR] Mark available:', err.message);
       return res.status(500).json({ error: 'خطأ' });
     }
   }
@@ -2211,6 +2260,19 @@ const {
         `INSERT INTO property_chat_messages (property_id, sender_id, content, is_admin) VALUES (?, ?, ?, ?)`,
         [propertyId, user.id, content.trim(), isAdmin]
       );
+
+      // Notify property owner if not admin
+      if (!isAdmin) {
+        const [propOwner]: any = await pool.query('SELECT user_id FROM properties WHERE id = ?', [propertyId]);
+        if (propOwner[0]?.user_id) {
+          try {
+            await pool.query(
+              'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?)',
+              [propOwner[0].user_id, 'new_message', 'استفسار جديد على عقارك', 'راجع استفسار العقار', `/properties/${propertyId}`]
+            );
+          } catch {}
+        }
+      }
 
       return res.status(201).json({ id: result.insertId, content: content.trim(), is_admin: isAdmin });
     } catch {
