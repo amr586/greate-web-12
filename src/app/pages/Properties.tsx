@@ -35,6 +35,7 @@ export default function Properties() {
   const [minArea, setMinArea] = useState('');
   const [maxArea, setMaxArea] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('الكل');
+  const [statusFilter, setStatusFilter] = useState('متاح');
   const [showFilters, setShowFilters] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
   const [showDistrictSuggestions, setShowDistrictSuggestions] = useState(false);
@@ -91,12 +92,14 @@ export default function Properties() {
     const matchMinArea = !minArea || Number(p.area) >= Number(minArea);
     const matchMaxArea = !maxArea || Number(p.area) <= Number(maxArea);
     const matchFeatured = featuredFilter === 'الكل' || (featuredFilter === 'مميز' ? Boolean(p.is_featured) : !p.is_featured);
-    return matchSearch && matchDistrict && matchType && matchPurpose && matchMinPrice && matchMaxPrice && matchMinArea && matchMaxArea && matchFeatured;
+    const isSold = p.status === 'sold';
+    const showSold = statusFilter === 'الكل' || (statusFilter === 'مباع' ? isSold : !isSold);
+    return matchSearch && matchDistrict && matchType && matchPurpose && matchMinPrice && matchMaxPrice && matchMinArea && matchMaxArea && matchFeatured && showSold;
   });
 
   const filteredDbNormal = filteredDb;
 
-  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setMinArea(''); setMaxArea(''); setFeaturedFilter('الكل'); };
+  const clearFilters = () => { setSearch(''); setDistrict('الكل'); setDistrictSearch(''); setType('الكل'); setPurpose('الكل'); setMinPrice(''); setMaxPrice(''); setMinArea(''); setMaxArea(''); setFeaturedFilter('الكل'); setStatusFilter('متاح'); };
   const activeCount = [search, (district !== 'الكل' && district !== 'مناطق أخرى') ? district : districtSearch, type !== 'الكل' ? type : '', purpose !== 'الكل' ? purpose : '', minPrice, maxPrice, minArea, maxArea, featuredFilter !== 'الكل' ? featuredFilter : ''].filter(Boolean).length;
 
   return (
@@ -195,6 +198,16 @@ export default function Properties() {
                       <option value="الكل">الكل</option>
                       <option value="مميز">مميز</option>
                       <option value="عادي">عادي</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">الحالة</label>
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#005a7d]"
+                    >
+                      <option value="متاح">متاح</option>
+                      <option value="مباع">تم البيع</option>
+                      <option value="الكل">الكل</option>
                     </select>
                   </div>
                   <div>
@@ -425,34 +438,34 @@ export default function Properties() {
                     </div>
 
                     {/* Amenities */}
-                    {(p.has_parking || p.has_elevator || p.has_pool || p.has_garden || p.is_furnished || p.has_basement || p.finishing_type) && (
+                    {(Number(p.has_parking) || Number(p.has_elevator) || Number(p.has_pool) || Number(p.has_garden) || p.is_furnished || Number(p.has_basement) || p.finishing_type) && (
                       <div className="flex flex-wrap gap-1.5 mb-2">
                         {p.is_furnished && (
                           <span className="flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-amber-100">
                             <Sofa size={9} />مفروش
                           </span>
                         )}
-                        {p.has_parking && (
+                        {Number(p.has_parking) > 0 && (
                           <span className="flex items-center gap-1 bg-blue-50 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-blue-100">
                             <Car size={9} />موقف
                           </span>
                         )}
-                        {p.has_elevator && (
+                        {Number(p.has_elevator) > 0 && (
                           <span className="flex items-center gap-1 bg-purple-50 text-purple-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-purple-100">
                             <Layers size={9} />مصعد
                           </span>
                         )}
-                        {p.has_pool && (
+                        {Number(p.has_pool) > 0 && (
                           <span className="flex items-center gap-1 bg-cyan-50 text-cyan-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-cyan-100">
                             <Waves size={9} />حمام سباحة
                           </span>
                         )}
-                        {p.has_garden && (
+                        {Number(p.has_garden) > 0 && (
                           <span className="flex items-center gap-1 bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-green-100">
                             <Trees size={9} />حديقة
                           </span>
                         )}
-                        {p.has_basement && (
+                        {Number(p.has_basement) > 0 && (
                           <span className="flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-gray-200">
                             <Warehouse size={9} />بيزمنت
                           </span>
