@@ -70,7 +70,7 @@ export default function SuperAdminDashboard() {
     setInitialLoadRan(true);
     if (!isSuperAdmin) { navigate('/dashboard'); return; }
     loadData();
-  }, [user, loading]);
+  }, [user, authLoading, isLoading]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);

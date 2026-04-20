@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bell, X, CheckCircle, AlertCircle, Building2, User, Phone, Mail, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
+const API_BASE = getApiBaseUrl();
 
 interface Notification {
   id: number;

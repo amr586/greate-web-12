@@ -8,7 +8,8 @@ import { CAIRO_DISTRICTS } from '../lib/districts';
 
 const TYPES = ['شقة', 'استديو', 'دوبلكس', 'فيلا', 'مكتب', 'شاليه', 'محل تجاري', 'أرض'];
 const FINISHING_OPTIONS = ['تشطيب', 'نص تشطيب', '3/4 تشطيب', 'سوبر لوكس'];
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+import { getApiBaseUrl } from '../lib/getApiUrl';
+const API_BASE = getApiBaseUrl();
 
 export default function UserAddProperty() {
   const { user, isAdmin, isSuperAdmin, subRole } = useAuth();

@@ -3,6 +3,7 @@ import { Bell, X, CheckCheck, MessageSquare, Home, CreditCard, Headphones, Info,
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
+import { getApiBaseUrl } from '../lib/getApiUrl';
 
 interface Notification {
   id: number;
@@ -54,7 +55,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+  const API_BASE = getApiBaseUrl();
 
   useEffect(() => {
     if (!user) return;
