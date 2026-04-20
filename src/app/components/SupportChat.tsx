@@ -42,8 +42,11 @@ export default function SupportChat() {
     if (!ticketId) return;
     try {
       const data = await api.getTicketMessages(ticketId);
-      setMessages(data);
-    } catch {}
+      console.log('[SupportChat] messages:', data);
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('[SupportChat] load error:', e);
+    }
   };
 
   const createTicket = async () => {
@@ -63,9 +66,14 @@ export default function SupportChat() {
     setInput('');
     setLoading(true);
     try {
+      console.log('[SupportChat] sending:', content);
       await api.sendTicketMessage(ticketId, content);
+      console.log('[SupportChat] sent OK');
       await loadMessages();
-    } catch {}
+    } catch (e) {
+      console.error('[SupportChat] send error:', e);
+      setInput(content);
+    }
     finally { setLoading(false); }
   };
 

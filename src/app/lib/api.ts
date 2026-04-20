@@ -141,7 +141,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
   createTicket: (subject: string) => request('/support/tickets', { method: 'POST', body: JSON.stringify({ subject }) }),
   getTickets: () => request('/support/tickets'),
   getTicketMessages: (id: number) => request(`/support/tickets/${id}/messages`),
-  sendTicketMessage: (id: number, content: string) => request(`/support/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  sendTicketMessage: (id: number, content: string) => request(`/support/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ message: content }) }),
   closeTicket: (id: number) => request(`/support/tickets/${id}/close`, { method: 'PATCH' }),
 
   submitContact: (data: { name: string; email: string; phone: string; subject: string; message: string }) =>
