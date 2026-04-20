@@ -26,7 +26,7 @@ export default function ForgotPassword() {
     if (!email.trim()) return setError('البريد الإلكتروني مطلوب');
     setLoading(true);
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password-check`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/forgot-password-check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -48,7 +48,7 @@ export default function ForgotPassword() {
     setError('');
     setLoading(true);
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/auth/forgot-password`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -71,7 +71,7 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/auth/verify-forgot-password`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/verify-forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),

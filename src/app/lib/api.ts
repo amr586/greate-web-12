@@ -119,6 +119,7 @@ register: (data: { name: string; email: string; phone: string; password: string 
   getUsers: () => request('/admin/users'),
   updateRole: (id: number, role: string, sub_role?: string) => request(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role, sub_role }) }),
   toggleUser: (id: number) => request(`/admin/users/${id}/toggle`, { method: 'PATCH' }),
+  deleteUser: (id: number) => request(`/admin/users/${id}`, { method: 'DELETE' }),
   resetUserPassword: (id: number, newPassword: string) => request(`/admin/users/${id}/reset-password`, { method: 'PATCH', body: JSON.stringify({ newPassword }) }),
   updateUserEmail: (id: number, newEmail: string) => request(`/admin/users/${id}/update-email`, { method: 'PATCH', body: JSON.stringify({ newEmail }) }),
   getAnalytics: () => request('/admin/analytics'),

@@ -108,7 +108,7 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <UserDashboard /> },
       { path: 'saved', element: <SavedProperties /> },
       { path: 'admin', element: <AdminDashboard /> },
-      { path: 'admin/notifications', element: <AdminNotifications /> },
+      { path: 'admin/contact', element: <AdminDashboard /> },
       { path: 'admin/add-property', element: <AdminAddProperty /> },
       { path: 'sub-admin', element: <SubAdminDashboard /> },
       { path: 'superadmin', element: <SuperAdminDashboard /> },

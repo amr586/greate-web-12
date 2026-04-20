@@ -1426,7 +1426,7 @@ export default async function handler(req: any, res: any) {
       const [rows]: any = await pool.query(`
         SELECT p.*,
           (SELECT pi.url FROM property_images pi WHERE pi.property_id = p.id AND pi.is_primary = true LIMIT 1) as primary_image
-        FROM properties p WHERE p.status = 'approved' AND p.show_on_home = true
+        FROM properties p WHERE p.status = 'approved' AND (p.show_on_home = true OR p.show_on_home = 1)
         ORDER BY p.created_at DESC LIMIT 6
       `);
       
@@ -1779,8 +1779,8 @@ const {
       `, [
         title, title_ar, description, price, area, bedrooms, bathrooms,
         district, city, address, type, purpose, floor, contact_phone,
-        typeof is_featured === 'boolean' ? is_featured : null,
-        typeof show_on_home === 'boolean' ? show_on_home : null,
+        is_featured === true || is_featured === 'true' || is_featured === '1' || is_featured === 1 ? true : false,
+        show_on_home === true || show_on_home === 'true' || show_on_home === '1' || show_on_home === 1 ? true : false,
         id
       ]);
 
@@ -1907,6 +1907,24 @@ const {
       if (!validRole) return res.status(400).json({ error: 'دور غير صالح' });
       
       await pool.query('UPDATE users SET role=?, sub_role=? WHERE id=?', [validRole, body.sub_role || null, id]);
+      return res.json({ success: true });
+    } catch {
+      return res.status(500).json({ error: 'خطأ' });
+    }
+  }
+
+  // DELETE /api/admin/users/:id
+  if (method === 'DELETE' && url?.match(/\/api\/admin\/users\/\d+$/)) {
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    try {
+      const idStr = url.match(/\/api\/admin\/users\/(\d+)/)?.[1];
+      const id = validateId(idStr);
+      if (!id) return res.status(400).json({ error: 'معرف غير صالح' });
+      if (id === user.id) return res.status(400).json({ error: 'لا يمكنك حذف حسابك الحالي' });
+      
+      await pool.query('DELETE FROM users WHERE id=?', [id]);
       return res.json({ success: true });
     } catch {
       return res.status(500).json({ error: 'خطأ' });
@@ -2053,7 +2071,7 @@ const {
       );
 
       // Notify all admins about new contact message
-      const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('superadmin', 'admin')");
+      const [admins]: any = await pool.query("SELECT id FROM users WHERE role IN ('superadmin', 'admin', 'subadmin')");
       for (const admin of admins) {
         try {
           await pool.query(

@@ -52,13 +52,14 @@ const SiteSettingsContext = createContext<SiteSettingsContextType>({
   refreshSettings: async () => {},
 });
 
+import { getApiBaseUrl } from '../lib/getApiUrl';
+
 export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
   const refreshSettings = async () => {
     try {
-      const BASE_URL = import.meta.env.VITE_API_URL || '/api';
-      const res = await fetch(`${BASE_URL}/settings`);
+      const res = await fetch(`${getApiBaseUrl()}/settings`);
       if (res.ok) {
         const data = await res.json();
         setSettings({ ...DEFAULT_SETTINGS, ...data });
