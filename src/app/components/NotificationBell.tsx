@@ -3,7 +3,6 @@ import { Bell, X, CheckCheck, MessageSquare, Home, CreditCard, Headphones, Info,
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
-import { getApiBaseUrl } from '../lib/getApiUrl';
 
 interface Notification {
   id: number;
@@ -55,7 +54,7 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const API_BASE = getApiBaseUrl();
+  const API_BASE = 'https://greate-web-12.vercel.app/api';
 
   useEffect(() => {
     if (!user) return;
@@ -137,7 +136,12 @@ export default function NotificationBell() {
     }
     if (n.link) {
       setOpen(false);
-      navigate(n.link);
+      const [path, query] = n.link.split('?');
+      if (query) {
+        navigate({ pathname: path, search: `?${query}` });
+      } else {
+        navigate(n.link);
+      }
     }
   };
 

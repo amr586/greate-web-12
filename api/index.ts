@@ -2090,7 +2090,7 @@ const {
         try {
           await pool.query(
             `INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, 'contact_message', ?, ?, ?)`,
-            [admin.id, 'رسالة جديدة من ' + sanitizedName, sanitizedSubject, '/admin/contact']
+            [admin.id, 'رسالة جديدة من ' + sanitizedName, sanitizedSubject, '/admin/contact?view=messages']
           );
         } catch {}
       }
@@ -2356,9 +2356,9 @@ const {
         const [propOwner]: any = await pool.query('SELECT user_id FROM properties WHERE id = ?', [propertyId]);
         if (propOwner[0]?.user_id) {
           try {
-            await pool.query(
+await pool.query(
               'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?)',
-              [propOwner[0].user_id, 'property_inquiry', 'استفسار جديد على عقارك', 'راجع استفسار العقار', `/properties/${propertyId}`]
+              [propOwner[0].user_id, 'property_inquiry', 'استفسار جديد على عقارك', `/properties/${propertyId}?view=messages`]
             );
           } catch {}
         }
