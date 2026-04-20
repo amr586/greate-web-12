@@ -366,7 +366,12 @@ export function PropertyDetailEnhanced() {
                 <div className="absolute top-4 right-4 flex flex-wrap gap-2">
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold ${purposeColor}`}>{purposeLabel}</span>
                   {property.type && <span className="px-3 py-1 rounded-lg text-xs font-medium bg-white/90 text-[#7C3AED]">{property.type}</span>}
-                  {property.is_featured && (
+                  {property.status === 'sold' && (
+                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-red-500 text-white flex items-center gap-1">
+                      <span>تم البيع</span>
+                    </span>
+                  )}
+                  {property.is_featured && property.status !== 'sold' && (
                     <span className="px-3 py-1 rounded-lg text-xs font-medium bg-gradient-to-r from-[#bca056] to-[#a68a47] text-white flex items-center gap-1">
                       <Star size={12} fill="currentColor" />مميز
                     </span>

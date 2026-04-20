@@ -89,6 +89,11 @@ export default function PropertyDetail() {
                     {property.purpose === 'sale' ? 'للبيع' : 'للإيجار'}
                   </span>
                   <span className="px-3 py-1 rounded-lg text-xs font-medium bg-white text-[#005a7d]">{property.type}</span>
+                  {property.status === 'sold' && (
+                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-red-500 text-white">
+                      تم البيع
+                    </span>
+                  )}
                 </div>
               </div>
               {images.length > 1 && (
